@@ -5,6 +5,7 @@ import { ArrowLeft, Save } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
 import api from '@/lib/api';
+import { isValidDateInput } from '@/lib/validation';
 
 export default function AddProjectPage() {
   const { t } = useLanguage();
@@ -20,10 +21,18 @@ export default function AddProjectPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
+    const cleanName = form.name.trim();
+    if (cleanName.length < 2) return setError('Project name must be at least 2 characters');
+    if (!isValidDateInput(form.startDate) || !isValidDateInput(form.expectedEndDate)) {
+      return setError('Please enter valid project dates');
+    }
+    if (new Date(form.startDate) > new Date(form.expectedEndDate)) {
+      return setError('End date cannot be before start date');
+    }
+    setLoading(true);
     try {
-      await api.post('/projects', form);
+      await api.post('/projects', { ...form, name: cleanName });
       router.push('/projects');
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to add project');
@@ -51,6 +60,7 @@ export default function AddProjectPage() {
               type="text"
               className="input-field"
               value={form.name}
+              maxLength={200}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
             />

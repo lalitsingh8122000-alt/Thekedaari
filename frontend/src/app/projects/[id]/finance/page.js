@@ -8,6 +8,7 @@ import {
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
 import api from '@/lib/api';
+import { parsePositiveAmount, isValidDateInput } from '@/lib/validation';
 
 export default function ProjectFinancePage() {
   const { t } = useLanguage();
@@ -21,6 +22,7 @@ export default function ProjectFinancePage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(null);
   const [workerSearch, setWorkerSearch] = useState('');
+  const [error, setError] = useState('');
   const [form, setForm] = useState({
     amount: '', date: new Date().toISOString().split('T')[0],
     paymentMode: 'Cash', remarks: '', notes: '', workerId: null,
@@ -48,20 +50,33 @@ export default function ProjectFinancePage() {
   const resetForm = () => {
     setForm({ amount: '', date: new Date().toISOString().split('T')[0], paymentMode: 'Cash', remarks: '', notes: '', workerId: null });
     setWorkerSearch('');
+    setError('');
   };
 
   const handleAdd = async () => {
+    setError('');
+    const amount = parsePositiveAmount(form.amount);
+    if (!amount) return setError('Please enter a valid amount');
+    if (!isValidDateInput(form.date)) return setError('Please select a valid date');
+    if (showModal === 'expense' && !form.remarks) return setError('Please select an expense category');
+    if (showModal === 'expense' && form.remarks === 'Labour' && !form.workerId) {
+      return setError('Please select a worker for labour expense');
+    }
+    if (showModal === 'income' && form.remarks.trim().length > 500) return setError('Remarks cannot exceed 500 characters');
+    if (showModal === 'expense' && form.notes.trim().length > 2000) return setError('Notes cannot exceed 2000 characters');
     try {
       if (showModal === 'income') {
-        await api.post(`/finance/projects/${id}/income`, form);
+        await api.post(`/finance/projects/${id}/income`, { ...form, amount, remarks: form.remarks.trim() });
       } else {
-        await api.post(`/finance/projects/${id}/expenses`, form);
+        await api.post(`/finance/projects/${id}/expenses`, { ...form, amount, notes: form.notes.trim() });
       }
       setShowModal(null);
       resetForm();
       setLoading(true);
       load();
-    } catch {}
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to save record');
+    }
   };
 
   const expenseRemarks = ['Cement', 'Sand', 'Labour', 'Others'];
@@ -200,6 +215,7 @@ export default function ProjectFinancePage() {
                 <h3 className="text-base font-bold">{showModal === 'income' ? t('add_income') : t('add_expense')}</h3>
                 <button onClick={() => { setShowModal(null); resetForm(); }} className="p-1"><X size={20} /></button>
               </div>
+              {error && <div className="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-xs">{error}</div>}
 
               {showModal === 'expense' && (
                 <div>
@@ -277,7 +293,7 @@ export default function ProjectFinancePage() {
 
               <div>
                 <label className="block text-gray-600 font-medium mb-1 text-xs">{t('amount')} (₹)</label>
-                <input type="number" className="input-field !py-2 text-base font-bold text-center" placeholder="₹" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
+                <input type="number" min="0.01" step="0.01" className="input-field !py-2 text-base font-bold text-center" placeholder="₹" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
               </div>
 
               <div>
@@ -304,7 +320,7 @@ export default function ProjectFinancePage() {
               {showModal === 'expense' && (
                 <div>
                   <label className="block text-gray-600 font-medium mb-1 text-xs">{t('notes')}</label>
-                  <input type="text" className="input-field !py-2 text-xs" placeholder={t('notes')} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+                  <input type="text" maxLength={2000} className="input-field !py-2 text-xs" placeholder={t('notes')} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
                 </div>
               )}
             </div>

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Phone, Lock, LogIn } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { normalizePhone, sanitizePhoneInput, isValidPhone, PHONE_LENGTH } from '@/lib/validation';
 
 export default function LoginPage() {
   const [phone, setPhone] = useState('');
@@ -17,9 +18,18 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    const cleanedPhone = normalizePhone(phone);
+    if (!isValidPhone(cleanedPhone)) {
+      setError('Phone number must be exactly 10 digits');
+      return;
+    }
+    if (!password) {
+      setError('Password is required');
+      return;
+    }
     setLoading(true);
     try {
-      await login(phone, password);
+      await login(cleanedPhone, password);
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
     } finally {
@@ -60,8 +70,11 @@ export default function LoginPage() {
               type="tel"
               placeholder={t('phone')}
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(sanitizePhoneInput(e.target.value))}
               className="input-field pl-12 text-lg"
+              inputMode="numeric"
+              pattern="\d{10}"
+              maxLength={PHONE_LENGTH}
               required
             />
           </div>

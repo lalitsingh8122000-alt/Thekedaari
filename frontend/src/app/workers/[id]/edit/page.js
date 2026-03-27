@@ -5,6 +5,7 @@ import { ArrowLeft, Save, Camera } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
 import api from '@/lib/api';
+import { normalizePhone, sanitizePhoneInput, isValidPhone, parsePositiveAmount, PHONE_LENGTH } from '@/lib/validation';
 
 export default function EditWorkerPage() {
   const { t } = useLanguage();
@@ -32,18 +33,35 @@ export default function EditWorkerPage() {
 
   const handlePhoto = (e) => {
     const file = e.target.files[0];
-    if (file) { setPhotoFile(file); setPreview(URL.createObjectURL(file)); }
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        setError('Please upload a valid image file');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size must be less than 5MB');
+        return;
+      }
+      setPhotoFile(file);
+      setPreview(URL.createObjectURL(file));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSaving(true);
     setError('');
+    const cleanedPhone = normalizePhone(form.phone);
+    const costPerDay = parsePositiveAmount(form.costPerDay);
+    if (form.name.trim().length < 2) return setError('Worker name must be at least 2 characters');
+    if (!isValidPhone(cleanedPhone)) return setError('Phone number must be exactly 10 digits');
+    if (!costPerDay) return setError('Enter a valid cost per day amount');
+    if (!form.roleId) return setError('Please select a role');
+    setSaving(true);
     try {
       const data = new FormData();
-      data.append('name', form.name);
-      data.append('phone', form.phone);
-      data.append('costPerDay', form.costPerDay);
+      data.append('name', form.name.trim());
+      data.append('phone', cleanedPhone);
+      data.append('costPerDay', String(costPerDay));
       data.append('roleId', form.roleId);
       data.append('status', form.status);
       if (photoFile) data.append('photo', photoFile);
@@ -78,15 +96,15 @@ export default function EditWorkerPage() {
 
           <div>
             <label className="label">{t('worker_name')}</label>
-            <input type="text" className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            <input type="text" className="input-field" maxLength={100} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           </div>
           <div>
             <label className="label">{t('phone')}</label>
-            <input type="tel" className="input-field" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required />
+            <input type="tel" className="input-field" value={form.phone} onChange={(e) => setForm({ ...form, phone: sanitizePhoneInput(e.target.value) })} inputMode="numeric" pattern="\d{10}" maxLength={PHONE_LENGTH} required />
           </div>
           <div>
             <label className="label">{t('cost_per_day')} (₹)</label>
-            <input type="number" className="input-field" value={form.costPerDay} onChange={(e) => setForm({ ...form, costPerDay: e.target.value })} required />
+            <input type="number" min="1" step="0.01" className="input-field" value={form.costPerDay} onChange={(e) => setForm({ ...form, costPerDay: e.target.value })} required />
           </div>
 
           <div>

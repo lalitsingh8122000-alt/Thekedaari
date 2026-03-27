@@ -4,6 +4,7 @@ import { Plus, ShieldCheck, X, Users } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
 import api from '@/lib/api';
+import { normalizeText } from '@/lib/validation';
 
 export default function RolesPage() {
   const [roles, setRoles] = useState([]);
@@ -11,6 +12,7 @@ export default function RolesPage() {
   const [showModal, setShowModal] = useState(false);
   const [roleName, setRoleName] = useState('');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const { t } = useLanguage();
 
   const load = () => {
@@ -22,15 +24,23 @@ export default function RolesPage() {
   const quickRoles = ['Labour', 'Karigar', 'Supervisor'];
 
   const addRole = async (name) => {
-    if (!name) return;
+    const cleanName = normalizeText(name);
+    if (!cleanName) return;
+    if (cleanName.length < 2) {
+      setError('Role name must be at least 2 characters');
+      return;
+    }
     setSaving(true);
+    setError('');
     try {
-      await api.post('/roles', { name });
+      await api.post('/roles', { name: cleanName });
       setRoleName('');
       setShowModal(false);
       setLoading(true);
       load();
-    } catch {} finally { setSaving(false); }
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to add role');
+    } finally { setSaving(false); }
   };
 
   return (
@@ -92,6 +102,7 @@ export default function RolesPage() {
               <h3 className="text-xl font-bold">{t('add_role')}</h3>
               <button onClick={() => setShowModal(false)} className="p-1"><X size={24} /></button>
             </div>
+            {error && <div className="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm">{error}</div>}
 
             <p className="text-gray-500 text-sm">Quick add / जल्दी जोड़ें:</p>
             <div className="grid grid-cols-3 gap-2">
@@ -106,7 +117,7 @@ export default function RolesPage() {
 
             <div className="border-t pt-4">
               <label className="label">{t('role_name')}</label>
-              <input type="text" className="input-field" value={roleName} onChange={(e) => setRoleName(e.target.value)} />
+              <input type="text" className="input-field" maxLength={100} value={roleName} onChange={(e) => setRoleName(e.target.value)} />
             </div>
 
             <button onClick={() => addRole(roleName)} disabled={!roleName || saving} className="btn-primary w-full">

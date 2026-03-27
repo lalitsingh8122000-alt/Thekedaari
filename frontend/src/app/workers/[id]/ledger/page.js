@@ -5,6 +5,7 @@ import { ArrowLeft, Plus, ArrowUpCircle, ArrowDownCircle, X } from 'lucide-react
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
 import api from '@/lib/api';
+import { parsePositiveAmount } from '@/lib/validation';
 
 export default function WorkerLedgerPage() {
   const { t } = useLanguage();
@@ -14,6 +15,7 @@ export default function WorkerLedgerPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(null);
   const [form, setForm] = useState({ amount: '', type: 'Debit', category: 'Payment', remarks: '', comment: '' });
+  const [error, setError] = useState('');
 
   const load = () => {
     api.get(`/ledger/${id}`).then((r) => setData(r.data)).catch(() => router.push('/workers')).finally(() => setLoading(false));
@@ -24,13 +26,19 @@ export default function WorkerLedgerPage() {
   const fmt = (n) => '₹' + Math.abs(n || 0).toLocaleString('en-IN');
 
   const handleAdd = async () => {
+    setError('');
+    const amount = parsePositiveAmount(form.amount);
+    if (!amount) return setError('Please enter a valid amount');
+    if (form.comment.trim().length > 2000) return setError('Comment cannot exceed 2000 characters');
     try {
-      await api.post('/ledger', { workerId: parseInt(id), ...form, amount: parseFloat(form.amount) });
+      await api.post('/ledger', { workerId: parseInt(id), ...form, amount, comment: form.comment.trim() });
       setShowModal(null);
       setForm({ amount: '', type: 'Debit', category: 'Payment', remarks: '', comment: '' });
       setLoading(true);
       load();
-    } catch {}
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to save ledger entry');
+    }
   };
 
   return (
@@ -121,10 +129,11 @@ export default function WorkerLedgerPage() {
                 <h3 className="text-base font-bold">{t('add_entry')}</h3>
                 <button onClick={() => setShowModal(null)} className="p-1"><X size={20} /></button>
               </div>
+              {error && <div className="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-xs">{error}</div>}
 
               <div>
                 <label className="block text-gray-600 font-medium mb-1 text-xs">{t('amount')} (₹)</label>
-                <input type="number" className="input-field !py-2 text-base font-bold text-center" placeholder="₹" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
+                <input type="number" min="0.01" step="0.01" className="input-field !py-2 text-base font-bold text-center" placeholder="₹" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
               </div>
 
               <div>
@@ -143,7 +152,7 @@ export default function WorkerLedgerPage() {
 
               <div>
                 <label className="block text-gray-600 font-medium mb-1 text-xs">{t('comment')}</label>
-                <input type="text" className="input-field !py-2 text-sm" value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} />
+                <input type="text" maxLength={2000} className="input-field !py-2 text-sm" value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} />
               </div>
             </div>
 

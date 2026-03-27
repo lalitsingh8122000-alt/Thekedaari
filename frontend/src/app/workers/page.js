@@ -8,6 +8,7 @@ import {
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
 import api from '@/lib/api';
+import { parsePositiveAmount, isValidDateInput } from '@/lib/validation';
 
 export default function WorkersPage() {
   const [workers, setWorkers] = useState([]);
@@ -21,6 +22,7 @@ export default function WorkersPage() {
     wantToPay: false, payment: '', paymentNote: '',
   });
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const { t } = useLanguage();
   const router = useRouter();
 
@@ -71,6 +73,20 @@ export default function WorkersPage() {
   };
 
   const markAttendance = async () => {
+    setError('');
+    if (!attForm.projectId) return setError('Please select a project');
+    if (!isValidDateInput(attForm.date)) return setError('Please select a valid date');
+    const salaryAmount = attForm.status === 'Absent' ? 0 : parsePositiveAmount(attForm.salary);
+    if (attForm.status === 'Present' && salaryAmount === null) {
+      return setError('Please enter a valid salary');
+    }
+    const paymentAmount = attForm.wantToPay && attForm.payment ? parsePositiveAmount(attForm.payment) : 0;
+    if (attForm.wantToPay && attForm.payment && paymentAmount === null) {
+      return setError('Please enter a valid payment amount');
+    }
+    if (attForm.paymentNote && attForm.paymentNote.trim().length > 500) {
+      return setError('Payment note cannot exceed 500 characters');
+    }
     setSaving(true);
     try {
       const finalType = attForm.status === 'Absent' ? 'Absent' : attForm.type;
@@ -79,13 +95,15 @@ export default function WorkersPage() {
         projectId: parseInt(attForm.projectId),
         date: attForm.date,
         type: finalType,
-        salary: attForm.status === 'Absent' ? 0 : parseFloat(attForm.salary),
-        payment: attForm.wantToPay && attForm.payment ? parseFloat(attForm.payment) : 0,
-        paymentNote: attForm.wantToPay ? attForm.paymentNote : '',
+        salary: attForm.status === 'Absent' ? 0 : salaryAmount,
+        payment: paymentAmount,
+        paymentNote: attForm.wantToPay ? attForm.paymentNote.trim() : '',
       });
       setShowAttendance(null);
       load();
-    } catch {} finally { setSaving(false); }
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to mark attendance');
+    } finally { setSaving(false); }
   };
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
@@ -180,6 +198,7 @@ export default function WorkersPage() {
                 <h3 className="text-base font-bold">{t('mark_attendance')}</h3>
                 <button onClick={() => setShowAttendance(null)} className="p-1"><X size={20} /></button>
               </div>
+              {error && <div className="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-xs">{error}</div>}
 
               <div className="bg-primary-50 px-3 py-2 rounded-xl flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-full bg-primary-200 flex items-center justify-center text-primary-700 font-bold text-sm">
@@ -265,6 +284,8 @@ export default function WorkersPage() {
                     </div>
                     <input
                       type="number"
+                      min="0"
+                      step="0.01"
                       className="w-24 border-2 border-blue-200 rounded-lg px-2 py-1 text-right text-base font-bold text-blue-700 focus:border-blue-400 focus:outline-none bg-white"
                       value={attForm.salary}
                       onChange={(e) => setAttForm({ ...attForm, salary: e.target.value })}
@@ -295,6 +316,8 @@ export default function WorkersPage() {
                       <label className="block text-orange-600 font-medium mb-0.5 text-xs">{t('pay_amount')} (₹)</label>
                       <input
                         type="number"
+                        min="0"
+                        step="0.01"
                         className="w-full border-2 border-orange-200 rounded-lg px-3 py-1.5 text-center text-base font-bold text-orange-700 focus:border-orange-400 focus:outline-none bg-white"
                         placeholder="0"
                         value={attForm.payment}
@@ -305,6 +328,7 @@ export default function WorkersPage() {
                       <label className="block text-orange-600 font-medium mb-0.5 text-xs">{t('payment_note')}</label>
                       <input
                         type="text"
+                        maxLength={500}
                         className="w-full border-2 border-orange-200 rounded-lg px-3 py-1.5 text-xs text-orange-700 focus:border-orange-400 focus:outline-none bg-white"
                         placeholder={t('payment_note_placeholder')}
                         value={attForm.paymentNote}

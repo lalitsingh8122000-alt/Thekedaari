@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { User, Phone, Lock, UserPlus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { normalizePhone, sanitizePhoneInput, isValidPhone, PHONE_LENGTH } from '@/lib/validation';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -19,13 +20,26 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    const cleanedPhone = normalizePhone(phone);
+    if (!isValidPhone(cleanedPhone)) {
+      setError('Phone number must be exactly 10 digits');
+      return;
+    }
+    if (name.trim().length < 2) {
+      setError('Name must be at least 2 characters');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
     setLoading(true);
     try {
-      await registerUser(name, phone, password, confirmPassword);
+      await registerUser(name.trim(), cleanedPhone, password, confirmPassword);
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed');
     } finally {
@@ -78,8 +92,11 @@ export default function RegisterPage() {
               type="tel"
               placeholder={t('phone')}
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(sanitizePhoneInput(e.target.value))}
               className="input-field pl-12 text-lg"
+              inputMode="numeric"
+              pattern="\d{10}"
+              maxLength={PHONE_LENGTH}
               required
             />
           </div>

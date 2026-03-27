@@ -1,6 +1,7 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const auth = require('../middleware/auth');
+const { normalizeString } = require('../utils/validation');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -20,8 +21,11 @@ router.get('/', auth, async (req, res) => {
 
 router.post('/', auth, async (req, res) => {
   try {
-    const { name } = req.body;
+    const name = normalizeString(req.body.name);
     if (!name) return res.status(400).json({ error: 'Role name is required' });
+    if (name.length < 2 || name.length > 100) {
+      return res.status(400).json({ error: 'Role name must be between 2 and 100 characters' });
+    }
 
     const role = await prisma.role.create({
       data: { name, userId: req.userId },

@@ -5,6 +5,7 @@ import { ArrowLeft, Save } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
 import api from '@/lib/api';
+import { isValidDateInput } from '@/lib/validation';
 
 export default function EditProjectPage() {
   const { t } = useLanguage();
@@ -30,10 +31,18 @@ export default function EditProjectPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSaving(true);
     setError('');
+    const cleanName = form.name.trim();
+    if (cleanName.length < 2) return setError('Project name must be at least 2 characters');
+    if (!isValidDateInput(form.startDate) || !isValidDateInput(form.expectedEndDate)) {
+      return setError('Please enter valid project dates');
+    }
+    if (new Date(form.startDate) > new Date(form.expectedEndDate)) {
+      return setError('End date cannot be before start date');
+    }
+    setSaving(true);
     try {
-      await api.put(`/projects/${id}`, form);
+      await api.put(`/projects/${id}`, { ...form, name: cleanName });
       router.push('/projects');
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to update');
@@ -67,7 +76,7 @@ export default function EditProjectPage() {
 
           <div>
             <label className="label">{t('project_name')}</label>
-            <input type="text" className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            <input type="text" className="input-field" maxLength={200} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           </div>
 
           <div className="grid grid-cols-2 gap-3">

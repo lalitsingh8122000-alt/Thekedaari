@@ -1,13 +1,21 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const auth = require('../middleware/auth');
+const {
+  VALID_LEDGER_TYPES,
+  VALID_LEDGER_CATEGORIES,
+  normalizeString,
+  parseAmount,
+  parseId,
+} = require('../utils/validation');
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
 router.get('/:workerId', auth, async (req, res) => {
   try {
-    const workerId = parseInt(req.params.workerId);
+    const workerId = parseId(req.params.workerId);
+    if (!workerId) return res.status(400).json({ error: 'Invalid worker id' });
 
     const worker = await prisma.worker.findFirst({
       where: { id: workerId, userId: req.userId },
@@ -41,21 +49,32 @@ router.get('/:workerId', auth, async (req, res) => {
 
 router.post('/', auth, async (req, res) => {
   try {
-    const { workerId, amount, type, category, remarks, comment } = req.body;
+    const workerId = parseId(req.body.workerId);
+    const amount = parseAmount(req.body.amount);
+    const type = normalizeString(req.body.type);
+    const category = normalizeString(req.body.category);
+    const remarks = normalizeString(req.body.remarks);
+    const comment = normalizeString(req.body.comment);
 
-    if (!workerId || !amount || !type || !category) {
+    if (!workerId || amount === null || !type || !category) {
       return res.status(400).json({ error: 'Worker, amount, type, and category are required' });
     }
+    if (!VALID_LEDGER_TYPES.has(type)) return res.status(400).json({ error: 'Invalid ledger type' });
+    if (!VALID_LEDGER_CATEGORIES.has(category)) return res.status(400).json({ error: 'Invalid ledger category' });
+    if (amount <= 0 || amount > 100000000) {
+      return res.status(400).json({ error: 'Amount must be between 1 and 10,00,00,000' });
+    }
+    if (remarks.length > 500) return res.status(400).json({ error: 'Remarks cannot exceed 500 characters' });
 
     const worker = await prisma.worker.findFirst({
-      where: { id: parseInt(workerId), userId: req.userId },
+      where: { id: workerId, userId: req.userId },
     });
     if (!worker) return res.status(404).json({ error: 'Worker not found' });
 
     const entry = await prisma.ledgerEntry.create({
       data: {
-        workerId: parseInt(workerId),
-        amount: parseFloat(amount),
+        workerId,
+        amount,
         type,
         category,
         remarks: remarks || null,
