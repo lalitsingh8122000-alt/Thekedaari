@@ -114,7 +114,7 @@ export default function WorkerLedgerPage() {
       </div>
 
       {showModal && (
-        <div className="modal-overlay">
+        <div className="modal-overlay z-[70]">
           <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl max-h-[90vh] flex flex-col">
             <div className="overflow-y-auto flex-1 p-3 sm:p-5 space-y-2.5 sm:space-y-3">
               <div className="flex items-center justify-between">
@@ -147,7 +147,7 @@ export default function WorkerLedgerPage() {
               </div>
             </div>
 
-            <div className="flex-shrink-0 px-3 pb-4 pt-2 sm:px-5 border-t border-gray-100 bg-white rounded-b-3xl sm:rounded-b-2xl">
+            <div className="flex-shrink-0 px-3 pt-2 sm:px-5 border-t border-gray-100 bg-white rounded-b-3xl sm:rounded-b-2xl pb-[calc(1rem+72px+env(safe-area-inset-bottom,0px))] sm:pb-4">
               <button
                 onClick={handleAdd}
                 className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-white text-sm transition-all ${showModal === 'credit' ? 'bg-red-500 active:bg-red-600' : 'bg-green-500 active:bg-green-600'}`}

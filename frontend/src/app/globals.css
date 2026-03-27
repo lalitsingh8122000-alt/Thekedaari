@@ -43,10 +43,12 @@ body {
     @apply card flex flex-col items-center justify-center text-center p-3 sm:p-5 min-h-[80px] sm:min-h-[100px];
   }
   .modal-overlay {
-    @apply fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center;
+    @apply fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center;
+    z-index: 50;
   }
   .modal-content {
-    @apply bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-4 sm:p-5 space-y-3 sm:space-y-4 max-h-[85vh] overflow-y-auto pb-6;
+    @apply bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-4 sm:p-5 space-y-3 sm:space-y-4 max-h-[85vh] overflow-y-auto;
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -55,5 +57,5 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 .page-content {
-  padding-bottom: 90px;
+  padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
 }

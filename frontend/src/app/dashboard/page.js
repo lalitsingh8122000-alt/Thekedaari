@@ -116,8 +116,8 @@ export default function DashboardPage() {
                         <p className="font-medium text-gray-700">{tx.worker?.name}</p>
                         <p className="text-xs text-gray-400">{tx.category} · {tx.remarks}</p>
                       </div>
-                      <span className={`font-bold ${tx.type === 'Credit' ? 'text-red-500' : 'text-green-600'}`}>
-                        {tx.type === 'Credit' ? '-' : '+'}{fmt(tx.amount)}
+                      <span className={`font-bold ${tx.type === 'Debit' ? 'text-red-500' : 'text-green-600'}`}>
+                        {tx.type === 'Debit' ? '-' : '+'}{fmt(tx.amount)}
                       </span>
                     </div>
                   ))}

@@ -6,7 +6,7 @@ export const metadata = {
   description: 'Construction Workforce & Project Management System',
   manifest: '/manifest.json',
   themeColor: '#2563eb',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
+  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover',
 };
 
 export default function RootLayout({ children }) {
