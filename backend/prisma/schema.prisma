@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  phone     String   @unique @db.VarChar(20)
+  password  String   @db.VarChar(255)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects    Project[]
+  roles       Role[]
+  workers     Worker[]
+  attendances Attendance[]
+  ledgers     LedgerEntry[]
+  incomes     Income[]
+  expenses    Expense[]
+}
+
+model Project {
+  id              Int      @id @default(autoincrement())
+  name            String   @db.VarChar(200)
+  startDate       DateTime
+  expectedEndDate DateTime
+  type            String   @db.VarChar(20)
+  status          String   @default("Running") @db.VarChar(20)
+  userId          Int
+  user            User     @relation(fields: [userId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  attendances Attendance[]
+  incomes     Income[]
+  expenses    Expense[]
+
+  @@index([userId])
+}
+
+model Role {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  workers Worker[]
+
+  @@index([userId])
+}
+
+model Worker {
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(100)
+  phone      String   @db.VarChar(20)
+  photo      String?  @db.VarChar(500)
+  status     String   @default("Active") @db.VarChar(20)
+  costPerDay Float
+  roleId     Int
+  role       Role     @relation(fields: [roleId], references: [id])
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  attendances   Attendance[]
+  ledgerEntries LedgerEntry[]
+  expenses      Expense[]
+
+  @@index([userId])
+  @@index([roleId])
+}
+
+model Attendance {
+  id        Int      @id @default(autoincrement())
+  workerId  Int
+  worker    Worker   @relation(fields: [workerId], references: [id])
+  projectId Int
+  project   Project  @relation(fields: [projectId], references: [id])
+  date      DateTime @db.Date
+  type      String   @db.VarChar(20)
+  salary    Float
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ledgerEntry LedgerEntry?
+
+  @@index([workerId])
+  @@index([projectId])
+  @@index([userId])
+  @@index([date])
+}
+
+model LedgerEntry {
+  id           Int         @id @default(autoincrement())
+  workerId     Int
+  worker       Worker      @relation(fields: [workerId], references: [id])
+  amount       Float
+  type         String      @db.VarChar(20)
+  category     String      @db.VarChar(50)
+  remarks      String?     @db.VarChar(500)
+  comment      String?     @db.Text
+  attendanceId Int?        @unique
+  attendance   Attendance? @relation(fields: [attendanceId], references: [id])
+  userId       Int
+  user         User        @relation(fields: [userId], references: [id])
+  createdAt    DateTime    @default(now())
+
+  @@index([workerId])
+  @@index([userId])
+  @@index([category])
+}
+
+model Income {
+  id          Int      @id @default(autoincrement())
+  projectId   Int
+  project     Project  @relation(fields: [projectId], references: [id])
+  amount      Float
+  date        DateTime @db.Date
+  paymentMode String   @db.VarChar(20)
+  remarks     String?  @db.VarChar(500)
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([projectId])
+  @@index([userId])
+}
+
+model Expense {
+  id        Int      @id @default(autoincrement())
+  projectId Int
+  project   Project  @relation(fields: [projectId], references: [id])
+  amount    Float
+  remarks   String   @db.VarChar(500)
+  notes     String?  @db.Text
+  workerId  Int?
+  worker    Worker?  @relation(fields: [workerId], references: [id])
+  date      DateTime @default(now())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([workerId])
+}
