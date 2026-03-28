@@ -1,6 +1,15 @@
 'use client';
 import { usePathname, useRouter } from 'next/navigation';
-import { X, LayoutDashboard, FolderKanban, Users, ShieldCheck, ArrowLeftRight, CalendarCheck } from 'lucide-react';
+import {
+  X,
+  LayoutDashboard,
+  FolderKanban,
+  Users,
+  ShieldCheck,
+  ArrowLeftRight,
+  CalendarCheck,
+  UserCircle,
+} from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 const menuItems = [
@@ -10,6 +19,7 @@ const menuItems = [
   { key: 'workers', path: '/workers', icon: Users, subtitle: 'master_data' },
   { key: 'roles', path: '/roles', icon: ShieldCheck },
   { key: 'transactions', path: '/transactions', icon: ArrowLeftRight },
+  { key: 'profile', path: '/profile', icon: UserCircle },
 ];
 
 export default function Sidebar({ open, onClose }) {

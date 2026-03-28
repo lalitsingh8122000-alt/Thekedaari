@@ -1,7 +1,16 @@
 import axios from 'axios';
 
+function resolveApiBaseURL() {
+  const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (raw) return raw.replace(/\/$/, '');
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:5000/api';
+  }
+  return '';
+}
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: resolveApiBaseURL(),
   headers: { 'Content-Type': 'application/json' },
 });
 

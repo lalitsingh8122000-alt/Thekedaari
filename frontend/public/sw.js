@@ -1,10 +1,20 @@
-const CACHE_NAME = 'thekedaar-v3';
+const CACHE_NAME = 'thekedaar-v5';
 const OFFLINE_URL = '/offline.html';
 const CORE_ASSETS = ['/', '/manifest.json', OFFLINE_URL, '/icon-192x192.png', '/icon-512x512.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS)).then(() => self.skipWaiting())
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+      await Promise.all(
+        CORE_ASSETS.map((url) =>
+          cache.add(url).catch(() => {
+            /* Missing asset or offline must not block SW install (Android installability) */
+          })
+        )
+      );
+      await self.skipWaiting();
+    })()
   );
 });
 

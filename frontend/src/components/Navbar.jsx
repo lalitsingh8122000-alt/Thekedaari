@@ -3,17 +3,17 @@ import { useState, useRef, useEffect } from 'react';
 import { Menu, LogOut, Phone, Calendar, Download, CheckCircle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-
-let savedPrompt = null;
+import { usePwaInstall } from '@/hooks/usePwaInstall';
+import { isLikelyIOS, isLikelyAndroid } from '@/lib/pwaPlatform';
 
 export default function Navbar({ onMenuClick }) {
   const { lang, switchLang, t } = useLanguage();
   const { user, logout } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [isInstalled, setIsInstalled] = useState(false);
-  const [installing, setInstalling] = useState(false);
+  const [installHintOpen, setInstallHintOpen] = useState(false);
+  const { canInstall, isInstalled, installing, promptInstall } = usePwaInstall();
   const profileRef = useRef(null);
+  const hi = lang === 'hi';
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -32,56 +32,18 @@ export default function Navbar({ onMenuClick }) {
   }, [profileOpen]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (!profileOpen) setInstallHintOpen(false);
+  }, [profileOpen]);
 
-    const standalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone === true;
-    setIsInstalled(standalone);
-
-    if (savedPrompt) setDeferredPrompt(savedPrompt);
-
-    const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault();
-      savedPrompt = e;
-      setDeferredPrompt(e);
-    };
-
-    const handleInstalled = () => {
-      setIsInstalled(true);
-      setDeferredPrompt(null);
-      savedPrompt = null;
-      setInstalling(false);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleInstalled);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleInstalled);
-    };
-  }, []);
-
-  const handleInstallClick = async () => {
-    const prompt = deferredPrompt || savedPrompt;
-    if (prompt) {
-      setInstalling(true);
-      try {
-        prompt.prompt();
-        const result = await prompt.userChoice;
-        if (result.outcome === 'accepted') {
-          setIsInstalled(true);
-        }
-      } catch {}
-      setDeferredPrompt(null);
-      savedPrompt = null;
-      setInstalling(false);
+  const handleProfileInstall = async () => {
+    if (canInstall) {
+      await promptInstall();
+      return;
     }
+    setInstallHintOpen((v) => !v);
   };
 
   const initial = user?.name?.charAt(0)?.toUpperCase() || '?';
-  const canInstall = !isInstalled && Boolean(deferredPrompt || savedPrompt);
 
   return (
     <header
@@ -144,17 +106,43 @@ export default function Navbar({ onMenuClick }) {
                         </span>
                       </div>
                     )}
-                    {canInstall && (
-                      <button
-                        onClick={handleInstallClick}
-                        disabled={installing}
-                        className="w-full mt-1 flex items-center justify-center gap-2 px-4 py-2.5 text-white bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:opacity-60 rounded-xl font-semibold transition-colors shadow-sm"
-                      >
-                        <Download size={18} />
-                        {installing
-                          ? (lang === 'hi' ? 'इंस्टॉल हो रहा है...' : 'Installing...')
-                          : (lang === 'hi' ? 'ऐप इंस्टॉल करें' : 'Install App')}
-                      </button>
+                    {!isInstalled && (
+                      <div className="mt-1 space-y-2">
+                        <button
+                          type="button"
+                          onClick={handleProfileInstall}
+                          disabled={installing}
+                          className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold transition-colors shadow-sm disabled:opacity-60 ${
+                            canInstall
+                              ? 'text-white bg-green-600 hover:bg-green-700 active:bg-green-800'
+                              : 'text-green-800 bg-green-50 border border-green-200 hover:bg-green-100 active:bg-green-100/80'
+                          }`}
+                        >
+                          <Download size={18} />
+                          {installing ? (hi ? 'इंस्टॉल हो रहा है...' : 'Installing...') : t('install_app')}
+                        </button>
+                        {installHintOpen && !canInstall && (
+                          <div className="text-xs text-gray-600 bg-gray-50 rounded-xl px-3 py-2.5 border border-gray-100 space-y-2">
+                            {isLikelyIOS() && (
+                              <p>
+                                {hi
+                                  ? 'Safari → शेयर (□↑) →「होम स्क्रीन में जोड़ें」'
+                                  : 'Safari: Share → Add to Home Screen.'}
+                              </p>
+                            )}
+                            {isLikelyAndroid() && (
+                              <p>
+                                {hi
+                                  ? 'Chrome: ⋮ मेनू →「ऐप इंस्टॉल करें」या「होम स्क्रीन में जोड़ें」'
+                                  : 'Chrome: ⋮ menu → Install app or Add to Home screen.'}
+                              </p>
+                            )}
+                            {!isLikelyIOS() && !isLikelyAndroid() && (
+                              <p>{t('install_desktop_hint')}</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     )}
                     {isInstalled && (
                       <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-2 rounded-xl text-sm font-medium">

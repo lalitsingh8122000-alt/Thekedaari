@@ -140,5 +140,8 @@
   "master_data": "Master Data",
   "employee_registry": "Employee Registry",
   "profile": "Profile",
-  "member_since": "Member since"
+  "member_since": "Member since",
+  "install_app": "Install app",
+  "install_android_hint": "If you do not see the option, update Chrome or try again after using the site for a short while.",
+  "install_desktop_hint": "Use your browser’s menu to install or add this site as an app."
 }
