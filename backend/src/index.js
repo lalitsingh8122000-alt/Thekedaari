@@ -3,6 +3,12 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
+const dbTarget = (process.env.DB_TARGET || 'local').toLowerCase();
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL =
+    dbTarget === 'aws' ? process.env.DATABASE_URL_AWS : process.env.DATABASE_URL_LOCAL;
+}
+
 const authRoutes = require('./routes/auth');
 const projectRoutes = require('./routes/projects');
 const roleRoutes = require('./routes/roles');

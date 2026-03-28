@@ -1,13 +1,18 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { Menu, LogOut, Phone, Calendar, X } from 'lucide-react';
+import { Menu, LogOut, Phone, Calendar, Download, CheckCircle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+
+let savedPrompt = null;
 
 export default function Navbar({ onMenuClick }) {
   const { lang, switchLang, t } = useLanguage();
   const { user, logout } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [installing, setInstalling] = useState(false);
   const profileRef = useRef(null);
 
   useEffect(() => {
@@ -26,15 +31,74 @@ export default function Navbar({ onMenuClick }) {
     };
   }, [profileOpen]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const standalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true;
+    setIsInstalled(standalone);
+
+    if (savedPrompt) setDeferredPrompt(savedPrompt);
+
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      savedPrompt = e;
+      setDeferredPrompt(e);
+    };
+
+    const handleInstalled = () => {
+      setIsInstalled(true);
+      setDeferredPrompt(null);
+      savedPrompt = null;
+      setInstalling(false);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    const prompt = deferredPrompt || savedPrompt;
+    if (prompt) {
+      setInstalling(true);
+      try {
+        prompt.prompt();
+        const result = await prompt.userChoice;
+        if (result.outcome === 'accepted') {
+          setIsInstalled(true);
+        }
+      } catch {}
+      setDeferredPrompt(null);
+      savedPrompt = null;
+      setInstalling(false);
+    }
+  };
+
   const initial = user?.name?.charAt(0)?.toUpperCase() || '?';
+  const canInstall = !isInstalled && Boolean(deferredPrompt || savedPrompt);
 
   return (
-    <header className="bg-primary-600 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-50 shadow-md">
+    <header
+      className="bg-primary-600 text-white sticky top-0 z-50 shadow-md"
+      style={{
+        paddingTop: 'calc(var(--safe-top) + 0.6rem)',
+        paddingLeft: 'calc(var(--safe-left) + 1rem)',
+        paddingRight: 'calc(var(--safe-right) + 1rem)',
+        paddingBottom: '0.75rem',
+      }}
+    >
+      <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
         <button onClick={onMenuClick} className="p-1 rounded-lg active:bg-primary-700">
           <Menu size={26} />
         </button>
-        <h1 className="text-xl font-bold">{t('app_name')}</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-white">Thekedaari</h1>
       </div>
 
       <div className="flex items-center gap-2">
@@ -80,6 +144,24 @@ export default function Navbar({ onMenuClick }) {
                         </span>
                       </div>
                     )}
+                    {canInstall && (
+                      <button
+                        onClick={handleInstallClick}
+                        disabled={installing}
+                        className="w-full mt-1 flex items-center justify-center gap-2 px-4 py-2.5 text-white bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:opacity-60 rounded-xl font-semibold transition-colors shadow-sm"
+                      >
+                        <Download size={18} />
+                        {installing
+                          ? (lang === 'hi' ? 'इंस्टॉल हो रहा है...' : 'Installing...')
+                          : (lang === 'hi' ? 'ऐप इंस्टॉल करें' : 'Install App')}
+                      </button>
+                    )}
+                    {isInstalled && (
+                      <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-2 rounded-xl text-sm font-medium">
+                        <CheckCircle size={16} />
+                        {lang === 'hi' ? 'ऐप इंस्टॉल है' : 'App Installed'}
+                      </div>
+                    )}
                   </div>
 
                   <div className="border-t border-gray-100 p-3">
@@ -99,6 +181,7 @@ export default function Navbar({ onMenuClick }) {
             )}
           </div>
         )}
+      </div>
       </div>
     </header>
   );

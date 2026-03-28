@@ -15,18 +15,18 @@ router.get('/', auth, async (req, res) => {
     });
 
     const totalMaterialExpense = await prisma.expense.aggregate({
-      where: { userId },
+      where: { userId, remarks: { not: 'Labour' } },
       _sum: { amount: true },
     });
 
-    const totalLabourCost = await prisma.attendance.aggregate({
-      where: { userId },
-      _sum: { salary: true },
+    const totalLabourPayments = await prisma.expense.aggregate({
+      where: { userId, remarks: 'Labour' },
+      _sum: { amount: true },
     });
 
     const income = totalIncome._sum.amount || 0;
     const materialExpense = totalMaterialExpense._sum.amount || 0;
-    const labourCost = totalLabourCost._sum.amount || 0;
+    const labourCost = totalLabourPayments._sum.amount || 0;
     const totalExpense = materialExpense + labourCost;
 
     const today = new Date();
@@ -41,11 +41,6 @@ router.get('/', auth, async (req, res) => {
     const todayExpense = await prisma.expense.aggregate({
       where: { userId, date: { gte: today, lt: tomorrow } },
       _sum: { amount: true },
-    });
-
-    const todayLabourCost = await prisma.attendance.aggregate({
-      where: { userId, date: { gte: today, lt: tomorrow } },
-      _sum: { salary: true },
     });
 
     const activeProjects = await prisma.project.count({
@@ -72,12 +67,42 @@ router.get('/', auth, async (req, res) => {
       totalIncome: p.incomes.reduce((sum, i) => sum + i.amount, 0),
     }));
 
-    const recentTransactions = await prisma.ledgerEntry.findMany({
-      where: { userId },
-      take: 10,
-      orderBy: { createdAt: 'desc' },
+    const recentPayments = await prisma.ledgerEntry.findMany({
+      where: { userId, category: { not: 'Salary' } },
+      take: 20,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       include: { worker: { select: { name: true } } },
     });
+
+    const recentIncomes = await prisma.income.findMany({
+      where: { userId },
+      take: 20,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      include: { project: { select: { name: true } } },
+    });
+
+    const recentTransactions = [
+      ...recentPayments.map((tx) => ({
+        id: `ledger-${tx.id}`,
+        source: 'payment',
+        name: tx.worker?.name || '',
+        label: `${tx.category} · ${tx.remarks}`,
+        amount: tx.amount,
+        type: tx.type,
+        createdAt: tx.createdAt,
+      })),
+      ...recentIncomes.map((inc) => ({
+        id: `income-${inc.id}`,
+        source: 'income',
+        name: inc.project?.name || '',
+        label: `Income${inc.remarks ? ' · ' + inc.remarks : ''} · ${inc.paymentMode}`,
+        amount: inc.amount,
+        type: 'Credit',
+        createdAt: inc.createdAt,
+      })),
+    ]
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 20);
 
     res.json({
       totalIncome: income,
@@ -86,7 +111,7 @@ router.get('/', auth, async (req, res) => {
       totalLabourCost: labourCost,
       profitLoss: income - totalExpense,
       todayAttendance,
-      todayExpense: (todayExpense._sum.amount || 0) + (todayLabourCost._sum.salary || 0),
+      todayExpense: todayExpense._sum.amount || 0,
       activeProjects,
       activeWorkers,
       topProjects: topProjectData,

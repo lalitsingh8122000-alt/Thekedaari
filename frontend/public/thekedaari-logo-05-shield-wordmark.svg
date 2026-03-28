@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="400" viewBox="0 0 1400 400">
+  <rect width="1400" height="400" rx="36" fill="#F1F5F9"/>
+  <rect x="40" y="40" width="320" height="320" rx="56" fill="#0F172A"/>
+  <path d="M200 86l104 38v76c0 74-46 122-104 154-58-32-104-80-104-154v-76l104-38z" fill="#DBEAFE"/>
+  <path d="M200 108l82 30v60c0 57-35 94-82 122-47-28-82-65-82-122v-60l82-30z" fill="#2563EB"/>
+  <rect x="194" y="148" width="12" height="92" rx="6" transform="rotate(-40 200 194)" fill="#F59E0B"/>
+  <rect x="186" y="142" width="28" height="28" rx="6" transform="rotate(-40 200 156)" fill="#FB923C"/>
+  <path d="M170 226l22 22 44-50" fill="none" stroke="#16A34A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="410" y="190" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="800" fill="#0F172A">THEKEDAARI</text>
+  <text x="1030" y="190" font-family="Arial, Helvetica, sans-serif" font-size="60" font-weight="700" fill="#2563EB">.com</text>
+  <text x="412" y="255" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="600" fill="#475569">
+    Trusted Construction Operations Platform
+  </text>
+  <g transform="translate(1230 58)">
+    <rect width="122" height="122" rx="28" fill="#0F172A"/>
+    <path d="M20 68c0-21 17-38 38-38s38 17 38 38v10H20z" fill="#F59E0B"/>
+    <rect x="16" y="78" width="84" height="14" rx="7" fill="#334155"/>
+    <path d="M40 62v-10c0-10 8-18 18-18s18 8 18 18v10" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
+  </g>
+</svg>

@@ -1,6 +1,6 @@
-const CACHE_NAME = 'thekedaar-v1';
+const CACHE_NAME = 'thekedaar-v3';
 const OFFLINE_URL = '/offline.html';
-const CORE_ASSETS = ['/', '/manifest.json', OFFLINE_URL, '/icon-192.svg', '/icon-512.svg'];
+const CORE_ASSETS = ['/', '/manifest.json', OFFLINE_URL, '/icon-192x192.png', '/icon-512x512.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

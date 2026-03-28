@@ -25,7 +25,7 @@ router.get('/:workerId', auth, async (req, res) => {
 
     const entries = await prisma.ledgerEntry.findMany({
       where: { workerId, userId: req.userId },
-      orderBy: { createdAt: 'asc' },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       include: {
         attendance: { select: { date: true, type: true, project: { select: { name: true } } } },
       },

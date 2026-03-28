@@ -60,10 +60,7 @@ export default function RegisterPage() {
 
       <div className="flex-1 flex flex-col items-center justify-center px-6">
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <span className="text-4xl">🏗️</span>
-          </div>
-          <h1 className="text-3xl font-bold text-white">{t('app_name')}</h1>
+          <h1 className="text-4xl font-extrabold text-white tracking-tight">Thekedaari</h1>
           <p className="text-primary-200 mt-2 text-lg">{t('register_subtitle')}</p>
         </div>
 

@@ -23,6 +23,8 @@ export default function WorkersPage() {
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [existingAttendance, setExistingAttendance] = useState(null);
+  const [checkingAttendance, setCheckingAttendance] = useState(false);
   const { t } = useLanguage();
   const router = useRouter();
 
@@ -39,6 +41,8 @@ export default function WorkersPage() {
 
   const openAttendance = (worker) => {
     setShowAttendance(worker);
+    setExistingAttendance(null);
+    setError('');
     setAttForm({
       projectId: projects[0]?.id || '',
       date: new Date().toISOString().split('T')[0],
@@ -50,6 +54,44 @@ export default function WorkersPage() {
       paymentNote: '',
     });
   };
+
+  const loadExistingAttendance = async (workerId, selectedDate) => {
+    if (!workerId || !selectedDate) {
+      setExistingAttendance(null);
+      return;
+    }
+    setCheckingAttendance(true);
+    try {
+      const res = await api.get('/attendance', {
+        params: { workerId, startDate: selectedDate, endDate: selectedDate },
+      });
+      const record = Array.isArray(res.data) && res.data.length > 0 ? res.data[0] : null;
+      setExistingAttendance(record);
+      if (record) {
+        const isAbsent = record.type === 'Absent';
+        setAttForm((f) => ({
+          ...f,
+          projectId: record.projectId || f.projectId,
+          status: isAbsent ? 'Absent' : 'Present',
+          type: isAbsent ? f.type : (record.type || 'FullDay'),
+          salary: record.salary ?? f.salary,
+          wantToPay: Number(record.payment || 0) > 0,
+          payment: Number(record.payment || 0) > 0 ? String(record.payment) : '',
+          paymentNote: record.paymentNote || '',
+        }));
+      }
+    } catch {
+      setExistingAttendance(null);
+    } finally {
+      setCheckingAttendance(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!showAttendance) return;
+    loadExistingAttendance(showAttendance.id, attForm.date);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAttendance?.id, attForm.date]);
 
   const calcSalary = (type, costPerDay) => {
     if (type === 'FullDay') return costPerDay;
@@ -90,7 +132,7 @@ export default function WorkersPage() {
     setSaving(true);
     try {
       const finalType = attForm.status === 'Absent' ? 'Absent' : attForm.type;
-      await api.post('/attendance', {
+      const payload = {
         workerId: showAttendance.id,
         projectId: parseInt(attForm.projectId),
         date: attForm.date,
@@ -98,7 +140,12 @@ export default function WorkersPage() {
         salary: attForm.status === 'Absent' ? 0 : salaryAmount,
         payment: paymentAmount,
         paymentNote: attForm.wantToPay ? attForm.paymentNote.trim() : '',
-      });
+      };
+      if (existingAttendance?.id) {
+        await api.put(`/attendance/${existingAttendance.id}`, payload);
+      } else {
+        await api.post('/attendance', payload);
+      }
       setShowAttendance(null);
       load();
     } catch (err) {
@@ -198,6 +245,12 @@ export default function WorkersPage() {
                 <h3 className="text-base font-bold">{t('mark_attendance')}</h3>
                 <button onClick={() => setShowAttendance(null)} className="p-1"><X size={20} /></button>
               </div>
+              {checkingAttendance && <div className="bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-xs">Checking existing attendance...</div>}
+              {existingAttendance && !checkingAttendance && (
+                <div className="bg-yellow-50 text-yellow-700 px-3 py-2 rounded-lg text-xs font-medium">
+                  Attendance already marked for this date. You are editing it now.
+                </div>
+              )}
               {error && <div className="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-xs">{error}</div>}
 
               <div className="bg-primary-50 px-3 py-2 rounded-xl flex items-center gap-2.5">
@@ -351,7 +404,7 @@ export default function WorkersPage() {
                 } ${saving ? 'opacity-60' : ''}`}
               >
                 <CalendarCheck size={18} />
-                {saving ? t('loading') : t('save_attendance')}
+                {saving ? t('loading') : existingAttendance ? 'Update Attendance' : t('save_attendance')}
               </button>
             </div>
           </div>

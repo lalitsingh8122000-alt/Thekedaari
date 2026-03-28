@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="400" viewBox="0 0 1400 400">
+  <rect width="1400" height="400" rx="36" fill="#FFFFFF"/>
+  <rect x="40" y="40" width="320" height="320" rx="56" fill="#2563EB"/>
+  <path d="M104 270h192M128 240h144M156 210h96" stroke="#BFDBFE" stroke-width="12" stroke-linecap="round"/>
+  <path d="M128 186l42-38 34 28 58-56" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="238" y="108" width="50" height="18" rx="8" fill="#F59E0B"/>
+  <text x="410" y="190" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="900" fill="#0F172A">THEKEDAARI</text>
+  <text x="1030" y="190" font-family="Arial, Helvetica, sans-serif" font-size="60" font-weight="800" fill="#2563EB">.com</text>
+  <text x="412" y="255" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="600" fill="#475569">
+    Professional toolkit for thekedaar operations
+  </text>
+  <g transform="translate(1230 58)">
+    <rect width="122" height="122" rx="28" fill="#0F172A"/>
+    <path d="M20 68c0-21 17-38 38-38s38 17 38 38v10H20z" fill="#F59E0B"/>
+    <rect x="16" y="78" width="84" height="14" rx="7" fill="#334155"/>
+    <path d="M40 62v-10c0-10 8-18 18-18s18 8 18 18v10" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
+  </g>
+</svg>

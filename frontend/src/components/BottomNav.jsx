@@ -16,7 +16,15 @@ export default function BottomNav() {
   const { t } = useLanguage();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden" style={{ zIndex: 40, paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+    <nav
+      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden"
+      style={{
+        zIndex: 40,
+        paddingBottom: 'var(--safe-bottom)',
+        paddingLeft: 'var(--safe-left)',
+        paddingRight: 'var(--safe-right)',
+      }}
+    >
       <div className="flex justify-around items-center py-1">
         {navItems.map(({ key, path, icon: Icon }) => {
           const active = pathname.startsWith(path);

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="400" viewBox="0 0 1400 400">
+  <rect width="1400" height="400" rx="36" fill="#FFF7ED"/>
+  <rect x="40" y="40" width="320" height="320" rx="56" fill="#7C2D12"/>
+  <rect x="108" y="178" width="138" height="66" rx="16" fill="#F59E0B"/>
+  <rect x="230" y="198" width="58" height="46" rx="10" fill="#FB923C"/>
+  <circle cx="140" cy="266" r="40" fill="#E2E8F0"/>
+  <rect x="180" y="256" width="126" height="30" rx="14" fill="#334155"/>
+  <rect x="108" y="162" width="76" height="16" rx="8" fill="#FED7AA"/>
+  <text x="410" y="190" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="800" fill="#7C2D12">THEKEDAARI</text>
+  <text x="1030" y="190" font-family="Arial, Helvetica, sans-serif" font-size="60" font-weight="700" fill="#EA580C">.com</text>
+  <text x="412" y="255" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="600" fill="#9A3412">
+    Civil work operations from labour to payments
+  </text>
+  <g transform="translate(1230 58)">
+    <rect width="122" height="122" rx="28" fill="#7C2D12"/>
+    <path d="M20 68c0-21 17-38 38-38s38 17 38 38v10H20z" fill="#F59E0B"/>
+    <rect x="16" y="78" width="84" height="14" rx="7" fill="#431407"/>
+    <path d="M40 62v-10c0-10 8-18 18-18s18 8 18 18v10" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
+  </g>
+</svg>

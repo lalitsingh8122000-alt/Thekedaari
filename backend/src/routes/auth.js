@@ -48,6 +48,7 @@ router.post('/register', async (req, res) => {
       user: { id: user.id, name: user.name, phone: user.phone, createdAt: user.createdAt },
     });
   } catch (err) {
+    console.error('Auth register error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -64,7 +65,11 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Phone number must be exactly 10 digits' });
     }
 
-    const user = await prisma.user.findUnique({ where: { phone } });
+    const rawPhone = String(req.body.phone || '').trim();
+    let user = await prisma.user.findUnique({ where: { phone } });
+    if (!user && rawPhone !== phone) {
+      user = await prisma.user.findUnique({ where: { phone: rawPhone } });
+    }
     if (!user) {
       return res.status(400).json({ error: 'Invalid phone number or password' });
     }
@@ -81,6 +86,7 @@ router.post('/login', async (req, res) => {
       user: { id: user.id, name: user.name, phone: user.phone, createdAt: user.createdAt },
     });
   } catch (err) {
+    console.error('Auth login error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });

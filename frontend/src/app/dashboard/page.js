@@ -113,8 +113,8 @@ export default function DashboardPage() {
                   {data.recentTransactions.map((tx) => (
                     <div key={tx.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                       <div>
-                        <p className="font-medium text-gray-700">{tx.worker?.name}</p>
-                        <p className="text-xs text-gray-400">{tx.category} · {tx.remarks}</p>
+                        <p className="font-medium text-gray-700">{tx.name}</p>
+                        <p className="text-xs text-gray-400">{tx.label}</p>
                       </div>
                       <span className={`font-bold ${tx.type === 'Debit' ? 'text-red-500' : 'text-green-600'}`}>
                         {tx.type === 'Debit' ? '-' : '+'}{fmt(tx.amount)}

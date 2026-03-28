@@ -171,25 +171,27 @@ router.get('/projects/:id/summary', auth, async (req, res) => {
       _sum: { amount: true },
     });
 
-    const expenses = await prisma.expense.aggregate({
-      where: { projectId, userId: req.userId },
+    const materialExpenses = await prisma.expense.aggregate({
+      where: { projectId, userId: req.userId, remarks: { not: 'Labour' } },
       _sum: { amount: true },
     });
 
-    const labourCost = await prisma.attendance.aggregate({
-      where: { projectId, userId: req.userId },
-      _sum: { salary: true },
+    const labourPayments = await prisma.expense.aggregate({
+      where: { projectId, userId: req.userId, remarks: 'Labour' },
+      _sum: { amount: true },
     });
 
     const totalIncome = incomes._sum.amount || 0;
-    const totalExpense = (expenses._sum.amount || 0) + (labourCost._sum.salary || 0);
+    const materialExpense = materialExpenses._sum.amount || 0;
+    const labourCost = labourPayments._sum.amount || 0;
+    const totalExpense = materialExpense + labourCost;
     const profitLoss = totalIncome - totalExpense;
 
     res.json({
       project,
       totalIncome,
-      totalMaterialExpense: expenses._sum.amount || 0,
-      totalLabourCost: labourCost._sum.salary || 0,
+      totalMaterialExpense: materialExpense,
+      totalLabourCost: labourCost,
       totalExpense,
       profitLoss,
     });

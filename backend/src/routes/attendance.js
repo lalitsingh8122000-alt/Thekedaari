@@ -107,6 +107,24 @@ router.post('/', auth, async (req, res) => {
     });
     if (!worker) return res.status(404).json({ error: 'Worker not found' });
 
+    const dayStart = new Date(`${date}T00:00:00.000Z`);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
+    const alreadyMarked = await prisma.attendance.findFirst({
+      where: {
+        userId: req.userId,
+        workerId,
+        date: { gte: dayStart, lt: dayEnd },
+      },
+      select: { id: true },
+    });
+    if (alreadyMarked) {
+      return res.status(409).json({
+        error: 'Attendance already marked for this worker on selected date',
+        attendanceId: alreadyMarked.id,
+      });
+    }
+
     let calculatedSalary = salary !== undefined ? parseAmount(salary) : worker.costPerDay;
     if (calculatedSalary === null) {
       return res.status(400).json({ error: 'Invalid salary amount' });
@@ -170,6 +188,18 @@ router.post('/', auth, async (req, res) => {
             userId: req.userId,
           },
         });
+
+        await tx.expense.create({
+          data: {
+            projectId: attendance.projectId,
+            amount: paymentAmount,
+            remarks: 'Labour',
+            notes: paymentRemarks,
+            workerId: attendance.workerId,
+            date: new Date(date),
+            userId: req.userId,
+          },
+        });
       }
 
       return { ...attendance, payment: paymentAmount, paymentNote: paymentNote || '' };
@@ -219,6 +249,24 @@ router.put('/:id', auth, async (req, res) => {
     }
     const parsedProjectId = projectId !== undefined ? parseId(projectId) : undefined;
     if (projectId !== undefined && !parsedProjectId) return res.status(400).json({ error: 'Invalid project' });
+
+    const effectiveDate = date || existing.date.toISOString().slice(0, 10);
+    const dayStart = new Date(`${effectiveDate}T00:00:00.000Z`);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
+    const duplicateForDate = await prisma.attendance.findFirst({
+      where: {
+        userId: req.userId,
+        workerId: existing.workerId,
+        id: { not: id },
+        date: { gte: dayStart, lt: dayEnd },
+      },
+      select: { id: true },
+    });
+    if (duplicateForDate) {
+      return res.status(409).json({ error: 'Another attendance already exists for this worker on selected date' });
+    }
+
     const result = await prisma.$transaction(async (tx) => {
       const attendance = await tx.attendance.update({
         where: { id },
@@ -272,6 +320,13 @@ router.put('/:id', auth, async (req, res) => {
             remarks: { startsWith: `Attendance payment att:${id}` },
           },
         });
+        const existingPaymentExpense = await tx.expense.findFirst({
+          where: {
+            userId: req.userId,
+            remarks: 'Labour',
+            notes: { startsWith: `Attendance payment att:${id}` },
+          },
+        });
 
         let paymentRemarks = `Attendance payment att:${id}`;
         if (cleanPaymentNote) {
@@ -295,6 +350,36 @@ router.put('/:id', auth, async (req, res) => {
               type: 'Debit',
               category: 'Payment',
               remarks: paymentRemarks,
+              userId: req.userId,
+            },
+          });
+        }
+
+        if (existingPaymentExpense) {
+          if (paymentAmount > 0) {
+            await tx.expense.update({
+              where: { id: existingPaymentExpense.id },
+              data: {
+                projectId: attendance.projectId,
+                amount: paymentAmount,
+                workerId: existing.workerId,
+                remarks: 'Labour',
+                notes: paymentRemarks,
+                date: attendance.date,
+              },
+            });
+          } else {
+            await tx.expense.delete({ where: { id: existingPaymentExpense.id } });
+          }
+        } else if (paymentAmount > 0) {
+          await tx.expense.create({
+            data: {
+              projectId: attendance.projectId,
+              amount: paymentAmount,
+              remarks: 'Labour',
+              notes: paymentRemarks,
+              workerId: existing.workerId,
+              date: attendance.date,
               userId: req.userId,
             },
           });
