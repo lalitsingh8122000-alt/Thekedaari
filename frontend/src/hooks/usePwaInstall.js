@@ -23,13 +23,14 @@ export function usePwaInstall() {
 
   const promptInstall = useCallback(async () => {
     const p = getDeferredPrompt();
-    if (!p) return;
+    if (!p) return false;
     setInstalling(true);
     try {
       await p.prompt();
       await p.userChoice;
+      return true;
     } catch {
-      /* user dismissed or prompt failed */
+      return false;
     } finally {
       clearDeferredPrompt();
       setInstalling(false);

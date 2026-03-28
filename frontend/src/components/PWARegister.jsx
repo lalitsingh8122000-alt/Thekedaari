@@ -5,20 +5,9 @@ import { attachPwaInstallListeners } from '@/lib/pwaInstallStore';
 
 export default function PWARegister() {
   useEffect(() => {
-    return attachPwaInstallListeners();
-  }, []);
-
-  useEffect(() => {
+    attachPwaInstallListeners();
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
-
-    const register = () => {
-      navigator.serviceWorker
-        .register('/sw.js', { scope: '/' })
-        .catch(() => {});
-    };
-
-    if (document.readyState === 'complete') register();
-    else window.addEventListener('load', register, { once: true });
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
   }, []);
 
   return null;

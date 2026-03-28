@@ -40,11 +40,16 @@ export function checkStandalone() {
   );
 }
 
+let installListenersAttached = false;
+
 /**
- * Single place for beforeinstallprompt / appinstalled (Chrome, Edge, Samsung Internet, etc.)
+ * beforeinstallprompt / appinstalled — attached once per page load.
+ * React Strict Mode would otherwise remove listeners on the dev double-mount and we can miss the event.
  */
 export function attachPwaInstallListeners() {
   if (typeof window === 'undefined') return () => {};
+  if (installListenersAttached) return () => {};
+  installListenersAttached = true;
 
   const onBeforeInstall = (e) => {
     e.preventDefault();
@@ -59,8 +64,5 @@ export function attachPwaInstallListeners() {
   window.addEventListener('beforeinstallprompt', onBeforeInstall);
   window.addEventListener('appinstalled', onAppInstalled);
 
-  return () => {
-    window.removeEventListener('beforeinstallprompt', onBeforeInstall);
-    window.removeEventListener('appinstalled', onAppInstalled);
-  };
+  return () => {};
 }

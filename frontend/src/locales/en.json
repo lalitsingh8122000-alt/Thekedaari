@@ -143,5 +143,6 @@
   "member_since": "Member since",
   "install_app": "Install app",
   "install_android_hint": "If you do not see the option, update Chrome or try again after using the site for a short while.",
-  "install_desktop_hint": "Use your browser’s menu to install or add this site as an app."
+  "install_desktop_hint": "Use your browser’s menu to install or add this site as an app.",
+  "install_fallback_intro": "No install popup appeared (browsers only allow that when they’re ready). Add the app from your browser menu:"
 }

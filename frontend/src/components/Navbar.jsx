@@ -5,14 +5,16 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { isLikelyIOS, isLikelyAndroid } from '@/lib/pwaPlatform';
+import { getDeferredPrompt, checkStandalone } from '@/lib/pwaInstallStore';
 
 export default function Navbar({ onMenuClick }) {
   const { lang, switchLang, t } = useLanguage();
   const { user, logout } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
   const [installHintOpen, setInstallHintOpen] = useState(false);
-  const { canInstall, isInstalled, installing, promptInstall } = usePwaInstall();
+  const { isInstalled, installing, promptInstall } = usePwaInstall();
   const profileRef = useRef(null);
+  const installHintTimerRef = useRef(null);
   const hi = lang === 'hi';
 
   useEffect(() => {
@@ -32,15 +34,31 @@ export default function Navbar({ onMenuClick }) {
   }, [profileOpen]);
 
   useEffect(() => {
-    if (!profileOpen) setInstallHintOpen(false);
+    if (!profileOpen) {
+      setInstallHintOpen(false);
+      if (installHintTimerRef.current) {
+        clearTimeout(installHintTimerRef.current);
+        installHintTimerRef.current = null;
+      }
+    }
   }, [profileOpen]);
 
   const handleProfileInstall = async () => {
-    if (canInstall) {
-      await promptInstall();
-      return;
+    if (installHintTimerRef.current) {
+      clearTimeout(installHintTimerRef.current);
+      installHintTimerRef.current = null;
     }
-    setInstallHintOpen((v) => !v);
+    setInstallHintOpen(false);
+
+    const shown = await promptInstall();
+    if (shown) return;
+
+    installHintTimerRef.current = setTimeout(() => {
+      installHintTimerRef.current = null;
+      if (checkStandalone()) return;
+      if (getDeferredPrompt()) return;
+      setInstallHintOpen(true);
+    }, 500);
   };
 
   const initial = user?.name?.charAt(0)?.toUpperCase() || '?';
@@ -112,17 +130,14 @@ export default function Navbar({ onMenuClick }) {
                           type="button"
                           onClick={handleProfileInstall}
                           disabled={installing}
-                          className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold transition-colors shadow-sm disabled:opacity-60 ${
-                            canInstall
-                              ? 'text-white bg-green-600 hover:bg-green-700 active:bg-green-800'
-                              : 'text-green-800 bg-green-50 border border-green-200 hover:bg-green-100 active:bg-green-100/80'
-                          }`}
+                          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold transition-colors shadow-sm disabled:opacity-60 text-white bg-green-600 hover:bg-green-700 active:bg-green-800"
                         >
                           <Download size={18} />
                           {installing ? (hi ? 'इंस्टॉल हो रहा है...' : 'Installing...') : t('install_app')}
                         </button>
-                        {installHintOpen && !canInstall && (
+                        {installHintOpen && (
                           <div className="text-xs text-gray-600 bg-gray-50 rounded-xl px-3 py-2.5 border border-gray-100 space-y-2">
+                            <p className="text-gray-700 font-medium">{t('install_fallback_intro')}</p>
                             {isLikelyIOS() && (
                               <p>
                                 {hi
