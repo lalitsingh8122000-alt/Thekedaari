@@ -20,7 +20,7 @@ export default function EditWorkerPage() {
   const [photoFile, setPhotoFile] = useState(null);
   const [form, setForm] = useState({ name: '', phone: '', costPerDay: '', roleId: '', status: '' });
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '');
 
   useEffect(() => {
     Promise.all([api.get(`/workers/${id}`), api.get('/roles')]).then(([w, r]) => {
