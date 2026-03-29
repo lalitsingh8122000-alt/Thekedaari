@@ -7,7 +7,7 @@
 
 set -e
 
-APP_DIR="/home/ubuntu/ThekeDaari"
+APP_DIR="/home/ubuntu/Thekedaari"
 DEPLOY_DIR="$APP_DIR/deploy"
 
 echo "=========================================="

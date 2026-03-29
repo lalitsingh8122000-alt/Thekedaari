@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'thekedaar-backend',
-      cwd: '/home/ubuntu/ThekeDaari/backend',
+      cwd: '/home/ubuntu/Thekedaari/backend',
       script: 'src/index.js',
       env: {
         NODE_ENV: 'production',
@@ -14,7 +14,7 @@ module.exports = {
     },
     {
       name: 'thekedaar-frontend',
-      cwd: '/home/ubuntu/ThekeDaari/frontend',
+      cwd: '/home/ubuntu/Thekedaari/frontend',
       script: 'node_modules/.bin/next',
       args: 'start',
       env: {
