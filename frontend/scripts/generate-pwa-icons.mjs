@@ -4,10 +4,26 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, '..', 'public');
-const svgPath = join(publicDir, 'thekedaari-app-icon.svg');
+/** Source asset (may be JPEG bytes with .png extension). */
+const logoPath = join(publicDir, 'thekedaari-logo.png');
+const brandOut = join(publicDir, 'thekedaari-logo.png');
+const bg = { r: 245, g: 245, b: 245, alpha: 1 };
 
-await sharp(svgPath).resize(192, 192).png().toFile(join(publicDir, 'icon-192x192.png'));
-await sharp(svgPath).resize(512, 512).png().toFile(join(publicDir, 'icon-512x512.png'));
-await sharp(svgPath).resize(180, 180).png().toFile(join(publicDir, 'apple-touch-icon.png'));
+const input = await sharp(logoPath).toBuffer();
 
-console.log('PWA icons written: icon-192x192.png, icon-512x512.png, apple-touch-icon.png');
+await sharp(input).png().toFile(brandOut);
+
+async function writeSquarePng(size, outName) {
+  await sharp(input)
+    .resize(size, size, { fit: 'contain', background: bg })
+    .png()
+    .toFile(join(publicDir, outName));
+}
+
+await writeSquarePng(192, 'icon-192x192.png');
+await writeSquarePng(512, 'icon-512x512.png');
+await writeSquarePng(180, 'apple-touch-icon.png');
+
+console.log(
+  'PWA icons written: thekedaari-logo.png (normalized), icon-192x192.png, icon-512x512.png, apple-touch-icon.png',
+);

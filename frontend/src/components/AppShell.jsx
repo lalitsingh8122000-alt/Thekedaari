@@ -5,9 +5,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
+import ProfileModal from './ProfileModal';
 
 export default function AppShell({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -20,6 +22,19 @@ export default function AppShell({ children }) {
       router.push('/login');
     }
   }, [user, loading, isPublic, router]);
+
+  useEffect(() => {
+    if (pathname === '/profile') {
+      setProfileModalOpen(true);
+    }
+  }, [pathname]);
+
+  const closeProfileModal = () => {
+    setProfileModalOpen(false);
+    if (pathname === '/profile') {
+      router.replace('/dashboard');
+    }
+  };
 
   if (loading) {
     return (
@@ -36,9 +51,14 @@ export default function AppShell({ children }) {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar onMenuClick={() => setSidebarOpen(true)} />
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onProfileOpen={() => setProfileModalOpen(true)}
+      />
       <main className="page-content p-4 max-w-4xl mx-auto">{children}</main>
       <BottomNav />
+      <ProfileModal open={profileModalOpen} onClose={closeProfileModal} />
     </div>
   );
 }

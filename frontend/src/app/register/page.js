@@ -1,10 +1,12 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Phone, Lock, UserPlus } from 'lucide-react';
+import { User, Phone, Lock, UserPlus, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { normalizePhone, sanitizePhoneInput, isValidPhone, PHONE_LENGTH } from '@/lib/validation';
+import AuthBrandHeader from '@/components/AuthBrandHeader';
+import AuthPageLayout from '@/components/AuthPageLayout';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -48,50 +50,47 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary-600 to-primary-800 flex flex-col">
-      <div className="flex justify-end p-4">
-        <button
-          onClick={() => switchLang(lang === 'en' ? 'hi' : 'en')}
-          className="bg-white/20 text-white font-semibold px-4 py-2 rounded-full text-sm"
-        >
-          {lang === 'en' ? 'हिंदी' : 'English'}
-        </button>
-      </div>
+    <AuthPageLayout
+      onSwitchLang={() => switchLang(lang === 'en' ? 'hi' : 'en')}
+      langLabel={lang === 'en' ? 'हिंदी' : 'English'}
+    >
+      <AuthBrandHeader subtitle={t('register_subtitle')} />
 
-      <div className="flex-1 flex flex-col items-center justify-center px-6">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-extrabold text-white tracking-tight">Thekedaari</h1>
-          <p className="text-primary-200 mt-2 text-lg">{t('register_subtitle')}</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
+      <div className="mt-8 pt-8 border-t border-slate-100/90">
+        <form onSubmit={handleSubmit} className="w-full space-y-4">
           {error && (
-            <div className="bg-red-100 text-red-700 px-4 py-3 rounded-xl text-center font-medium">
-              {error}
+            <div
+              role="alert"
+              className="flex items-start gap-3 text-left bg-red-50 text-red-800 border border-red-100/90 px-4 py-3.5 rounded-xl text-sm font-medium shadow-sm shadow-red-900/[0.04]"
+            >
+              <AlertCircle className="flex-shrink-0 text-red-500 mt-0.5" size={18} aria-hidden />
+              <span>{error}</span>
             </div>
           )}
 
           <div className="relative">
-            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={20} />
             <input
               type="text"
               placeholder={t('name')}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="input-field pl-12 text-lg"
+              className="auth-field"
+              autoComplete="name"
               required
             />
           </div>
 
           <div className="relative">
-            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={20} />
             <input
               type="tel"
               placeholder={t('phone')}
               value={phone}
               onChange={(e) => setPhone(sanitizePhoneInput(e.target.value))}
-              className="input-field pl-12 text-lg"
+              className="auth-field"
               inputMode="numeric"
+              autoComplete="tel"
               pattern="\d{10}"
               maxLength={PHONE_LENGTH}
               required
@@ -99,50 +98,48 @@ export default function RegisterPage() {
           </div>
 
           <div className="relative">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={20} />
             <input
               type="password"
               placeholder={t('password')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="input-field pl-12 text-lg"
+              className="auth-field"
+              autoComplete="new-password"
               required
             />
           </div>
 
           <div className="relative">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={20} />
             <input
               type="password"
               placeholder={t('confirm_password')}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="input-field pl-12 text-lg"
+              className="auth-field"
+              autoComplete="new-password"
               required
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn-primary w-full flex items-center justify-center gap-2"
-          >
-            <UserPlus size={22} />
+          <button type="submit" disabled={loading} className="auth-submit mt-1">
+            <UserPlus size={22} strokeWidth={2.25} />
             {loading ? t('loading') : t('register')}
           </button>
 
-          <p className="text-center text-primary-200 text-base">
+          <p className="text-center text-slate-500 text-[0.9375rem] leading-relaxed mt-8 pt-6 border-t border-slate-100/90">
             {t('have_account')}{' '}
             <button
               type="button"
               onClick={() => router.push('/login')}
-              className="text-white font-bold underline"
+              className="auth-link py-2 px-1.5 -my-2 rounded-lg hover:bg-primary-50/80 transition-colors"
             >
               {t('login')}
             </button>
           </p>
         </form>
       </div>
-    </div>
+    </AuthPageLayout>
   );
 }

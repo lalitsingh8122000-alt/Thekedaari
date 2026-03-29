@@ -38,6 +38,15 @@ body {
   .input-field {
     @apply w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 text-base sm:text-lg focus:border-primary-500 focus:outline-none transition-colors bg-white;
   }
+  .auth-field {
+    @apply w-full border border-slate-200/90 rounded-xl pl-12 pr-4 py-3 sm:py-3.5 text-base sm:text-lg bg-white text-slate-900 placeholder:text-slate-400 shadow-sm shadow-slate-900/[0.03] focus:border-primary-500 focus:ring-[3px] focus:ring-primary-500/20 focus:shadow-md focus:shadow-primary-500/5 focus:outline-none transition-all;
+  }
+  .auth-submit {
+    @apply w-full flex items-center justify-center gap-2 bg-gradient-to-b from-primary-600 to-primary-700 text-white font-semibold py-3.5 px-4 rounded-xl text-base sm:text-lg shadow-lg shadow-primary-700/30 hover:from-primary-500 hover:to-primary-600 hover:shadow-primary-600/25 active:scale-[0.99] transition-all disabled:opacity-50 disabled:shadow-none disabled:active:scale-100 disabled:from-primary-600 disabled:to-primary-700;
+  }
+  .auth-link {
+    @apply text-primary-600 font-semibold underline-offset-4 hover:text-primary-700 hover:underline active:text-primary-800 transition-colors;
+  }
   .label {
     @apply block text-gray-600 font-medium mb-1 text-sm sm:text-base;
   }

@@ -22,12 +22,17 @@ const menuItems = [
   { key: 'profile', path: '/profile', icon: UserCircle },
 ];
 
-export default function Sidebar({ open, onClose }) {
+export default function Sidebar({ open, onClose, onProfileOpen }) {
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useLanguage();
 
   const navigate = (path) => {
+    if (path === '/profile' && onProfileOpen) {
+      onProfileOpen();
+      onClose();
+      return;
+    }
     router.push(path);
     onClose();
   };

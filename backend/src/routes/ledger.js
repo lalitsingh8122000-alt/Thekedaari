@@ -7,6 +7,7 @@ const {
   normalizeString,
   parseAmount,
   parseId,
+  isValidDate,
 } = require('../utils/validation');
 
 const router = express.Router();
@@ -55,6 +56,8 @@ router.post('/', auth, async (req, res) => {
     const category = normalizeString(req.body.category);
     const remarks = normalizeString(req.body.remarks);
     const comment = normalizeString(req.body.comment);
+    const projectId = parseId(req.body.projectId);
+    const expenseDateRaw = req.body.date;
 
     if (!workerId || amount === null || !type || !category) {
       return res.status(400).json({ error: 'Worker, amount, type, and category are required' });
@@ -65,22 +68,61 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ error: 'Amount must be between 1 and 10,00,00,000' });
     }
     if (remarks.length > 500) return res.status(400).json({ error: 'Remarks cannot exceed 500 characters' });
+    if (comment.length > 2000) return res.status(400).json({ error: 'Comment cannot exceed 2000 characters' });
 
     const worker = await prisma.worker.findFirst({
       where: { id: workerId, userId: req.userId },
     });
     if (!worker) return res.status(404).json({ error: 'Worker not found' });
 
-    const entry = await prisma.ledgerEntry.create({
-      data: {
-        workerId,
-        amount,
-        type,
-        category,
-        remarks: remarks || null,
-        comment: comment || null,
-        userId: req.userId,
-      },
+    const isPaymentToWorker = type === 'Debit' && category === 'Payment';
+    if (isPaymentToWorker) {
+      if (!projectId) {
+        return res.status(400).json({ error: 'Select a project so this payment is counted in that project’s labour expense' });
+      }
+      const project = await prisma.project.findFirst({ where: { id: projectId, userId: req.userId } });
+      if (!project) return res.status(404).json({ error: 'Project not found' });
+      if (expenseDateRaw !== undefined && expenseDateRaw !== null && expenseDateRaw !== '' && !isValidDate(expenseDateRaw)) {
+        return res.status(400).json({ error: 'Invalid expense date' });
+      }
+    }
+
+    const expenseDate =
+      isPaymentToWorker && expenseDateRaw && isValidDate(expenseDateRaw)
+        ? new Date(expenseDateRaw)
+        : new Date();
+
+    const entry = await prisma.$transaction(async (tx) => {
+      const created = await tx.ledgerEntry.create({
+        data: {
+          workerId,
+          amount,
+          type,
+          category,
+          remarks: remarks || null,
+          comment: comment || null,
+          userId: req.userId,
+        },
+      });
+
+      if (isPaymentToWorker) {
+        const noteParts = ['Worker ledger payment'];
+        if (remarks) noteParts.push(remarks);
+        if (comment) noteParts.push(comment);
+        await tx.expense.create({
+          data: {
+            projectId,
+            amount,
+            remarks: 'Labour',
+            notes: noteParts.join(' — '),
+            workerId,
+            date: expenseDate,
+            userId: req.userId,
+          },
+        });
+      }
+
+      return created;
     });
 
     res.status(201).json(entry);
