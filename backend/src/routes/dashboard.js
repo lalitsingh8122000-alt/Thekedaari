@@ -67,12 +67,24 @@ router.get('/', auth, async (req, res) => {
       totalIncome: p.incomes.reduce((sum, i) => sum + i.amount, 0),
     }));
 
-    const recentPayments = await prisma.ledgerEntry.findMany({
-      where: { userId, category: { not: 'Salary' } },
-      take: 20,
+    /**
+     * Recent list: only money paid to workers (ledger Debits: Payment / Other).
+     * Add earning / salary / bonus = Credit — must never appear here.
+     * Fetch recent rows then filter in JS so stray Credits never slip through.
+     */
+    const ledgerRecentRaw = await prisma.ledgerEntry.findMany({
+      where: { userId },
+      take: 80,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       include: { worker: { select: { name: true } } },
     });
+    const recentPayments = ledgerRecentRaw
+      .filter((e) => {
+        const typ = String(e.type ?? '').trim();
+        const cat = String(e.category ?? '').trim();
+        return typ === 'Debit' && (cat === 'Payment' || cat === 'Other');
+      })
+      .slice(0, 20);
 
     const recentIncomes = await prisma.income.findMany({
       where: { userId },
@@ -81,14 +93,20 @@ router.get('/', auth, async (req, res) => {
       include: { project: { select: { name: true } } },
     });
 
+    const ledgerLabel = (tx) => {
+      const cat = tx.category || '';
+      const rem = tx.remarks != null && String(tx.remarks).trim() ? String(tx.remarks).trim() : '';
+      return rem ? `${cat} · ${rem}` : cat;
+    };
+
     const recentTransactions = [
       ...recentPayments.map((tx) => ({
         id: `ledger-${tx.id}`,
         source: 'payment',
         name: tx.worker?.name || '',
-        label: `${tx.category} · ${tx.remarks}`,
+        label: ledgerLabel(tx),
         amount: tx.amount,
-        type: tx.type,
+        type: 'Debit',
         createdAt: tx.createdAt,
       })),
       ...recentIncomes.map((inc) => ({

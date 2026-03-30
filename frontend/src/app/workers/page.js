@@ -1,9 +1,9 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Plus, Users, CalendarCheck, BookOpen, Pencil, X,
-  IndianRupee, Banknote, UserCheck, UserX,
+  IndianRupee, Banknote, UserCheck, UserX, Search,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
@@ -25,6 +25,7 @@ export default function WorkersPage() {
   const [error, setError] = useState('');
   const [existingAttendance, setExistingAttendance] = useState(null);
   const [checkingAttendance, setCheckingAttendance] = useState(false);
+  const [search, setSearch] = useState('');
   const { t } = useLanguage();
   const router = useRouter();
 
@@ -38,6 +39,20 @@ export default function WorkersPage() {
   };
 
   useEffect(() => { load(); }, [filterStatus]);
+
+  const filteredWorkers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return workers;
+    const qDigits = q.replace(/\D/g, '');
+    return workers.filter((w) => {
+      const name = (w.name || '').toLowerCase();
+      const phone = String(w.phone || '').replace(/\D/g, '');
+      const role = (w.role?.name || '').toLowerCase();
+      if (name.includes(q) || role.includes(q)) return true;
+      if (qDigits.length >= 2 && phone.includes(qDigits)) return true;
+      return false;
+    });
+  }, [workers, search]);
 
   const openAttendance = (worker) => {
     setShowAttendance(worker);
@@ -179,6 +194,19 @@ export default function WorkersPage() {
           ))}
         </div>
 
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('search_workers_placeholder')}
+            className="w-full input-field pl-10 py-2.5 text-base"
+            autoComplete="off"
+            aria-label={t('search')}
+          />
+        </div>
+
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-10 w-10 border-4 border-primary-600 border-t-transparent" />
@@ -188,9 +216,14 @@ export default function WorkersPage() {
             <Users size={48} className="mx-auto text-gray-300 mb-3" />
             <p className="text-gray-400 text-lg">{t('no_data')}</p>
           </div>
+        ) : filteredWorkers.length === 0 ? (
+          <div className="card text-center py-10">
+            <Search size={40} className="mx-auto text-gray-300 mb-2" />
+            <p className="text-gray-500 font-medium">{t('no_search_matches')}</p>
+          </div>
         ) : (
           <div className="space-y-2 sm:space-y-3">
-            {workers.map((w) => (
+            {filteredWorkers.map((w) => (
               <div key={w.id} className="card">
                 <div className="flex items-center gap-2.5 sm:gap-3 mb-2.5 sm:mb-3">
                   {w.photo ? (

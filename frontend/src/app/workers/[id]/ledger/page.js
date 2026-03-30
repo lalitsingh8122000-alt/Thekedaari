@@ -149,17 +149,17 @@ export default function WorkerLedgerPage() {
               <button
                 type="button"
                 onClick={openAddBalance}
-                className="flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base font-semibold py-3 rounded-xl bg-amber-50 text-amber-900 border border-amber-200/80 active:scale-[0.98] transition-transform"
+                className="flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base font-semibold py-3 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200/80 active:scale-[0.98] transition-transform"
               >
-                <TrendingUp size={18} className="text-amber-600 shrink-0" />
+                <TrendingUp size={18} className="text-emerald-600 shrink-0" />
                 {t('ledger_add_earning')}
               </button>
               <button
                 type="button"
                 onClick={openPayWorker}
-                className="flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base font-semibold py-3 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200/80 active:scale-[0.98] transition-transform"
+                className="flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base font-semibold py-3 rounded-xl bg-red-50 text-red-900 border border-red-200/80 active:scale-[0.98] transition-transform"
               >
-                <Banknote size={18} className="text-emerald-600 shrink-0" />
+                <Banknote size={18} className="text-red-600 shrink-0" />
                 {t('ledger_record_payment')}
               </button>
             </div>
@@ -176,7 +176,7 @@ export default function WorkerLedgerPage() {
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span
                             className={`text-[10px] sm:text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-md ${
-                              isOwed ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
+                              isOwed ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
                             }`}
                           >
                             {isOwed ? t('ledger_tag_owed') : t('ledger_tag_paid')}
@@ -197,7 +197,7 @@ export default function WorkerLedgerPage() {
                         </p>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className={`font-bold text-sm sm:text-base tabular-nums ${isOwed ? 'text-amber-700' : 'text-emerald-700'}`}>
+                        <p className={`font-bold text-sm sm:text-base tabular-nums ${isOwed ? 'text-emerald-700' : 'text-red-600'}`}>
                           {isOwed ? '+' : '−'}
                           {fmt(entry.amount)}
                         </p>
@@ -306,7 +306,7 @@ export default function WorkerLedgerPage() {
                 type="button"
                 onClick={handleAdd}
                 className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-white text-sm transition-all active:scale-[0.99] ${
-                  showModal === 'addBalance' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                  showModal === 'addBalance' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'
                 }`}
               >
                 <Plus size={18} /> {t('save')}

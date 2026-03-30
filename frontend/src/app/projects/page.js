@@ -1,7 +1,7 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Pencil, IndianRupee, FolderKanban } from 'lucide-react';
+import { Plus, Pencil, IndianRupee, FolderKanban, Search } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
 import api from '@/lib/api';
@@ -11,6 +11,7 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [search, setSearch] = useState('');
   const { t } = useLanguage();
   const router = useRouter();
 
@@ -22,6 +23,17 @@ export default function ProjectsPage() {
   };
 
   useEffect(() => { load(); }, [filterStatus, filterType]);
+
+  const filteredProjects = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return projects;
+    return projects.filter((p) => {
+      const name = (p.name || '').toLowerCase();
+      const typ = (p.type || '').toLowerCase();
+      const st = (p.status || '').toLowerCase();
+      return name.includes(q) || typ.includes(q) || st.includes(q);
+    });
+  }, [projects, search]);
 
   const statusColor = (s) => (s === 'Running' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600');
   const typeLabel = (type) => ({ Small: t('small'), Medium: t('medium'), Big: t('big') }[type] || type);
@@ -62,6 +74,19 @@ export default function ProjectsPage() {
           ))}
         </div>
 
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('search_projects_placeholder')}
+            className="w-full input-field pl-10 py-2.5 text-base"
+            autoComplete="off"
+            aria-label={t('search')}
+          />
+        </div>
+
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-10 w-10 border-4 border-primary-600 border-t-transparent" />
@@ -71,9 +96,14 @@ export default function ProjectsPage() {
             <FolderKanban size={48} className="mx-auto text-gray-300 mb-3" />
             <p className="text-gray-400 text-lg">{t('no_data')}</p>
           </div>
+        ) : filteredProjects.length === 0 ? (
+          <div className="card text-center py-10">
+            <Search size={40} className="mx-auto text-gray-300 mb-2" />
+            <p className="text-gray-500 font-medium">{t('no_search_matches')}</p>
+          </div>
         ) : (
           <div className="space-y-3">
-            {projects.map((p) => (
+            {filteredProjects.map((p) => (
               <div key={p.id} className="card">
                 <div className="flex items-start justify-between mb-3">
                   <div>
