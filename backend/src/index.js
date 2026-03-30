@@ -19,6 +19,15 @@ const financeRoutes = require('./routes/finance');
 const dashboardRoutes = require('./routes/dashboard');
 
 const app = express();
+app.disable('etag');
+// 🚀 paste here
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.set('Surrogate-Control', 'no-store');
+  next();
+});
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());

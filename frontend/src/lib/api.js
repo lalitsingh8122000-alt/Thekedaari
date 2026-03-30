@@ -11,19 +11,35 @@ function resolveApiBaseURL() {
 
 const api = axios.create({
   baseURL: resolveApiBaseURL(),
-  headers: { 'Content-Type': 'application/json' },
+headers: {
+  'Content-Type': 'application/json',
+  'Cache-Control': 'no-cache, no-store, must-revalidate',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+},
 });
 
 api.interceptors.request.use((config) => {
+  config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+  config.headers['Pragma'] = 'no-cache';
+  config.headers['Expires'] = '0';
+
+  if ((config.method || '').toLowerCase() === 'get') {
+    config.params = {
+      ...(config.params || {}),
+      _t: Date.now(),
+    };
+  }
+
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('thekedaar_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
   }
+
   return config;
 });
-
 api.interceptors.response.use(
   (res) => res,
   (err) => {
