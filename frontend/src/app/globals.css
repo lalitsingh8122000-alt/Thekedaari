@@ -39,13 +39,19 @@ body {
     @apply w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 text-base sm:text-lg focus:border-primary-500 focus:outline-none transition-colors bg-white;
   }
   .auth-field {
-    @apply w-full border border-slate-200/90 rounded-xl pl-12 pr-4 py-3 sm:py-3.5 text-base sm:text-lg bg-white text-slate-900 placeholder:text-slate-400 shadow-sm shadow-slate-900/[0.03] focus:border-primary-500 focus:ring-[3px] focus:ring-primary-500/20 focus:shadow-md focus:shadow-primary-500/5 focus:outline-none transition-all;
+    @apply w-full border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-base sm:text-lg bg-slate-50/80 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-0 transition-all;
   }
   .auth-submit {
-    @apply w-full flex items-center justify-center gap-2 bg-gradient-to-b from-primary-600 to-primary-700 text-white font-semibold py-3.5 px-4 rounded-xl text-base sm:text-lg shadow-lg shadow-primary-700/30 hover:from-primary-500 hover:to-primary-600 hover:shadow-primary-600/25 active:scale-[0.99] transition-all disabled:opacity-50 disabled:shadow-none disabled:active:scale-100 disabled:from-primary-600 disabled:to-primary-700;
+    @apply w-full flex items-center justify-center gap-2 rounded-xl text-base sm:text-lg font-semibold text-white py-3.5 px-4 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 active:scale-[0.99] transition-all shadow-sm disabled:opacity-50 disabled:active:scale-100;
+  }
+  .auth-submit-register {
+    @apply w-full flex items-center justify-center gap-2 rounded-lg text-base font-semibold text-white py-3 px-4 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 active:scale-[0.99] transition-all shadow-sm disabled:opacity-50 disabled:active:scale-100;
   }
   .auth-link {
-    @apply text-primary-600 font-semibold underline-offset-4 hover:text-primary-700 hover:underline active:text-primary-800 transition-colors;
+    @apply text-primary-800 font-semibold underline-offset-4 decoration-primary-300/80 hover:text-primary-900 hover:underline hover:decoration-primary-500 transition-colors;
+  }
+  .auth-link-accent {
+    @apply text-emerald-700 font-semibold underline-offset-4 decoration-emerald-300/80 hover:text-emerald-800 hover:underline hover:decoration-emerald-500 transition-colors;
   }
   .label {
     @apply block text-gray-600 font-medium mb-1 text-sm sm:text-base;

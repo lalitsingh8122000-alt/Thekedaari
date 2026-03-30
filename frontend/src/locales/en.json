@@ -13,6 +13,7 @@
   "confirm_password": "Confirm Password",
   "login_subtitle": "Enter your phone & password",
   "register_subtitle": "Create your account",
+  "auth_footer_tagline": "Attendance & income / expense management",
   "no_account": "Don't have an account?",
   "have_account": "Already have an account?",
 

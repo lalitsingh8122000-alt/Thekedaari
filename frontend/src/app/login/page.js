@@ -46,64 +46,62 @@ export default function LoginPage() {
     >
       <AuthBrandHeader subtitle={t('login_subtitle')} />
 
-      <div className="mt-8 pt-8 border-t border-slate-100/90">
-        <form onSubmit={handleSubmit} className="w-full space-y-4">
-          {error && (
-            <div
-              role="alert"
-              className="flex items-start gap-3 text-left bg-red-50 text-red-800 border border-red-100/90 px-4 py-3.5 rounded-xl text-sm font-medium shadow-sm shadow-red-900/[0.04]"
-            >
-              <AlertCircle className="flex-shrink-0 text-red-500 mt-0.5" size={18} aria-hidden />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <div className="relative">
-            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={20} />
-            <input
-              type="tel"
-              placeholder={t('phone')}
-              value={phone}
-              onChange={(e) => setPhone(sanitizePhoneInput(e.target.value))}
-              className="auth-field"
-              inputMode="numeric"
-              autoComplete="tel"
-              pattern="\d{10}"
-              maxLength={PHONE_LENGTH}
-              required
-            />
+      <form onSubmit={handleSubmit} className="w-full mt-5 space-y-3.5">
+        {error && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 text-left bg-red-50 text-red-800 border border-red-100 px-3 py-2 rounded-lg text-sm font-medium"
+          >
+            <AlertCircle className="flex-shrink-0 text-red-500 mt-0.5" size={16} aria-hidden />
+            <span>{error}</span>
           </div>
+        )}
 
-          <div className="relative">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={20} />
-            <input
-              type="password"
-              placeholder={t('password')}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="auth-field"
-              autoComplete="current-password"
-              required
-            />
-          </div>
+        <div className="relative">
+          <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-primary-600/50 pointer-events-none" size={20} />
+          <input
+            type="tel"
+            placeholder={t('phone')}
+            value={phone}
+            onChange={(e) => setPhone(sanitizePhoneInput(e.target.value))}
+            className="auth-field"
+            inputMode="numeric"
+            autoComplete="tel"
+            pattern="\d{10}"
+            maxLength={PHONE_LENGTH}
+            required
+          />
+        </div>
 
-          <button type="submit" disabled={loading} className="auth-submit mt-1">
-            <LogIn size={22} strokeWidth={2.25} />
-            {loading ? t('loading') : t('login')}
+        <div className="relative">
+          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-primary-600/50 pointer-events-none" size={20} />
+          <input
+            type="password"
+            placeholder={t('password')}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="auth-field"
+            autoComplete="current-password"
+            required
+          />
+        </div>
+
+        <button type="submit" disabled={loading} className="auth-submit">
+          <LogIn size={22} strokeWidth={2.25} />
+          {loading ? t('loading') : t('login')}
+        </button>
+
+        <p className="text-center text-gray-600 text-[0.9375rem] sm:text-base pt-4 mt-1 border-t border-gray-100">
+          {t('no_account')}{' '}
+          <button
+            type="button"
+            onClick={() => router.push('/register')}
+            className="auth-link py-1 px-0.5 rounded hover:bg-primary-50 transition-colors"
+          >
+            {t('register')}
           </button>
-
-          <p className="text-center text-slate-500 text-[0.9375rem] leading-relaxed mt-8 pt-6 border-t border-slate-100/90">
-            {t('no_account')}{' '}
-            <button
-              type="button"
-              onClick={() => router.push('/register')}
-              className="auth-link py-2 px-1.5 -my-2 rounded-lg hover:bg-primary-50/80 transition-colors"
-            >
-              {t('register')}
-            </button>
-          </p>
-        </form>
-      </div>
+        </p>
+      </form>
     </AuthPageLayout>
   );
 }

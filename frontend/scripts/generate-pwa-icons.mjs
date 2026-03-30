@@ -7,7 +7,8 @@ const publicDir = join(__dirname, '..', 'public');
 /** Source asset (may be JPEG bytes with .png extension). */
 const logoPath = join(publicDir, 'thekedaari-logo.png');
 const brandOut = join(publicDir, 'thekedaari-logo.png');
-const bg = { r: 245, g: 245, b: 245, alpha: 1 };
+/** Match logo canvas (white) for icon padding */
+const bg = { r: 255, g: 255, b: 255, alpha: 1 };
 
 const input = await sharp(logoPath).toBuffer();
 

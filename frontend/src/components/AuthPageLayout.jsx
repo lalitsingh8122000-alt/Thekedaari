@@ -1,54 +1,62 @@
 'use client';
 
+import Image from 'next/image';
+import { useLanguage } from '@/contexts/LanguageContext';
+
+/**
+ * Same chrome as the app after login: Navbar uses bg-primary-600, body uses bg-gray-50.
+ */
 export default function AuthPageLayout({ children, onSwitchLang, langLabel }) {
+  const { t } = useLanguage();
+
   return (
-    <div className="min-h-screen relative flex flex-col overflow-x-hidden">
-      <div
-        className="absolute inset-0 bg-gradient-to-br from-slate-950 via-[#0a1f38] to-[#123056]"
-        aria-hidden
-      />
-      <div
-        className="absolute inset-0 opacity-[0.55] bg-[radial-gradient(ellipse_110%_55%_at_50%_-15%,rgba(59,130,246,0.38),transparent_52%)]"
-        aria-hidden
-      />
-      <div
-        className="absolute inset-0 opacity-[0.11] bg-[linear-gradient(to_right,rgba(255,255,255,0.07)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.07)_1px,transparent_1px)] bg-[length:44px_44px]"
-        aria-hidden
-      />
-      <div
-        className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_15%_85%,rgba(255,255,255,0.08),transparent_42%)]"
-        aria-hidden
-      />
-      <div
-        className="absolute inset-0 opacity-35 bg-[radial-gradient(circle_at_85%_25%,rgba(56,189,248,0.12),transparent_35%)]"
-        aria-hidden
-      />
-
-      <div
-        className="relative flex justify-end px-4 pt-4 pb-2 sm:px-5 sm:pt-5"
-        style={{ paddingTop: 'max(1rem, var(--safe-top))' }}
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <header
+        className="bg-primary-600 text-white shadow-md shrink-0 z-20"
+        style={{
+          paddingTop: 'calc(var(--safe-top) + 0.6rem)',
+          paddingLeft: 'calc(var(--safe-left) + 1rem)',
+          paddingRight: 'calc(var(--safe-right) + 1rem)',
+          paddingBottom: '0.75rem',
+        }}
       >
-        <button
-          type="button"
-          onClick={onSwitchLang}
-          className="rounded-full bg-white/10 backdrop-blur-md text-white/95 font-medium px-4 py-2.5 text-sm border border-white/15 shadow-lg shadow-slate-950/20 hover:bg-white/18 hover:border-white/25 active:scale-[0.98] transition-all"
-        >
-          {langLabel}
-        </button>
-      </div>
-
-      <div
-        className="relative flex-1 flex flex-col items-center justify-center px-4 pb-12 sm:pb-14 pt-2"
-        style={{ paddingBottom: 'max(2.5rem, calc(2.5rem + var(--safe-bottom)))' }}
-      >
-        <div className="w-full max-w-[440px] motion-safe:animate-auth-enter">
-          <div className="rounded-[1.75rem] overflow-hidden bg-white/[0.98] backdrop-blur-xl shadow-[0_32px_64px_-16px_rgba(15,23,42,0.55),0_0_0_1px_rgba(255,255,255,0.65)_inset] border border-white/50 ring-1 ring-slate-900/[0.06]">
-            <div
-              className="h-1 w-full bg-gradient-to-r from-sky-400 via-primary-500 to-primary-700"
-              aria-hidden
-            />
-            <div className="px-6 py-7 sm:px-9 sm:py-9 sm:pb-10">{children}</div>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl bg-white/15 ring-1 ring-white/25 flex items-center justify-center p-1.5 shrink-0 overflow-hidden">
+              <Image
+                src="/thekedaari-logo.png"
+                alt=""
+                width={48}
+                height={48}
+                className="object-contain w-full h-full"
+                priority
+              />
+            </div>
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white truncate">
+              Thekedaari
+            </h1>
           </div>
+          <button
+            type="button"
+            onClick={onSwitchLang}
+            className="bg-white/20 text-white font-semibold px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-sm active:bg-white/30 transition-colors shrink-0"
+          >
+            {langLabel}
+          </button>
+        </div>
+      </header>
+
+      <div
+        className="flex-1 flex flex-col items-center justify-center px-4 py-6 sm:py-10"
+        style={{ paddingBottom: 'max(1.5rem, calc(1.5rem + var(--safe-bottom)))' }}
+      >
+        <div className="w-full max-w-[420px] sm:max-w-[440px] motion-safe:animate-auth-enter">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-md px-6 py-7 sm:px-8 sm:py-8">
+            {children}
+          </div>
+          <p className="text-center text-xs text-gray-500 mt-4 px-2 leading-relaxed max-w-md mx-auto">
+            {t('auth_footer_tagline')}
+          </p>
         </div>
       </div>
     </div>
