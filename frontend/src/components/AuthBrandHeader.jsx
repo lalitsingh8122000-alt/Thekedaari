@@ -1,11 +1,17 @@
 'use client';
 
+const assetV = process.env.NEXT_PUBLIC_ASSET_VERSION;
+const logoSrc =
+  assetV && assetV.length > 0
+    ? `/thekedaari-logo.png?v=${encodeURIComponent(assetV)}`
+    : '/thekedaari-logo.png';
+
 export default function AuthBrandHeader({ subtitle }) {
   return (
     <header className="flex flex-col items-center text-center gap-2.5">
       <div className="w-full max-w-[min(240px,85vw)] sm:max-w-[270px] mx-auto">
         <img
-          src="/thekedaari-logo.png"
+          src={logoSrc}
           alt="Thekedaari — attendance & finance for construction sites"
           width="400"
           height="400"
