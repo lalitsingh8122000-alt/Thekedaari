@@ -17,6 +17,22 @@ const nextConfig = {
           { key: 'Service-Worker-Allowed', value: '/' },
         ],
       },
+      {
+        source: '/thekedaari-logo.png',
+        headers: [{ key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' }],
+      },
+      {
+        source: '/icon-192x192.png',
+        headers: [{ key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' }],
+      },
+      {
+        source: '/icon-512x512.png',
+        headers: [{ key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' }],
+      },
+      {
+        source: '/apple-touch-icon.png',
+        headers: [{ key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' }],
+      },
     ];
   },
 };
