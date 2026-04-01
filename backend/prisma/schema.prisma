@@ -78,18 +78,21 @@ model Worker {
 }
 
 model Attendance {
-  id        Int      @id @default(autoincrement())
-  workerId  Int
-  worker    Worker   @relation(fields: [workerId], references: [id])
-  projectId Int
-  project   Project  @relation(fields: [projectId], references: [id])
-  date      DateTime @db.Date
-  type      String   @db.VarChar(20)
-  salary    Float
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               Int          @id @default(autoincrement())
+  workerId         Int
+  worker           Worker       @relation(fields: [workerId], references: [id])
+  projectId        Int
+  project          Project      @relation(fields: [projectId], references: [id])
+  date             DateTime     @db.Date
+  type             String       @db.VarChar(20)
+  salary           Float
+  userId           Int
+  user             User         @relation(fields: [userId], references: [id])
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  primarySplitId   Int?
+  splitParent      Attendance?  @relation("AttendanceSplit", fields: [primarySplitId], references: [id], onDelete: Cascade)
+  splitSecondaries Attendance[] @relation("AttendanceSplit")
 
   ledgerEntry LedgerEntry?
 
@@ -97,6 +100,7 @@ model Attendance {
   @@index([projectId])
   @@index([userId])
   @@index([date])
+  @@index([primarySplitId])
 }
 
 model LedgerEntry {

@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "node src/index.js",
     "start": "node src/index.js",
-    "db:push": "npx prisma db push",
-    "db:studio": "npx prisma studio"
+    "db:push": "node scripts/prisma-with-env.js db push",
+    "db:migrate": "node scripts/prisma-with-env.js migrate deploy",
+    "db:studio": "node scripts/prisma-with-env.js studio"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

@@ -20,8 +20,14 @@ export default function AttendancePage() {
   const [showModal, setShowModal] = useState(null);
   const [editRecord, setEditRecord] = useState(null);
   const [attForm, setAttForm] = useState({
-    status: 'Present', type: 'FullDay', salary: 0,
-    wantToPay: false, payment: '', paymentNote: '',
+    status: 'Present',
+    type: 'FullDay',
+    salary: 0,
+    wantToPay: false,
+    payment: '',
+    paymentNote: '',
+    secondSite: false,
+    secondProjectId: '',
   });
   const [saving, setSaving] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -70,13 +76,17 @@ export default function AttendancePage() {
     if (record) {
       setEditRecord(record);
       const isAbsent = record.type === 'Absent';
+      const split = record.isSplitHalfDay && record.splitPartner;
+      const totalSplitSalary = split ? record.salary + record.splitPartner.salary : record.salary;
       setAttForm({
         status: isAbsent ? 'Absent' : 'Present',
         type: isAbsent ? 'FullDay' : record.type,
-        salary: record.salary,
+        salary: split ? totalSplitSalary : record.salary,
         wantToPay: (record.payment || 0) > 0,
         payment: record.payment || '',
         paymentNote: record.paymentNote || '',
+        secondSite: !!split,
+        secondProjectId: split ? String(record.splitPartner.projectId) : '',
       });
     } else {
       setEditRecord(null);
@@ -87,40 +97,58 @@ export default function AttendancePage() {
         wantToPay: false,
         payment: '',
         paymentNote: '',
+        secondSite: false,
+        secondProjectId: '',
       });
     }
     setShowModal(worker);
   };
 
-  const calcSalary = (type, costPerDay) => {
+  /** Half day on one site = half rate; half day on two sites same day = full day total, split 50/50 in backend. */
+  const calcSalary = (type, costPerDay, twoSiteHalfDay = false) => {
     if (type === 'FullDay') return costPerDay;
-    if (type === 'HalfDay') return costPerDay / 2;
+    if (type === 'HalfDay') return twoSiteHalfDay ? costPerDay : costPerDay / 2;
     return 0;
   };
 
   const handleStatusChange = (status) => {
     if (status === 'Absent') {
-      setAttForm((f) => ({ ...f, status: 'Absent', salary: 0 }));
+      setAttForm((f) => ({
+        ...f, status: 'Absent', salary: 0, secondSite: false, secondProjectId: '',
+      }));
     } else {
       setAttForm((f) => ({
-        ...f, status: 'Present',
-        salary: calcSalary(f.type, showModal.costPerDay),
+        ...f,
+        status: 'Present',
+        salary: calcSalary(f.type, showModal.costPerDay, f.type === 'HalfDay' && f.secondSite),
       }));
     }
   };
 
   const handleTypeChange = (type) => {
     setAttForm((f) => ({
-      ...f, type,
-      salary: calcSalary(type, showModal.costPerDay),
+      ...f,
+      type,
+      salary: calcSalary(type, showModal.costPerDay, type === 'HalfDay' && f.secondSite),
+      ...(type !== 'HalfDay' ? { secondSite: false, secondProjectId: '' } : {}),
     }));
   };
 
+  const otherProjects = projects.filter((p) => String(p.id) !== String(selectedProject));
+  const selectedProjectName =
+    projects.find((p) => String(p.id) === String(selectedProject))?.name ?? '';
+
   const handleSave = async () => {
     if (!selectedProject) return;
+    const finalType = attForm.status === 'Absent' ? 'Absent' : attForm.type;
+    if (finalType === 'HalfDay' && attForm.secondSite) {
+      if (!attForm.secondProjectId || String(attForm.secondProjectId) === String(selectedProject)) {
+        alert(t('second_project_required'));
+        return;
+      }
+    }
     setSaving(true);
     try {
-      const finalType = attForm.status === 'Absent' ? 'Absent' : attForm.type;
       const payload = {
         type: finalType,
         salary: attForm.status === 'Absent' ? 0 : parseFloat(attForm.salary),
@@ -128,20 +156,38 @@ export default function AttendancePage() {
         paymentNote: attForm.wantToPay ? attForm.paymentNote : '',
       };
 
+      const removeSplit =
+        !!editRecord?.isSplitHalfDay && finalType === 'HalfDay' && !attForm.secondSite;
+
       if (editRecord) {
-        await api.put(`/attendance/${editRecord.id}`, payload);
+        const putBody = { ...payload };
+        if (removeSplit) {
+          putBody.removeSplit = true;
+          putBody.secondProjectId = null;
+        } else if (finalType === 'HalfDay' && attForm.secondSite && attForm.secondProjectId) {
+          putBody.secondProjectId = parseInt(attForm.secondProjectId, 10);
+        }
+        await api.put(`/attendance/${editRecord.id}`, putBody);
       } else {
-        await api.post('/attendance', {
+        const postBody = {
           workerId: showModal.id,
-          projectId: parseInt(selectedProject),
+          projectId: parseInt(selectedProject, 10),
           date: selectedDate,
           ...payload,
-        });
+        };
+        if (finalType === 'HalfDay' && attForm.secondSite && attForm.secondProjectId) {
+          postBody.secondProjectId = parseInt(attForm.secondProjectId, 10);
+        }
+        await api.post('/attendance', postBody);
       }
       setShowModal(null);
       setEditRecord(null);
       setRefreshKey((k) => k + 1);
-    } catch {} finally { setSaving(false); }
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to save');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const fmt = (n) => '₹' + (n || 0).toLocaleString('en-IN');
@@ -287,6 +333,7 @@ export default function AttendancePage() {
                               record.type === 'FullDay' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                             }`}>
                               {record.type === 'FullDay' ? t('full_day') : t('half_day')}
+                              {record.isSplitHalfDay ? ` · ${t('two_sites')}` : ''}
                             </span>
                             <p className="text-xs font-bold text-blue-600 mt-0.5">{fmt(record.salary)}</p>
                           </>
@@ -341,6 +388,12 @@ export default function AttendancePage() {
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-sm truncate">{showModal.name}</p>
                   <p className="text-[11px] text-gray-500">{showModal.role?.name}</p>
+                  {selectedProjectName ? (
+                    <p className="text-[11px] mt-1 font-semibold text-primary-800 truncate">
+                      {t('marking_attendance_on')}:{' '}
+                      <span className="text-primary-950">{selectedProjectName}</span>
+                    </p>
+                  ) : null}
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="text-[10px] text-gray-400">{t('cost_per_day')}</p>
@@ -400,6 +453,53 @@ export default function AttendancePage() {
                       ))}
                     </div>
                   </div>
+
+                  {attForm.type === 'HalfDay' && attForm.status === 'Present' && otherProjects.length > 0 && (
+                    <div className="space-y-2 rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2.5">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={attForm.secondSite}
+                          onChange={(e) => {
+                            const on = e.target.checked;
+                            setAttForm((f) => ({
+                              ...f,
+                              secondSite: on,
+                              secondProjectId:
+                                on && !f.secondProjectId && otherProjects[0]
+                                  ? String(otherProjects[0].id)
+                                  : on
+                                    ? f.secondProjectId
+                                    : '',
+                              salary: calcSalary('HalfDay', showModal.costPerDay, on),
+                            }));
+                          }}
+                          className="rounded border-amber-400 text-amber-600 focus:ring-amber-500"
+                        />
+                        <span className="text-xs font-semibold text-amber-900">{t('add_second_site')}</span>
+                      </label>
+                      {attForm.secondSite && (
+                        <>
+                          <div>
+                            <label className="block text-[11px] font-medium text-amber-900 mb-1">
+                              {t('second_site_project')}
+                            </label>
+                            <select
+                              className="input-field w-full text-sm"
+                              value={attForm.secondProjectId}
+                              onChange={(e) => setAttForm((f) => ({ ...f, secondProjectId: e.target.value }))}
+                            >
+                              <option value="">{t('select_project')}</option>
+                              {otherProjects.map((p) => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <p className="text-[10px] text-amber-800/90 leading-snug">{t('half_day_split_hint')}</p>
+                        </>
+                      )}
+                    </div>
+                  )}
 
                   <div className="bg-blue-50 rounded-xl px-3 py-2 flex items-center justify-between">
                     <div className="flex items-center gap-1.5">

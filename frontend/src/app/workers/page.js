@@ -20,6 +20,8 @@ export default function WorkersPage() {
     projectId: '', date: new Date().toISOString().split('T')[0],
     status: 'Present', type: 'FullDay', salary: '',
     wantToPay: false, payment: '', paymentNote: '',
+    secondSite: false,
+    secondProjectId: '',
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -40,6 +42,11 @@ export default function WorkersPage() {
 
   useEffect(() => { load(); }, [filterStatus]);
 
+  const otherProjects = useMemo(
+    () => projects.filter((p) => String(p.id) !== String(attForm.projectId)),
+    [projects, attForm.projectId]
+  );
+
   const filteredWorkers = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return workers;
@@ -59,7 +66,7 @@ export default function WorkersPage() {
     setExistingAttendance(null);
     setError('');
     setAttForm({
-      projectId: projects[0]?.id || '',
+      projectId: projects[0]?.id != null ? String(projects[0].id) : '',
       date: new Date().toISOString().split('T')[0],
       status: 'Present',
       type: 'FullDay',
@@ -67,6 +74,8 @@ export default function WorkersPage() {
       wantToPay: false,
       payment: '',
       paymentNote: '',
+      secondSite: false,
+      secondProjectId: '',
     });
   };
 
@@ -80,19 +89,38 @@ export default function WorkersPage() {
       const res = await api.get('/attendance', {
         params: { workerId, startDate: selectedDate, endDate: selectedDate },
       });
-      const record = Array.isArray(res.data) && res.data.length > 0 ? res.data[0] : null;
+      const rows = Array.isArray(res.data) ? res.data : [];
+      let record = null;
+      if (rows.length === 1) {
+        record = rows[0];
+      } else if (rows.length >= 2) {
+        record =
+          rows.find((r) => r.splitSecondaries?.length > 0) ||
+          rows.find((r) => !r.primarySplitId) ||
+          rows[0];
+      }
       setExistingAttendance(record);
       if (record) {
         const isAbsent = record.type === 'Absent';
+        const split = record.isSplitHalfDay && record.splitPartner;
+        const totalSplitSalary = split ? record.salary + record.splitPartner.salary : record.salary;
         setAttForm((f) => ({
           ...f,
-          projectId: record.projectId || f.projectId,
+          projectId: record.projectId != null ? String(record.projectId) : f.projectId,
           status: isAbsent ? 'Absent' : 'Present',
           type: isAbsent ? f.type : (record.type || 'FullDay'),
-          salary: record.salary ?? f.salary,
+          salary: split ? totalSplitSalary : (record.salary ?? f.salary),
           wantToPay: Number(record.payment || 0) > 0,
           payment: Number(record.payment || 0) > 0 ? String(record.payment) : '',
           paymentNote: record.paymentNote || '',
+          secondSite: !!split,
+          secondProjectId: split ? String(record.splitPartner.projectId) : '',
+        }));
+      } else {
+        setAttForm((f) => ({
+          ...f,
+          secondSite: false,
+          secondProjectId: '',
         }));
       }
     } catch {
@@ -108,25 +136,32 @@ export default function WorkersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showAttendance?.id, attForm.date]);
 
-  const calcSalary = (type, costPerDay) => {
+  const calcSalary = (type, costPerDay, twoSiteHalfDay = false) => {
     if (type === 'FullDay') return costPerDay;
-    if (type === 'HalfDay') return costPerDay / 2;
+    if (type === 'HalfDay') return twoSiteHalfDay ? costPerDay : costPerDay / 2;
     return 0;
   };
 
   const handleStatusChange = (status) => {
     if (status === 'Absent') {
-      setAttForm((f) => ({ ...f, status: 'Absent', salary: 0 }));
+      setAttForm((f) => ({
+        ...f, status: 'Absent', salary: 0, secondSite: false, secondProjectId: '',
+      }));
     } else {
       setAttForm((f) => ({
         ...f, status: 'Present',
-        salary: calcSalary(f.type, showAttendance.costPerDay),
+        salary: String(calcSalary(f.type, showAttendance.costPerDay, f.type === 'HalfDay' && f.secondSite)),
       }));
     }
   };
 
   const handleTypeChange = (type) => {
-    setAttForm((f) => ({ ...f, type, salary: calcSalary(type, showAttendance.costPerDay) }));
+    setAttForm((f) => ({
+      ...f,
+      type,
+      salary: String(calcSalary(type, showAttendance.costPerDay, type === 'HalfDay' && f.secondSite)),
+      ...(type !== 'HalfDay' ? { secondSite: false, secondProjectId: '' } : {}),
+    }));
   };
 
   const markAttendance = async () => {
@@ -144,21 +179,37 @@ export default function WorkersPage() {
     if (attForm.paymentNote && attForm.paymentNote.trim().length > 500) {
       return setError('Payment note cannot exceed 500 characters');
     }
+    const finalType = attForm.status === 'Absent' ? 'Absent' : attForm.type;
+    if (finalType === 'HalfDay' && attForm.secondSite) {
+      if (!attForm.secondProjectId || String(attForm.secondProjectId) === String(attForm.projectId)) {
+        return setError(t('second_project_required'));
+      }
+    }
     setSaving(true);
     try {
-      const finalType = attForm.status === 'Absent' ? 'Absent' : attForm.type;
       const payload = {
         workerId: showAttendance.id,
-        projectId: parseInt(attForm.projectId),
+        projectId: parseInt(attForm.projectId, 10),
         date: attForm.date,
         type: finalType,
         salary: attForm.status === 'Absent' ? 0 : salaryAmount,
         payment: paymentAmount,
         paymentNote: attForm.wantToPay ? attForm.paymentNote.trim() : '',
       };
+      const removeSplit =
+        !!existingAttendance?.isSplitHalfDay && finalType === 'HalfDay' && !attForm.secondSite;
       if (existingAttendance?.id) {
+        if (removeSplit) {
+          payload.removeSplit = true;
+          payload.secondProjectId = null;
+        } else if (finalType === 'HalfDay' && attForm.secondSite && attForm.secondProjectId) {
+          payload.secondProjectId = parseInt(attForm.secondProjectId, 10);
+        }
         await api.put(`/attendance/${existingAttendance.id}`, payload);
       } else {
+        if (finalType === 'HalfDay' && attForm.secondSite && attForm.secondProjectId) {
+          payload.secondProjectId = parseInt(attForm.secondProjectId, 10);
+        }
         await api.post('/attendance', payload);
       }
       setShowAttendance(null);
@@ -303,7 +354,19 @@ export default function WorkersPage() {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-gray-600 font-medium mb-1 text-xs">{t('select_project')}</label>
-                  <select className="input-field text-xs !py-2" value={attForm.projectId} onChange={(e) => setAttForm({ ...attForm, projectId: e.target.value })}>
+                  <select
+                    className="input-field text-xs !py-2"
+                    value={attForm.projectId}
+                    onChange={(e) => {
+                      const pid = e.target.value;
+                      setAttForm((f) => ({
+                        ...f,
+                        projectId: pid,
+                        secondProjectId:
+                          f.secondProjectId && String(f.secondProjectId) === String(pid) ? '' : f.secondProjectId,
+                      }));
+                    }}
+                  >
                     {projects.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
                   </select>
                 </div>
@@ -363,6 +426,54 @@ export default function WorkersPage() {
                       ))}
                     </div>
                   </div>
+
+                  {attForm.type === 'HalfDay' && attForm.status === 'Present' && otherProjects.length > 0 && (
+                    <div className="space-y-2 rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2.5">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={attForm.secondSite}
+                          onChange={(e) => {
+                            const on = e.target.checked;
+                            setAttForm((f) => ({
+                              ...f,
+                              secondSite: on,
+                              secondProjectId:
+                                on && !f.secondProjectId && otherProjects[0]
+                                  ? String(otherProjects[0].id)
+                                  : on
+                                    ? f.secondProjectId
+                                    : '',
+                              salary: String(calcSalary('HalfDay', showAttendance.costPerDay, on)),
+                            }));
+                          }}
+                          className="rounded border-amber-400 text-amber-600 focus:ring-amber-500"
+                        />
+                        <span className="text-xs font-semibold text-amber-900">{t('add_second_site')}</span>
+                      </label>
+                      {attForm.secondSite && (
+                        <>
+                          <div>
+                            <label className="block text-[11px] font-medium text-amber-900 mb-1">
+                              {t('second_site_project')}
+                            </label>
+                            <select
+                              className="input-field w-full text-sm"
+                              value={attForm.secondProjectId}
+                              onChange={(e) => setAttForm((f) => ({ ...f, secondProjectId: e.target.value }))}
+                            >
+                              <option value="">{t('select_project')}</option>
+                              {otherProjects.map((p) => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <p className="text-[10px] text-amber-800/90 leading-snug">{t('half_day_split_hint')}</p>
+                        </>
+                      )}
+                    </div>
+                  )}
+
                   <div className="bg-blue-50 rounded-xl px-3 py-2 flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <IndianRupee size={15} className="text-blue-500" />
