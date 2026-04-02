@@ -45,6 +45,71 @@ function paymentRemarksBase(primaryAttendanceId) {
   return `Attendance payment att:${primaryAttendanceId}`;
 }
 
+function labourExpenseNotesBase(attendanceId) {
+  return `Attendance wage att:${attendanceId}`;
+}
+
+async function removeOldPaymentStyleLabourExpenses(tx, userId, attendanceId) {
+  await tx.expense.deleteMany({
+    where: {
+      userId,
+      remarks: 'Labour',
+      notes: { startsWith: paymentRemarksBase(attendanceId) },
+    },
+  });
+}
+
+async function deleteLabourWageExpense(tx, userId, attendanceId) {
+  await tx.expense.deleteMany({
+    where: {
+      userId,
+      remarks: 'Labour',
+      notes: { startsWith: labourExpenseNotesBase(attendanceId) },
+    },
+  });
+}
+
+async function upsertLabourExpenseForAttendance(
+  tx,
+  { userId, attendanceId, workerId, projectId, salaryAmount, typeLabel, projectName, attDate }
+) {
+  await removeOldPaymentStyleLabourExpenses(tx, userId, attendanceId);
+  const base = labourExpenseNotesBase(attendanceId);
+  const existing = await tx.expense.findFirst({
+    where: { userId, notes: { startsWith: base } },
+  });
+  if (salaryAmount > 0) {
+    const fullNotes = `${base} — ${typeLabel} — ${projectName}`;
+    if (existing) {
+      await tx.expense.update({
+        where: { id: existing.id },
+        data: {
+          projectId,
+          amount: salaryAmount,
+          workerId,
+          remarks: 'Labour',
+          notes: fullNotes,
+          date: attDate,
+        },
+      });
+    } else {
+      await tx.expense.create({
+        data: {
+          projectId,
+          amount: salaryAmount,
+          remarks: 'Labour',
+          notes: fullNotes,
+          workerId,
+          date: attDate,
+          userId,
+        },
+      });
+    }
+  } else if (existing) {
+    await tx.expense.delete({ where: { id: existing.id } });
+  }
+}
+
 function isSplitPair(att) {
   return !!(att.primarySplitId || (att.splitSecondaries && att.splitSecondaries.length > 0));
 }
@@ -278,8 +343,29 @@ router.post('/', auth, async (req, res) => {
           });
         }
 
+        const attDate = new Date(date);
+        await upsertLabourExpenseForAttendance(tx, {
+          userId: req.userId,
+          attendanceId: att1.id,
+          workerId,
+          projectId: att1.projectId,
+          salaryAmount: s1,
+          typeLabel: 'HalfDay',
+          projectName: att1.project.name,
+          attDate,
+        });
+        await upsertLabourExpenseForAttendance(tx, {
+          userId: req.userId,
+          attendanceId: att2.id,
+          workerId,
+          projectId: att2.projectId,
+          salaryAmount: s2,
+          typeLabel: 'HalfDay',
+          projectName: att2.project.name,
+          attDate,
+        });
+
         if (paymentAmount > 0) {
-          const [p1, p2] = splitAmount5050(paymentAmount);
           let payRemarks = paymentRemarksBase(att1.id);
           if (paymentNote) payRemarks += ` | ${paymentNote}`;
           await tx.ledgerEntry.create({
@@ -289,28 +375,6 @@ router.post('/', auth, async (req, res) => {
               type: 'Debit',
               category: 'Payment',
               remarks: payRemarks,
-              userId: req.userId,
-            },
-          });
-          await tx.expense.create({
-            data: {
-              projectId: att1.projectId,
-              amount: p1,
-              remarks: 'Labour',
-              notes: payRemarks,
-              workerId: att1.workerId,
-              date: new Date(date),
-              userId: req.userId,
-            },
-          });
-          await tx.expense.create({
-            data: {
-              projectId: secondProjectId,
-              amount: p2,
-              remarks: 'Labour',
-              notes: payRemarks,
-              workerId: att1.workerId,
-              date: new Date(date),
               userId: req.userId,
             },
           });
@@ -357,6 +421,18 @@ router.post('/', auth, async (req, res) => {
         });
       }
 
+      const attDateSingle = new Date(date);
+      await upsertLabourExpenseForAttendance(tx, {
+        userId: req.userId,
+        attendanceId: attendance.id,
+        workerId,
+        projectId: attendance.projectId,
+        salaryAmount: calculatedSalary,
+        typeLabel: type,
+        projectName: attendance.project.name,
+        attDate: attDateSingle,
+      });
+
       if (paymentAmount > 0) {
         let paymentRemarks = paymentRemarksBase(attendance.id);
         if (paymentNote) {
@@ -369,18 +445,6 @@ router.post('/', auth, async (req, res) => {
             type: 'Debit',
             category: 'Payment',
             remarks: paymentRemarks,
-            userId: req.userId,
-          },
-        });
-
-        await tx.expense.create({
-          data: {
-            projectId: attendance.projectId,
-            amount: paymentAmount,
-            remarks: 'Labour',
-            notes: paymentRemarks,
-            workerId: attendance.workerId,
-            date: new Date(date),
             userId: req.userId,
           },
         });
@@ -501,6 +565,7 @@ router.put('/:id', auth, async (req, res) => {
         const prim = primaryAtt;
         const secLedger = await tx.ledgerEntry.findUnique({ where: { attendanceId: sec.id } });
         if (secLedger) await tx.ledgerEntry.delete({ where: { id: secLedger.id } });
+        await deleteLabourWageExpense(tx, req.userId, sec.id);
         await tx.attendance.delete({ where: { id: sec.id } });
 
         const finalType = cleanType || primaryAtt.type;
@@ -563,17 +628,19 @@ router.put('/:id', auth, async (req, res) => {
             const m = ep?.remarks?.match(/\| (.+)$/);
             payNote = m ? m[1] : '';
           }
-          await syncPaymentAndExpenses(
-            tx,
-            req.userId,
-            prim.id,
-            existing.workerId,
-            attendance.projectId,
-            paymentAmount,
-            payNote || '',
-            attendance.date
-          );
+          await syncPaymentLedger(tx, req.userId, prim.id, existing.workerId, paymentAmount, payNote || '');
         }
+
+        await upsertLabourExpenseForAttendance(tx, {
+          userId: req.userId,
+          attendanceId: prim.id,
+          workerId: existing.workerId,
+          projectId: attendance.projectId,
+          salaryAmount: newSalary,
+          typeLabel: attendance.type,
+          projectName: attendance.project.name,
+          attDate: attendance.date,
+        });
 
         return attendance;
       }
@@ -664,18 +731,29 @@ router.put('/:id', auth, async (req, res) => {
             const m = ep?.remarks?.match(/\| (.+)$/);
             payNote = m ? m[1] : '';
           }
-          await syncSplitPaymentAndExpenses(
-            tx,
-            req.userId,
-            prim.id,
-            existing.workerId,
-            attPrimary.projectId,
-            attSecondary.projectId,
-            paymentAmount,
-            payNote || '',
-            attPrimary.date
-          );
+          await syncSplitPaymentLedger(tx, req.userId, prim.id, existing.workerId, paymentAmount, payNote || '');
         }
+
+        await upsertLabourExpenseForAttendance(tx, {
+          userId: req.userId,
+          attendanceId: prim.id,
+          workerId: existing.workerId,
+          projectId: attPrimary.projectId,
+          salaryAmount: s1,
+          typeLabel: 'HalfDay',
+          projectName: attPrimary.project.name,
+          attDate: attPrimary.date,
+        });
+        await upsertLabourExpenseForAttendance(tx, {
+          userId: req.userId,
+          attendanceId: sec.id,
+          workerId: existing.workerId,
+          projectId: attSecondary.projectId,
+          salaryAmount: s2,
+          typeLabel: 'HalfDay',
+          projectName: attSecondary.project.name,
+          attDate: attSecondary.date,
+        });
 
         return existing.id === prim.id ? attPrimary : attSecondary;
       }
@@ -724,83 +802,26 @@ router.put('/:id', auth, async (req, res) => {
         });
       }
 
+      await upsertLabourExpenseForAttendance(tx, {
+        userId: req.userId,
+        attendanceId: id,
+        workerId: existing.workerId,
+        projectId: attendance.projectId,
+        salaryAmount: calculatedSalary,
+        typeLabel: attendance.type,
+        projectName: attendance.project.name,
+        attDate: attendance.date,
+      });
+
       if (paymentAmount !== null) {
-        const existingPayment = await tx.ledgerEntry.findFirst({
-          where: {
-            userId: req.userId,
-            category: 'Payment',
-            remarks: { startsWith: paymentRemarksBase(id) },
-          },
-        });
-        const existingExpenses = await tx.expense.findMany({
-          where: {
-            userId: req.userId,
-            remarks: 'Labour',
-            notes: { startsWith: paymentRemarksBase(id) },
-          },
-        });
-
-        let paymentRemarks = paymentRemarksBase(id);
-        if (cleanPaymentNote) {
-          paymentRemarks += ` | ${cleanPaymentNote}`;
-        }
-
-        if (existingPayment) {
-          if (paymentAmount > 0) {
-            await tx.ledgerEntry.update({
-              where: { id: existingPayment.id },
-              data: { amount: paymentAmount, remarks: paymentRemarks },
-            });
-          } else {
-            await tx.ledgerEntry.delete({ where: { id: existingPayment.id } });
-          }
-        } else if (paymentAmount > 0) {
-          await tx.ledgerEntry.create({
-            data: {
-              workerId: existing.workerId,
-              amount: paymentAmount,
-              type: 'Debit',
-              category: 'Payment',
-              remarks: paymentRemarks,
-              userId: req.userId,
-            },
-          });
-        }
-
-        if (existingExpenses.length > 0) {
-          if (paymentAmount > 0) {
-            await tx.expense.update({
-              where: { id: existingExpenses[0].id },
-              data: {
-                projectId: attendance.projectId,
-                amount: paymentAmount,
-                workerId: existing.workerId,
-                remarks: 'Labour',
-                notes: paymentRemarks,
-                date: attendance.date,
-              },
-            });
-            for (let i = 1; i < existingExpenses.length; i++) {
-              await tx.expense.delete({ where: { id: existingExpenses[i].id } });
-            }
-          } else {
-            for (const ex of existingExpenses) {
-              await tx.expense.delete({ where: { id: ex.id } });
-            }
-          }
-        } else if (paymentAmount > 0) {
-          await tx.expense.create({
-            data: {
-              projectId: attendance.projectId,
-              amount: paymentAmount,
-              remarks: 'Labour',
-              notes: paymentRemarks,
-              workerId: existing.workerId,
-              date: attendance.date,
-              userId: req.userId,
-            },
-          });
-        }
+        await syncPaymentLedger(
+          tx,
+          req.userId,
+          id,
+          existing.workerId,
+          paymentAmount,
+          cleanPaymentNote || ''
+        );
       }
 
       return attendance;
@@ -813,16 +834,7 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
-async function syncPaymentAndExpenses(
-  tx,
-  userId,
-  attendanceId,
-  workerId,
-  projectId,
-  paymentAmount,
-  paymentNote,
-  attDate
-) {
+async function syncPaymentLedger(tx, userId, attendanceId, workerId, paymentAmount, paymentNote) {
   let paymentRemarks = paymentRemarksBase(attendanceId);
   if (paymentNote) paymentRemarks += ` | ${paymentNote}`;
   const existingPayment = await tx.ledgerEntry.findFirst({
@@ -832,13 +844,6 @@ async function syncPaymentAndExpenses(
       remarks: { startsWith: paymentRemarksBase(attendanceId) },
     },
   });
-  const existingExpenses = await tx.expense.findMany({
-    where: {
-      userId,
-      remarks: 'Labour',
-      notes: { startsWith: paymentRemarksBase(attendanceId) },
-    },
-  });
   if (existingPayment) {
     if (paymentAmount > 0) {
       await tx.ledgerEntry.update({
@@ -860,56 +865,11 @@ async function syncPaymentAndExpenses(
       },
     });
   }
-  if (existingExpenses.length > 0) {
-    if (paymentAmount > 0) {
-      await tx.expense.update({
-        where: { id: existingExpenses[0].id },
-        data: {
-          projectId,
-          amount: paymentAmount,
-          workerId,
-          remarks: 'Labour',
-          notes: paymentRemarks,
-          date: attDate,
-        },
-      });
-      for (let i = 1; i < existingExpenses.length; i++) {
-        await tx.expense.delete({ where: { id: existingExpenses[i].id } });
-      }
-    } else {
-      for (const ex of existingExpenses) {
-        await tx.expense.delete({ where: { id: ex.id } });
-      }
-    }
-  } else if (paymentAmount > 0) {
-    await tx.expense.create({
-      data: {
-        projectId,
-        amount: paymentAmount,
-        remarks: 'Labour',
-        notes: paymentRemarks,
-        workerId,
-        date: attDate,
-        userId,
-      },
-    });
-  }
 }
 
-async function syncSplitPaymentAndExpenses(
-  tx,
-  userId,
-  primaryAttendanceId,
-  workerId,
-  projectId1,
-  projectId2,
-  paymentAmount,
-  paymentNote,
-  attDate
-) {
+async function syncSplitPaymentLedger(tx, userId, primaryAttendanceId, workerId, paymentAmount, paymentNote) {
   let paymentRemarks = paymentRemarksBase(primaryAttendanceId);
   if (paymentNote) paymentRemarks += ` | ${paymentNote}`;
-  const [p1, p2] = splitAmount5050(paymentAmount || 0);
   const existingPayment = await tx.ledgerEntry.findFirst({
     where: {
       userId,
@@ -917,13 +877,6 @@ async function syncSplitPaymentAndExpenses(
       remarks: { startsWith: paymentRemarksBase(primaryAttendanceId) },
     },
   });
-  const existingExpenses = await tx.expense.findMany({
-    where: {
-      userId,
-      remarks: 'Labour',
-      notes: { startsWith: paymentRemarksBase(primaryAttendanceId) },
-    },
-  });
   if (existingPayment) {
     if (paymentAmount > 0) {
       await tx.ledgerEntry.update({
@@ -944,68 +897,6 @@ async function syncSplitPaymentAndExpenses(
         userId,
       },
     });
-  }
-
-  const byProject = (pid) => existingExpenses.find((e) => e.projectId === pid);
-
-  if (paymentAmount > 0) {
-    const e1 = byProject(projectId1);
-    const e2 = byProject(projectId2);
-    if (e1) {
-      await tx.expense.update({
-        where: { id: e1.id },
-        data: {
-          amount: p1,
-          notes: paymentRemarks,
-          date: attDate,
-          workerId,
-        },
-      });
-    } else {
-      await tx.expense.create({
-        data: {
-          projectId: projectId1,
-          amount: p1,
-          remarks: 'Labour',
-          notes: paymentRemarks,
-          workerId,
-          date: attDate,
-          userId,
-        },
-      });
-    }
-    if (e2) {
-      await tx.expense.update({
-        where: { id: e2.id },
-        data: {
-          amount: p2,
-          notes: paymentRemarks,
-          date: attDate,
-          workerId,
-        },
-      });
-    } else {
-      await tx.expense.create({
-        data: {
-          projectId: projectId2,
-          amount: p2,
-          remarks: 'Labour',
-          notes: paymentRemarks,
-          workerId,
-          date: attDate,
-          userId,
-        },
-      });
-    }
-    for (const ex of existingExpenses) {
-      if (ex.projectId !== projectId1 && ex.projectId !== projectId2) {
-        await tx.expense.delete({ where: { id: ex.id } });
-      }
-    }
-  } else {
-    for (const ex of existingExpenses) {
-      await tx.expense.delete({ where: { id: ex.id } });
-    }
   }
 }
 

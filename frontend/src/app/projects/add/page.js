@@ -15,7 +15,6 @@ export default function AddProjectPage() {
   const [form, setForm] = useState({
     name: '',
     startDate: new Date().toISOString().split('T')[0],
-    expectedEndDate: '',
     type: 'Medium',
   });
 
@@ -24,15 +23,12 @@ export default function AddProjectPage() {
     setError('');
     const cleanName = form.name.trim();
     if (cleanName.length < 2) return setError('Project name must be at least 2 characters');
-    if (!isValidDateInput(form.startDate) || !isValidDateInput(form.expectedEndDate)) {
-      return setError('Please enter valid project dates');
-    }
-    if (new Date(form.startDate) > new Date(form.expectedEndDate)) {
-      return setError('End date cannot be before start date');
+    if (!isValidDateInput(form.startDate)) {
+      return setError('Please enter a valid start date');
     }
     setLoading(true);
     try {
-      await api.post('/projects', { ...form, name: cleanName });
+      await api.post('/projects', { name: cleanName, startDate: form.startDate, type: form.type });
       router.push('/projects');
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to add project');
@@ -66,27 +62,15 @@ export default function AddProjectPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label">{t('start_date')}</label>
-              <input
-                type="date"
-                className="input-field"
-                value={form.startDate}
-                onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <label className="label">{t('end_date')}</label>
-              <input
-                type="date"
-                className="input-field"
-                value={form.expectedEndDate}
-                onChange={(e) => setForm({ ...form, expectedEndDate: e.target.value })}
-                required
-              />
-            </div>
+          <div>
+            <label className="label">{t('start_date')}</label>
+            <input
+              type="date"
+              className="input-field"
+              value={form.startDate}
+              onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+              required
+            />
           </div>
 
           <div>

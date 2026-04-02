@@ -8,6 +8,7 @@ const {
   parseId,
   isValidDate,
 } = require('../utils/validation');
+const { provisionalExpectedEnd } = require('../utils/projectDates');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -62,8 +63,8 @@ router.post('/', auth, async (req, res) => {
     const expectedEndDate = req.body.expectedEndDate;
     const type = normalizeString(req.body.type);
 
-    if (!name || !startDate || !expectedEndDate || !type) {
-      return res.status(400).json({ error: 'All fields are required' });
+    if (!name || !startDate || !type) {
+      return res.status(400).json({ error: 'Project name, start date, and type are required' });
     }
     if (name.length < 2 || name.length > 200) {
       return res.status(400).json({ error: 'Project name must be between 2 and 200 characters' });
@@ -71,18 +72,28 @@ router.post('/', auth, async (req, res) => {
     if (!VALID_PROJECT_TYPES.has(type)) {
       return res.status(400).json({ error: 'Invalid project type' });
     }
-    if (!isValidDate(startDate) || !isValidDate(expectedEndDate)) {
-      return res.status(400).json({ error: 'Invalid project dates' });
+    if (!isValidDate(startDate)) {
+      return res.status(400).json({ error: 'Invalid start date' });
     }
-    if (new Date(startDate) > new Date(expectedEndDate)) {
-      return res.status(400).json({ error: 'End date cannot be before start date' });
+
+    let endDateValue;
+    if (expectedEndDate !== undefined && expectedEndDate !== null && String(expectedEndDate).trim() !== '') {
+      if (!isValidDate(expectedEndDate)) {
+        return res.status(400).json({ error: 'Invalid expected end date' });
+      }
+      endDateValue = new Date(expectedEndDate);
+      if (new Date(startDate) > endDateValue) {
+        return res.status(400).json({ error: 'End date cannot be before start date' });
+      }
+    } else {
+      endDateValue = provisionalExpectedEnd(startDate);
     }
 
     const project = await prisma.project.create({
       data: {
         name,
         startDate: new Date(startDate),
-        expectedEndDate: new Date(expectedEndDate),
+        expectedEndDate: endDateValue,
         type,
         userId: req.userId,
       },
@@ -90,6 +101,7 @@ router.post('/', auth, async (req, res) => {
 
     res.status(201).json(project);
   } catch (err) {
+    console.error('POST /projects', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -132,11 +144,18 @@ router.put('/:id', auth, async (req, res) => {
       data.startDate = new Date(startDate);
     }
     if (expectedEndDate !== undefined) {
-      if (!isValidDate(expectedEndDate)) return res.status(400).json({ error: 'Invalid expected end date' });
-      data.expectedEndDate = new Date(expectedEndDate);
+      if (expectedEndDate === null || expectedEndDate === '') {
+        const startForProv = data.startDate || existing.startDate;
+        data.expectedEndDate = provisionalExpectedEnd(startForProv);
+      } else if (!isValidDate(expectedEndDate)) {
+        return res.status(400).json({ error: 'Invalid expected end date' });
+      } else {
+        data.expectedEndDate = new Date(expectedEndDate);
+      }
     }
     const effectiveStart = data.startDate || existing.startDate;
-    const effectiveEnd = data.expectedEndDate || existing.expectedEndDate;
+    const effectiveEnd =
+      data.expectedEndDate !== undefined ? data.expectedEndDate : existing.expectedEndDate;
     if (effectiveStart > effectiveEnd) {
       return res.status(400).json({ error: 'End date cannot be before start date' });
     }
@@ -148,6 +167,7 @@ router.put('/:id', auth, async (req, res) => {
 
     res.json(project);
   } catch (err) {
+    console.error('PUT /projects/:id', err);
     res.status(500).json({ error: 'Server error' });
   }
 });

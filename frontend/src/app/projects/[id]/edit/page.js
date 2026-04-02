@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
 import api from '@/lib/api';
 import { isValidDateInput } from '@/lib/validation';
+import { isProvisionalExpectedEnd } from '@/lib/projectDates';
 
 export default function EditProjectPage() {
   const { t } = useLanguage();
@@ -19,10 +20,14 @@ export default function EditProjectPage() {
   useEffect(() => {
     api.get(`/projects/${id}`).then((r) => {
       const p = r.data;
+      const endRaw = p.expectedEndDate;
+      const startRaw = p.startDate;
+      const showEndEmpty =
+        !endRaw || (startRaw && endRaw && isProvisionalExpectedEnd(startRaw, endRaw));
       setForm({
         name: p.name,
         startDate: p.startDate?.split('T')[0],
-        expectedEndDate: p.expectedEndDate?.split('T')[0],
+        expectedEndDate: showEndEmpty ? '' : p.expectedEndDate.split('T')[0],
         type: p.type,
         status: p.status,
       });
@@ -34,15 +39,25 @@ export default function EditProjectPage() {
     setError('');
     const cleanName = form.name.trim();
     if (cleanName.length < 2) return setError('Project name must be at least 2 characters');
-    if (!isValidDateInput(form.startDate) || !isValidDateInput(form.expectedEndDate)) {
-      return setError('Please enter valid project dates');
+    if (!isValidDateInput(form.startDate)) {
+      return setError('Please enter a valid start date');
     }
-    if (new Date(form.startDate) > new Date(form.expectedEndDate)) {
+    const endTrimmed = (form.expectedEndDate || '').trim();
+    if (endTrimmed && !isValidDateInput(form.expectedEndDate)) {
+      return setError('Please enter a valid end date or leave it blank');
+    }
+    if (endTrimmed && new Date(form.startDate) > new Date(form.expectedEndDate)) {
       return setError('End date cannot be before start date');
     }
     setSaving(true);
     try {
-      await api.put(`/projects/${id}`, { ...form, name: cleanName });
+      await api.put(`/projects/${id}`, {
+        name: cleanName,
+        startDate: form.startDate,
+        expectedEndDate: endTrimmed ? form.expectedEndDate : null,
+        type: form.type,
+        status: form.status,
+      });
       router.push('/projects');
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to update');
@@ -79,15 +94,19 @@ export default function EditProjectPage() {
             <input type="text" className="input-field" maxLength={200} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label">{t('start_date')}</label>
-              <input type="date" className="input-field" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} required />
-            </div>
-            <div>
-              <label className="label">{t('end_date')}</label>
-              <input type="date" className="input-field" value={form.expectedEndDate} onChange={(e) => setForm({ ...form, expectedEndDate: e.target.value })} required />
-            </div>
+          <div>
+            <label className="label">{t('start_date')}</label>
+            <input type="date" className="input-field" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} required />
+          </div>
+          <div>
+            <label className="label">{t('end_date')}</label>
+            <input
+              type="date"
+              className="input-field"
+              value={form.expectedEndDate}
+              onChange={(e) => setForm({ ...form, expectedEndDate: e.target.value })}
+            />
+            <p className="text-xs text-gray-500 mt-1.5">{t('end_date_optional_hint')}</p>
           </div>
 
           <div>

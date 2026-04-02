@@ -12,6 +12,7 @@ export const landingBodyHtml = `<!-- ══════════ NAV ══�
             <li><a href="#about">About</a></li>
         </ul>
         <div class="nav-right">
+            <span id="landing-install-slot"></span>
             <a href="/login" class="nav-login">Login</a>
             <a href="/register" class="nav-cta">Start Free →</a>
         </div>

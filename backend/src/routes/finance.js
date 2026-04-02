@@ -71,7 +71,7 @@ router.get('/projects/:id/expenses', auth, async (req, res) => {
     const projectId = parseId(req.params.id);
     if (!projectId) return res.status(400).json({ error: 'Invalid project id' });
     const expenses = await prisma.expense.findMany({
-      where: { projectId, userId: req.userId },
+      where: { projectId, userId: req.userId, remarks: { not: 'Labour' } },
       orderBy: { date: 'desc' },
       include: {
         worker: { select: { id: true, name: true, phone: true, role: { select: { name: true } } } },
@@ -100,6 +100,11 @@ router.post('/projects/:id/expenses', auth, async (req, res) => {
       return res.status(400).json({ error: 'Amount must be between 1 and 10,00,00,000' });
     }
     if (!VALID_EXPENSE_REMARKS.has(remarks)) return res.status(400).json({ error: 'Invalid expense category' });
+    if (remarks === 'Labour') {
+      return res.status(400).json({
+        error: 'Labour cost is recorded from attendance. Add cement, sand, or other expenses here.',
+      });
+    }
     if (notes.length > 2000) return res.status(400).json({ error: 'Notes cannot exceed 2000 characters' });
     if (date !== undefined && date !== null && date !== '' && !isValidDate(date)) {
       return res.status(400).json({ error: 'Invalid expense date' });
@@ -108,9 +113,6 @@ router.post('/projects/:id/expenses', auth, async (req, res) => {
       return res.status(400).json({ error: 'Invalid worker' });
     }
 
-    if (remarks === 'Labour' && !workerId) {
-      return res.status(400).json({ error: 'Please select a worker for labour expense' });
-    }
     const project = await prisma.project.findFirst({ where: { id: projectId, userId: req.userId } });
     if (!project) return res.status(404).json({ error: 'Project not found' });
     if (workerId) {

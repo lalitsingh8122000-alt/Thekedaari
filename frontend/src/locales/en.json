@@ -44,6 +44,7 @@
   "project_name": "Project Name",
   "start_date": "Start Date",
   "end_date": "Expected End Date",
+  "end_date_optional_hint": "Optional. Leave blank if unknown — set status to Completed when the project ends.",
   "project_type": "Project Type",
   "project_status": "Status",
   "small": "Small",
@@ -53,6 +54,7 @@
   "completed": "Completed",
   "expense": "Expense",
   "finance": "Finance",
+  "finance_expense_material_only_hint": "Labour cost comes from attendance. Use this list for cement, sand, and other material expenses only.",
 
   "add_worker": "Add Worker",
   "edit_worker": "Edit Worker",

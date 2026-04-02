@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { createRoot } from 'react-dom/client';
 import { landingBodyHtml } from './landingBodyHtml';
+import LandingNavInstall from './LandingNavInstall';
 import './landing-page.css';
 
 export default function LandingPage() {
@@ -98,6 +100,16 @@ export default function LandingPage() {
       revObs.disconnect();
       statObs.disconnect();
       window.removeEventListener('scroll', onScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    const host = rootRef.current?.querySelector('#landing-install-slot');
+    if (!host) return undefined;
+    const r = createRoot(host);
+    r.render(<LandingNavInstall />);
+    return () => {
+      r.unmount();
     };
   }, []);
 

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
   ArrowLeft, Plus, TrendingUp, TrendingDown, Save,
-  ArrowUpCircle, ArrowDownCircle, X, Search, User,
+  ArrowUpCircle, ArrowDownCircle, X,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
@@ -18,28 +18,27 @@ export default function ProjectFinancePage() {
   const [summary, setSummary] = useState(null);
   const [incomes, setIncomes] = useState([]);
   const [expenses, setExpenses] = useState([]);
-  const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(null);
-  const [workerSearch, setWorkerSearch] = useState('');
   const [error, setError] = useState('');
   const [form, setForm] = useState({
-    amount: '', date: new Date().toISOString().split('T')[0],
-    paymentMode: 'Cash', remarks: '', notes: '', workerId: null,
+    amount: '',
+    date: new Date().toISOString().split('T')[0],
+    paymentMode: 'Cash',
+    remarks: '',
+    notes: '',
   });
 
   const load = async () => {
     try {
-      const [s, i, e, w] = await Promise.all([
+      const [s, i, e] = await Promise.all([
         api.get(`/finance/projects/${id}/summary`),
         api.get(`/finance/projects/${id}/income`),
         api.get(`/finance/projects/${id}/expenses`),
-        api.get('/workers', { params: { status: 'Active' } }),
       ]);
       setSummary(s.data);
       setIncomes(i.data);
       setExpenses(e.data);
-      setWorkers(w.data);
     } catch {} finally { setLoading(false); }
   };
 
@@ -48,8 +47,7 @@ export default function ProjectFinancePage() {
   const fmt = (n) => '₹' + (n || 0).toLocaleString('en-IN');
 
   const resetForm = () => {
-    setForm({ amount: '', date: new Date().toISOString().split('T')[0], paymentMode: 'Cash', remarks: '', notes: '', workerId: null });
-    setWorkerSearch('');
+    setForm({ amount: '', date: new Date().toISOString().split('T')[0], paymentMode: 'Cash', remarks: '', notes: '' });
     setError('');
   };
 
@@ -59,9 +57,6 @@ export default function ProjectFinancePage() {
     if (!amount) return setError('Please enter a valid amount');
     if (!isValidDateInput(form.date)) return setError('Please select a valid date');
     if (showModal === 'expense' && !form.remarks) return setError('Please select an expense category');
-    if (showModal === 'expense' && form.remarks === 'Labour' && !form.workerId) {
-      return setError('Please select a worker for labour expense');
-    }
     if (showModal === 'income' && form.remarks.trim().length > 500) return setError('Remarks cannot exceed 500 characters');
     if (showModal === 'expense' && form.notes.trim().length > 2000) return setError('Notes cannot exceed 2000 characters');
     try {
@@ -79,14 +74,7 @@ export default function ProjectFinancePage() {
     }
   };
 
-  const expenseRemarks = ['Cement', 'Sand', 'Labour', 'Others'];
-
-  const filteredWorkers = workers.filter((w) =>
-    w.name.toLowerCase().includes(workerSearch.toLowerCase()) ||
-    w.phone.includes(workerSearch)
-  );
-
-  const selectedWorker = workers.find((w) => w.id === form.workerId);
+  const expenseRemarks = ['Cement', 'Sand', 'Others'];
 
   return (
     <AppShell>
@@ -174,6 +162,7 @@ export default function ProjectFinancePage() {
 
             {tab === 'expense' && (
               <div className="space-y-2 sm:space-y-3">
+                <p className="text-xs text-gray-500 px-0.5">{t('finance_expense_material_only_hint')}</p>
                 <button onClick={() => { resetForm(); setShowModal('expense'); }} className="btn-danger w-full flex items-center justify-center gap-2">
                   <Plus size={18} /> {t('add_expense')}
                 </button>
@@ -186,18 +175,11 @@ export default function ProjectFinancePage() {
                         <p className="font-bold text-red-600">{fmt(e.amount)}</p>
                         <p className="text-xs text-gray-400">{new Date(e.date).toLocaleDateString('en-IN')}</p>
                         <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-600">
-                          {e.remarks === 'Cement' ? t('cement') : e.remarks === 'Sand' ? t('sand') : e.remarks === 'Labour' ? t('labour') : t('other')}
+                          {e.remarks === 'Cement' ? t('cement') : e.remarks === 'Sand' ? t('sand') : t('other')}
                         </span>
                       </div>
                       <ArrowDownCircle size={22} className="text-red-400 flex-shrink-0" />
                     </div>
-                    {e.worker && (
-                      <div className="mt-2 flex items-center gap-2 bg-blue-50 px-2.5 py-1.5 rounded-lg">
-                        <User size={14} className="text-blue-500" />
-                        <span className="text-xs sm:text-sm font-medium text-blue-700">{t('paid_to')}: {e.worker.name}</span>
-                        {e.worker.role && <span className="text-xs text-blue-400">({e.worker.role.name})</span>}
-                      </div>
-                    )}
                     {e.notes && <p className="text-xs text-gray-500 mt-1">{e.notes}</p>}
                   </div>
                 ))}
@@ -224,70 +206,15 @@ export default function ProjectFinancePage() {
                     {expenseRemarks.map((r) => (
                       <button
                         key={r} type="button"
-                        onClick={() => setForm({ ...form, remarks: r, workerId: r !== 'Labour' ? null : form.workerId })}
+                        onClick={() => setForm({ ...form, remarks: r })}
                         className={`py-2 rounded-xl font-semibold text-xs transition-colors ${
                           form.remarks === r ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600'
                         }`}
                       >
-                        {r === 'Cement' ? t('cement') : r === 'Sand' ? t('sand') : r === 'Labour' ? t('labour') : t('other')}
+                        {r === 'Cement' ? t('cement') : r === 'Sand' ? t('sand') : t('other')}
                       </button>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {showModal === 'expense' && form.remarks === 'Labour' && (
-                <div>
-                  <label className="block text-gray-600 font-medium mb-1 text-xs">{t('select_person')} *</label>
-                  {selectedWorker ? (
-                    <div className="flex items-center justify-between bg-primary-50 p-2 rounded-xl">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-primary-200 flex items-center justify-center text-primary-700 font-bold text-xs">
-                          {selectedWorker.name.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="font-bold text-xs text-primary-800">{selectedWorker.name}</p>
-                          <p className="text-[11px] text-primary-500">{selectedWorker.role?.name}</p>
-                        </div>
-                      </div>
-                      <button onClick={() => setForm({ ...form, workerId: null })} className="text-primary-400 active:text-primary-600">
-                        <X size={16} />
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="relative mb-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                        <input
-                          type="text"
-                          className="input-field !py-1.5 pl-8 text-xs"
-                          placeholder={`${t('search')}...`}
-                          value={workerSearch}
-                          onChange={(e) => setWorkerSearch(e.target.value)}
-                        />
-                      </div>
-                      <div className="max-h-32 overflow-y-auto space-y-0.5 border rounded-xl p-1">
-                        {filteredWorkers.length === 0 ? (
-                          <p className="text-center text-gray-400 py-2 text-xs">{t('no_data')}</p>
-                        ) : filteredWorkers.map((w) => (
-                          <button
-                            key={w.id}
-                            onClick={() => { setForm({ ...form, workerId: w.id }); setWorkerSearch(''); }}
-                            className="w-full flex items-center gap-2 p-1.5 rounded-lg active:bg-gray-100 text-left"
-                          >
-                            <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold text-[10px] flex-shrink-0">
-                              {w.name.charAt(0)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-gray-800 text-xs truncate">{w.name}</p>
-                              <p className="text-[11px] text-gray-400">{w.role?.name}</p>
-                            </div>
-                            <span className="text-[11px] font-medium text-gray-500 flex-shrink-0">₹{w.costPerDay}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
                 </div>
               )}
 
@@ -328,8 +255,7 @@ export default function ProjectFinancePage() {
             <div className="flex-shrink-0 px-3 pt-2 sm:px-5 border-t border-gray-100 bg-white rounded-b-3xl sm:rounded-b-2xl pb-[calc(1rem+72px+env(safe-area-inset-bottom,0px))] sm:pb-4">
               <button
                 onClick={handleAdd}
-                disabled={showModal === 'expense' && form.remarks === 'Labour' && !form.workerId}
-                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-white text-sm transition-all disabled:opacity-50 ${
+                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-white text-sm transition-all ${
                   showModal === 'income' ? 'bg-green-500 active:bg-green-600' : 'bg-red-500 active:bg-red-600'
                 }`}
               >
