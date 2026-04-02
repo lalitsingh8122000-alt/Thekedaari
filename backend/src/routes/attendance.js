@@ -190,10 +190,13 @@ router.get('/', auth, async (req, res) => {
     const result = attendance.map((a) => {
       const { displayPayment, note } = displayPaymentForSplitRow(a, paymentMap);
       const partner = a.primarySplitId ? a.splitParent : a.splitSecondaries?.[0] || null;
+      const payAnchor = getPrimaryAttendanceId(a);
+      const paymentTotal = paymentMap[payAnchor]?.amount ?? 0;
       return {
         ...a,
         payment: displayPayment,
         paymentNote: note,
+        paymentTotal,
         splitPartner: partner,
         isSplitHalfDay: isSplitPair(a),
       };
@@ -814,10 +817,11 @@ router.put('/:id', auth, async (req, res) => {
       });
 
       if (paymentAmount !== null) {
+        const paymentLedgerAnchorId = existing.primarySplitId || id;
         await syncPaymentLedger(
           tx,
           req.userId,
-          id,
+          paymentLedgerAnchorId,
           existing.workerId,
           paymentAmount,
           cleanPaymentNote || ''

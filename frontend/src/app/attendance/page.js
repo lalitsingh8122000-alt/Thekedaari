@@ -78,12 +78,16 @@ export default function AttendancePage() {
       const isAbsent = record.type === 'Absent';
       const split = record.isSplitHalfDay && record.splitPartner;
       const totalSplitSalary = split ? record.salary + record.splitPartner.salary : record.salary;
+      const totalPaid =
+        record.paymentTotal != null && record.paymentTotal > 0
+          ? record.paymentTotal
+          : Number(record.payment) || 0;
       setAttForm({
         status: isAbsent ? 'Absent' : 'Present',
         type: isAbsent ? 'FullDay' : record.type,
         salary: split ? totalSplitSalary : record.salary,
-        wantToPay: (record.payment || 0) > 0,
-        payment: record.payment || '',
+        wantToPay: totalPaid > 0,
+        payment: totalPaid > 0 ? String(totalPaid) : '',
         paymentNote: record.paymentNote || '',
         secondSite: !!split,
         secondProjectId: split ? String(record.splitPartner.projectId) : '',
@@ -167,7 +171,11 @@ export default function AttendancePage() {
         } else if (finalType === 'HalfDay' && attForm.secondSite && attForm.secondProjectId) {
           putBody.secondProjectId = parseInt(attForm.secondProjectId, 10);
         }
-        await api.put(`/attendance/${editRecord.id}`, putBody);
+        const putTargetId =
+          editRecord.isSplitHalfDay && editRecord.splitPartner
+            ? editRecord.primarySplitId || editRecord.id
+            : editRecord.id;
+        await api.put(`/attendance/${putTargetId}`, putBody);
       } else {
         const postBody = {
           workerId: showModal.id,

@@ -104,14 +104,18 @@ export default function WorkersPage() {
         const isAbsent = record.type === 'Absent';
         const split = record.isSplitHalfDay && record.splitPartner;
         const totalSplitSalary = split ? record.salary + record.splitPartner.salary : record.salary;
+        const totalPaid =
+          record.paymentTotal != null && record.paymentTotal > 0
+            ? record.paymentTotal
+            : Number(record.payment) || 0;
         setAttForm((f) => ({
           ...f,
           projectId: record.projectId != null ? String(record.projectId) : f.projectId,
           status: isAbsent ? 'Absent' : 'Present',
           type: isAbsent ? f.type : (record.type || 'FullDay'),
           salary: split ? totalSplitSalary : (record.salary ?? f.salary),
-          wantToPay: Number(record.payment || 0) > 0,
-          payment: Number(record.payment || 0) > 0 ? String(record.payment) : '',
+          wantToPay: totalPaid > 0,
+          payment: totalPaid > 0 ? String(totalPaid) : '',
           paymentNote: record.paymentNote || '',
           secondSite: !!split,
           secondProjectId: split ? String(record.splitPartner.projectId) : '',
@@ -205,7 +209,11 @@ export default function WorkersPage() {
         } else if (finalType === 'HalfDay' && attForm.secondSite && attForm.secondProjectId) {
           payload.secondProjectId = parseInt(attForm.secondProjectId, 10);
         }
-        await api.put(`/attendance/${existingAttendance.id}`, payload);
+        const putTargetId =
+          existingAttendance.isSplitHalfDay && existingAttendance.splitPartner
+            ? existingAttendance.primarySplitId || existingAttendance.id
+            : existingAttendance.id;
+        await api.put(`/attendance/${putTargetId}`, payload);
       } else {
         if (finalType === 'HalfDay' && attForm.secondSite && attForm.secondProjectId) {
           payload.secondProjectId = parseInt(attForm.secondProjectId, 10);
