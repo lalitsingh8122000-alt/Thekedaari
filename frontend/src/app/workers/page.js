@@ -66,7 +66,7 @@ export default function WorkersPage() {
     setExistingAttendance(null);
     setError('');
     setAttForm({
-      projectId: projects[0]?.id != null ? String(projects[0].id) : '',
+      projectId: '',
       date: new Date().toISOString().split('T')[0],
       status: 'Present',
       type: 'FullDay',
@@ -170,7 +170,7 @@ export default function WorkersPage() {
 
   const markAttendance = async () => {
     setError('');
-    if (!attForm.projectId) return setError('Please select a project');
+    if (!attForm.projectId) return setError(t('attendance_project_required'));
     if (!isValidDateInput(attForm.date)) return setError('Please select a valid date');
     const salaryAmount = attForm.status === 'Absent' ? 0 : parsePositiveAmount(attForm.salary);
     if (attForm.status === 'Present' && salaryAmount === null) {
@@ -375,6 +375,7 @@ export default function WorkersPage() {
                       }));
                     }}
                   >
+                    <option value="">{t('select_project')}</option>
                     {projects.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
                   </select>
                 </div>

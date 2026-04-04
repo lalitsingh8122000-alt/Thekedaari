@@ -502,10 +502,34 @@ router.put('/:id', auth, async (req, res) => {
     }
     const effectiveType = cleanType || existing.type;
 
+    const parsedProjectId = projectId !== undefined ? parseId(projectId) : undefined;
+    if (projectId !== undefined && !parsedProjectId) return res.status(400).json({ error: 'Invalid project' });
+
+    const parsedSecondProjectId = bodySecondProjectId !== undefined ? parseId(bodySecondProjectId) : undefined;
+    if (bodySecondProjectId !== undefined && bodySecondProjectId !== null && bodySecondProjectId !== '' && !parsedSecondProjectId) {
+      return res.status(400).json({ error: 'Invalid second project' });
+    }
+
+    const wantsRemoveSplit = removeSplit === true || req.body.secondProjectId === null;
+    if (
+      parsedSecondProjectId &&
+      cleanType === 'HalfDay' &&
+      parsedSecondProjectId === (parsedProjectId ?? existing.projectId)
+    ) {
+      return res.status(400).json({ error: 'Second project must be different from the first project' });
+    }
+    const willStartSplit =
+      !isSplit &&
+      !wantsRemoveSplit &&
+      cleanType === 'HalfDay' &&
+      !!parsedSecondProjectId &&
+      parsedSecondProjectId !== (parsedProjectId ?? existing.projectId);
+
     if (salary === undefined && cleanType) {
       if (cleanType === 'FullDay') calculatedSalary = existing.worker.costPerDay;
       else if (cleanType === 'HalfDay') {
-        calculatedSalary = isSplit ? existing.worker.costPerDay : existing.worker.costPerDay / 2;
+        calculatedSalary =
+          isSplit || willStartSplit ? existing.worker.costPerDay : existing.worker.costPerDay / 2;
       }
     }
     if (cleanType === 'Absent' || effectiveType === 'Absent') calculatedSalary = 0;
@@ -521,13 +545,6 @@ router.put('/:id', auth, async (req, res) => {
     const cleanPaymentNote = paymentNote !== undefined ? normalizeString(paymentNote) : undefined;
     if (cleanPaymentNote !== undefined && cleanPaymentNote.length > 500) {
       return res.status(400).json({ error: 'Payment note cannot exceed 500 characters' });
-    }
-    const parsedProjectId = projectId !== undefined ? parseId(projectId) : undefined;
-    if (projectId !== undefined && !parsedProjectId) return res.status(400).json({ error: 'Invalid project' });
-
-    const parsedSecondProjectId = bodySecondProjectId !== undefined ? parseId(bodySecondProjectId) : undefined;
-    if (bodySecondProjectId !== undefined && bodySecondProjectId !== null && bodySecondProjectId !== '' && !parsedSecondProjectId) {
-      return res.status(400).json({ error: 'Invalid second project' });
     }
 
     const effectiveDate = date || existing.date.toISOString().slice(0, 10);
@@ -554,13 +571,19 @@ router.put('/:id', auth, async (req, res) => {
       }
     }
 
-    const wantsRemoveSplit = removeSplit === true || req.body.secondProjectId === null;
     const shouldEndSplit =
       isSplit &&
       (wantsRemoveSplit ||
         cleanType === 'FullDay' ||
         cleanType === 'Absent' ||
         cleanType === 'Other');
+
+    if (willStartSplit) {
+      const p2 = await prisma.project.findFirst({
+        where: { id: parsedSecondProjectId, userId: req.userId },
+      });
+      if (!p2) return res.status(404).json({ error: 'Second project not found' });
+    }
 
     const result = await prisma.$transaction(async (tx) => {
       if (isSplit && shouldEndSplit) {
@@ -646,6 +669,115 @@ router.put('/:id', auth, async (req, res) => {
         });
 
         return attendance;
+      }
+
+      if (willStartSplit) {
+        const [s1, s2] = splitAmount5050(calculatedSalary);
+        const primId = existing.id;
+        const attPrimary = await tx.attendance.update({
+          where: { id: primId },
+          data: {
+            ...(parsedProjectId && { projectId: parsedProjectId }),
+            ...(date && { date: new Date(date) }),
+            type: 'HalfDay',
+            salary: s1,
+          },
+          include: {
+            worker: { select: { id: true, name: true } },
+            project: { select: { id: true, name: true } },
+          },
+        });
+        const attSecondary = await tx.attendance.create({
+          data: {
+            workerId: existing.workerId,
+            projectId: parsedSecondProjectId,
+            date: attPrimary.date,
+            type: 'HalfDay',
+            salary: s2,
+            userId: req.userId,
+            primarySplitId: primId,
+          },
+          include: {
+            worker: { select: { id: true, name: true } },
+            project: { select: { id: true, name: true } },
+          },
+        });
+
+        const primLedger = await tx.ledgerEntry.findUnique({ where: { attendanceId: primId } });
+        if (primLedger) {
+          if (s1 > 0) {
+            await tx.ledgerEntry.update({
+              where: { id: primLedger.id },
+              data: { amount: s1, remarks: `HalfDay - ${attPrimary.project.name}` },
+            });
+          } else {
+            await tx.ledgerEntry.delete({ where: { id: primLedger.id } });
+          }
+        } else if (s1 > 0) {
+          await tx.ledgerEntry.create({
+            data: {
+              workerId: existing.workerId,
+              amount: s1,
+              type: 'Credit',
+              category: 'Salary',
+              remarks: `HalfDay - ${attPrimary.project.name}`,
+              attendanceId: primId,
+              userId: req.userId,
+            },
+          });
+        }
+        if (s2 > 0) {
+          await tx.ledgerEntry.create({
+            data: {
+              workerId: existing.workerId,
+              amount: s2,
+              type: 'Credit',
+              category: 'Salary',
+              remarks: `HalfDay - ${attSecondary.project.name}`,
+              attendanceId: attSecondary.id,
+              userId: req.userId,
+            },
+          });
+        }
+
+        if (paymentAmount !== null) {
+          let payNote = cleanPaymentNote;
+          if (payNote === undefined) {
+            const ep = await tx.ledgerEntry.findFirst({
+              where: {
+                userId: req.userId,
+                category: 'Payment',
+                remarks: { startsWith: paymentRemarksBase(primId) },
+              },
+            });
+            const m = ep?.remarks?.match(/\| (.+)$/);
+            payNote = m ? m[1] : '';
+          }
+          await syncSplitPaymentLedger(tx, req.userId, primId, existing.workerId, paymentAmount, payNote || '');
+        }
+
+        await upsertLabourExpenseForAttendance(tx, {
+          userId: req.userId,
+          attendanceId: primId,
+          workerId: existing.workerId,
+          projectId: attPrimary.projectId,
+          salaryAmount: s1,
+          typeLabel: 'HalfDay',
+          projectName: attPrimary.project.name,
+          attDate: attPrimary.date,
+        });
+        await upsertLabourExpenseForAttendance(tx, {
+          userId: req.userId,
+          attendanceId: attSecondary.id,
+          workerId: existing.workerId,
+          projectId: attSecondary.projectId,
+          salaryAmount: s2,
+          typeLabel: 'HalfDay',
+          projectName: attSecondary.project.name,
+          attDate: attSecondary.date,
+        });
+
+        return attPrimary;
       }
 
       if (isSplit && !shouldEndSplit && (cleanType === undefined || cleanType === 'HalfDay')) {

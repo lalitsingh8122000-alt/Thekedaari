@@ -77,6 +77,7 @@
   "marking_attendance_on": "Project",
   "edit_attendance": "Edit Attendance",
   "select_project": "Select Project",
+  "attendance_project_required": "Please select a project.",
   "select_worker": "Select Worker",
   "attendance_date": "Date",
   "attendance_type": "Attendance Type",

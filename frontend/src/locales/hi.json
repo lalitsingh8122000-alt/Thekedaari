@@ -77,6 +77,7 @@
   "marking_attendance_on": "प्रोजेक्ट",
   "edit_attendance": "हाज़िरी बदलें",
   "select_project": "प्रोजेक्ट चुनें",
+  "attendance_project_required": "कृपया एक प्रोजेक्ट चुनें।",
   "select_worker": "मज़दूर चुनें",
   "attendance_date": "तारीख़",
   "attendance_type": "हाज़िरी का प्रकार",
