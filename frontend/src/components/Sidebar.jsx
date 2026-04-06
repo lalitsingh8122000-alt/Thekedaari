@@ -9,6 +9,8 @@ import {
   ArrowLeftRight,
   CalendarCheck,
   UserCircle,
+  BookOpen,
+  Headphones,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -19,6 +21,8 @@ const menuItems = [
   { key: 'workers', path: '/workers', icon: Users, subtitle: 'master_data' },
   { key: 'roles', path: '/roles', icon: ShieldCheck },
   { key: 'transactions', path: '/transactions', icon: ArrowLeftRight },
+  { key: 'how_to_use', path: '/how-to-use', icon: BookOpen },
+  { key: 'contact_us', path: '/contact-us', icon: Headphones },
   { key: 'profile', path: '/profile', icon: UserCircle },
 ];
 

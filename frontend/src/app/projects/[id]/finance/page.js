@@ -3,12 +3,18 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
   ArrowLeft, Plus, TrendingUp, TrendingDown, Save,
-  ArrowUpCircle, ArrowDownCircle, X,
+  ArrowUpCircle, ArrowDownCircle, X, Pencil, Trash2,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
 import api from '@/lib/api';
 import { parsePositiveAmount, isValidDateInput, roleNameIsContractor } from '@/lib/validation';
+
+function toDateInput(value) {
+  if (value == null) return new Date().toISOString().split('T')[0];
+  const d = typeof value === 'string' ? value : new Date(value).toISOString();
+  return d.slice(0, 10);
+}
 
 export default function ProjectFinancePage() {
   const { t } = useLanguage();
@@ -37,6 +43,9 @@ export default function ProjectFinancePage() {
     date: new Date().toISOString().split('T')[0],
     notes: '',
   });
+  const [editingIncomeId, setEditingIncomeId] = useState(null);
+  const [editingExpenseId, setEditingExpenseId] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   const load = async () => {
     try {
@@ -69,6 +78,8 @@ export default function ProjectFinancePage() {
       notes: '',
     });
     setError('');
+    setEditingIncomeId(null);
+    setEditingExpenseId(null);
   };
 
   const contractors = workers.filter(
@@ -86,7 +97,7 @@ export default function ProjectFinancePage() {
     return [...forThisTrade, ...extraUntagged];
   }, [contractors, contractForm.contractTradeId]);
 
-  const handleAdd = async () => {
+  const handleSaveModal = async () => {
     setError('');
     if (showModal === 'expenseContract') {
       const amount = parsePositiveAmount(contractForm.amount);
@@ -104,7 +115,11 @@ export default function ProjectFinancePage() {
           workerId: parseInt(contractForm.contractorId, 10),
           contractTradeId: parseInt(contractForm.contractTradeId, 10),
         };
-        await api.post(`/finance/projects/${id}/expenses`, body);
+        if (editingExpenseId != null) {
+          await api.patch(`/finance/expenses/${editingExpenseId}`, body);
+        } else {
+          await api.post(`/finance/projects/${id}/expenses`, body);
+        }
         setShowModal(null);
         resetForm();
         setLoading(true);
@@ -122,9 +137,24 @@ export default function ProjectFinancePage() {
     if (showModal === 'expense' && form.notes.trim().length > 2000) return setError('Notes cannot exceed 2000 characters');
     try {
       if (showModal === 'income') {
-        await api.post(`/finance/projects/${id}/income`, { ...form, amount, remarks: form.remarks.trim() });
+        const payload = { amount, date: form.date, paymentMode: form.paymentMode, remarks: form.remarks.trim() };
+        if (editingIncomeId != null) {
+          await api.patch(`/finance/income/${editingIncomeId}`, payload);
+        } else {
+          await api.post(`/finance/projects/${id}/income`, payload);
+        }
       } else {
-        await api.post(`/finance/projects/${id}/expenses`, { ...form, amount, notes: form.notes.trim() });
+        const body = {
+          amount,
+          date: form.date,
+          remarks: form.remarks,
+          notes: form.notes.trim(),
+        };
+        if (editingExpenseId != null) {
+          await api.patch(`/finance/expenses/${editingExpenseId}`, body);
+        } else {
+          await api.post(`/finance/projects/${id}/expenses`, body);
+        }
       }
       setShowModal(null);
       resetForm();
@@ -132,6 +162,24 @@ export default function ProjectFinancePage() {
       load();
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to save record');
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    try {
+      if (pendingDelete.kind === 'income') {
+        await api.delete(`/finance/income/${pendingDelete.id}`);
+      } else {
+        await api.delete(`/finance/expenses/${pendingDelete.id}`);
+      }
+      setPendingDelete(null);
+      setLoading(true);
+      load();
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Failed to delete';
+      if (typeof window !== 'undefined') window.alert(msg);
+      setPendingDelete(null);
     }
   };
 
@@ -222,19 +270,52 @@ export default function ProjectFinancePage() {
 
             {tab === 'income' && (
               <div className="space-y-2 sm:space-y-3">
-                <button onClick={() => { resetForm(); setShowModal('income'); }} className="btn-success w-full flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => { resetForm(); setShowModal('income'); }}
+                  className="btn-success w-full flex items-center justify-center gap-2"
+                >
                   <Plus size={18} /> {t('add_income')}
                 </button>
                 {incomes.length === 0 ? (
                   <div className="card text-center py-8 text-gray-400">{t('no_data')}</div>
                 ) : incomes.map((i) => (
-                  <div key={i.id} className="card flex items-center justify-between">
-                    <div>
+                  <div key={i.id} className="card flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
                       <p className="font-bold text-green-600">{fmt(i.amount)}</p>
                       <p className="text-xs text-gray-400">{new Date(i.date).toLocaleDateString('en-IN')} · {i.paymentMode === 'Cash' ? t('cash') : t('online')}</p>
                       {i.remarks && <p className="text-xs text-gray-500 mt-0.5">{i.remarks}</p>}
                     </div>
-                    <ArrowUpCircle size={22} className="text-green-400 flex-shrink-0" />
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setError('');
+                          setEditingIncomeId(i.id);
+                          setEditingExpenseId(null);
+                          setForm({
+                            amount: String(i.amount),
+                            date: toDateInput(i.date),
+                            paymentMode: i.paymentMode,
+                            remarks: i.remarks || '',
+                            notes: '',
+                          });
+                          setShowModal('income');
+                        }}
+                        className="p-2 rounded-xl bg-gray-100 text-gray-700 active:bg-gray-200"
+                        aria-label={t('edit')}
+                      >
+                        <Pencil size={18} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPendingDelete({ kind: 'income', id: i.id })}
+                        className="p-2 rounded-xl bg-red-50 text-red-600 active:bg-red-100"
+                        aria-label={t('delete')}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -255,15 +336,55 @@ export default function ProjectFinancePage() {
                   <div className="card text-center py-8 text-gray-400">{t('no_data')}</div>
                 ) : expenses.map((e) => (
                   <div key={e.id} className="card">
-                    <div className="flex items-center justify-between">
-                      <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
                         <p className="font-bold text-red-600">{fmt(e.amount)}</p>
                         <p className="text-xs text-gray-400">{new Date(e.date).toLocaleDateString('en-IN')}</p>
                         <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-600">
                           {expenseLabel(e.remarks)}
                         </span>
                       </div>
-                      <ArrowDownCircle size={22} className="text-red-400 flex-shrink-0" />
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setError('');
+                            setEditingIncomeId(null);
+                            setEditingExpenseId(e.id);
+                            if (e.remarks === 'Contract') {
+                              setContractForm({
+                                contractorId: e.workerId != null ? String(e.workerId) : '',
+                                contractTradeId: e.contractTradeId != null ? String(e.contractTradeId) : '',
+                                amount: String(e.amount),
+                                date: toDateInput(e.date),
+                                notes: e.notes || '',
+                              });
+                              setShowModal('expenseContract');
+                            } else {
+                              setForm({
+                                amount: String(e.amount),
+                                date: toDateInput(e.date),
+                                paymentMode: 'Cash',
+                                remarks: e.remarks,
+                                notes: e.notes || '',
+                              });
+                              setShowModal('expense');
+                            }
+                          }}
+                          className="p-2 rounded-xl bg-gray-100 text-gray-700 active:bg-gray-200"
+                          aria-label={t('edit')}
+                        >
+                          <Pencil size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPendingDelete({ kind: 'expense', id: e.id })}
+                          className="p-2 rounded-xl bg-red-50 text-red-600 active:bg-red-100"
+                          aria-label={t('delete')}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     </div>
                     {e.worker && (
                       <p className="text-xs text-amber-800 mt-1 font-medium">
@@ -287,12 +408,12 @@ export default function ProjectFinancePage() {
               <div className="flex items-center justify-between">
                 <h3 className="text-base font-bold">
                   {showModal === 'income'
-                    ? t('add_income')
+                    ? (editingIncomeId != null ? t('edit_income') : t('add_income'))
                     : showModal === 'expenseContract'
-                      ? t('add_contract_expense')
-                      : t('add_expense')}
+                      ? (editingExpenseId != null ? t('edit_contract_expense_short') : t('add_contract_expense'))
+                      : (editingExpenseId != null ? t('edit_expense') : t('add_expense'))}
                 </h3>
-                <button onClick={() => { setShowModal(null); resetForm(); }} className="p-1"><X size={20} /></button>
+                <button type="button" onClick={() => { setShowModal(null); resetForm(); }} className="p-1"><X size={20} /></button>
               </div>
               {error && <div className="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-xs">{error}</div>}
 
@@ -401,19 +522,32 @@ export default function ProjectFinancePage() {
               </div>
 
               {showModal === 'income' && (
-                <div>
-                  <label className="block text-gray-600 font-medium mb-1 text-xs">{t('payment_mode')}</label>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {['Cash', 'Online'].map((m) => (
-                      <button
-                        key={m} type="button" onClick={() => setForm({ ...form, paymentMode: m })}
-                        className={`py-2 rounded-xl font-semibold text-xs ${form.paymentMode === m ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600'}`}
-                      >
-                        {m === 'Cash' ? t('cash') : t('online')}
-                      </button>
-                    ))}
+                <>
+                  <div>
+                    <label className="block text-gray-600 font-medium mb-1 text-xs">{t('payment_mode')}</label>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {['Cash', 'Online'].map((m) => (
+                        <button
+                          key={m} type="button" onClick={() => setForm({ ...form, paymentMode: m })}
+                          className={`py-2 rounded-xl font-semibold text-xs ${form.paymentMode === m ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600'}`}
+                        >
+                          {m === 'Cash' ? t('cash') : t('online')}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                  <div>
+                    <label className="block text-gray-600 font-medium mb-1 text-xs">{t('remarks')}</label>
+                    <input
+                      type="text"
+                      maxLength={500}
+                      className="input-field !py-2 text-xs"
+                      placeholder="…"
+                      value={form.remarks}
+                      onChange={(e) => setForm({ ...form, remarks: e.target.value })}
+                    />
+                  </div>
+                </>
               )}
 
               {(showModal === 'expense' || showModal === 'expenseContract') && (
@@ -435,12 +569,38 @@ export default function ProjectFinancePage() {
 
             <div className="flex-shrink-0 px-3 pt-2 sm:px-5 border-t border-gray-100 bg-white rounded-b-3xl sm:rounded-b-2xl pb-[calc(1rem+72px+env(safe-area-inset-bottom,0px))] sm:pb-4">
               <button
-                onClick={handleAdd}
+                type="button"
+                onClick={handleSaveModal}
                 className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-white text-sm transition-all ${
                   showModal === 'income' ? 'bg-green-500 active:bg-green-600' : showModal === 'expenseContract' ? 'bg-amber-500 active:bg-amber-600' : 'bg-red-500 active:bg-red-600'
                 }`}
               >
                 <Save size={18} /> {t('save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pendingDelete && (
+        <div className="modal-overlay z-[80]">
+          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl mx-4 p-5 space-y-4">
+            <p className="font-bold text-gray-900">{t('finance_delete_title')}</p>
+            <p className="text-sm text-gray-600 leading-relaxed">{t('finance_delete_body')}</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingDelete(null)}
+                className="flex-1 py-2.5 rounded-xl font-semibold border border-gray-200 text-gray-700 active:bg-gray-50"
+              >
+                {t('cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                className="flex-1 py-2.5 rounded-xl font-semibold bg-red-600 text-white active:bg-red-700"
+              >
+                {t('delete')}
               </button>
             </div>
           </div>

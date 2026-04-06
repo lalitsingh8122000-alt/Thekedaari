@@ -44,3 +44,10 @@ export function isValidDateInput(value) {
   const date = new Date(`${value}T00:00:00.000Z`);
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
+
+/** Case-insensitive: another trade in the list already uses this name. */
+export function isContractTradeNameTaken(trades, name) {
+  const n = normalizeText(name).toLowerCase();
+  if (n.length < 2) return false;
+  return (trades || []).some((tr) => normalizeText(tr.name).toLowerCase() === n);
+}

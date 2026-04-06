@@ -90,6 +90,7 @@
   "theka_add_new_option": "+ Add new sub-type",
   "theka_add_use": "Add & use",
   "trade_add_failed": "Could not add that type.",
+  "trade_duplicate_name": "This work type name already exists. Use a different name.",
   "roles_custom_trade_placeholder": "Custom sub-type name…",
   "roles_custom_trade_button": "Add custom",
   "quick_add_trades": "Quick add",
@@ -194,6 +195,12 @@
 
   "save": "Save",
   "cancel": "Cancel",
+  "delete": "Delete",
+  "finance_delete_title": "Delete this entry?",
+  "finance_delete_body": "This removes the transaction from the project. You cannot undo this.",
+  "edit_income": "Edit income",
+  "edit_expense": "Edit expense",
+  "edit_contract_expense_short": "Edit contract / theka",
   "edit": "Edit",
   "filter": "Filter",
   "search": "Search",
@@ -212,5 +219,63 @@
   "install_app": "Install app",
   "install_android_hint": "If you do not see the option, update Chrome or try again after using the site for a short while.",
   "install_desktop_hint": "Use your browser’s menu to install or add this site as an app.",
-  "install_fallback_intro": "No install popup appeared (browsers only allow that when they’re ready). Add the app from your browser menu:"
+  "install_fallback_intro": "No install popup appeared (browsers only allow that when they’re ready). Add the app from your browser menu:",
+
+  "how_to_use": "How to use",
+  "guide_page_title": "Step-by-step user guide",
+  "guide_page_subtitle": "Pictures are taken from the real app. Read the short story under each title, then follow the numbered steps. You do not need to be good at English — read slowly.",
+  "guide_tip_screenshots": "These pictures are from the real app. Scroll through each section and follow the numbered steps on your phone.",
+  "guide_footer_note": "If something fails (red message on screen), read it aloud to your supervisor or the person who installed the app.",
+  "guide_box_how_to_read_title": "How to read this page",
+  "guide_box_how_to_read_body": "Each part has: a title, a simple explanation, one phone screenshot, then numbered steps. Stop after each step and check your own phone matches.",
+  "guide_box_screenshots_title": "About the photos",
+  "guide_steps_heading": "Do this on your phone",
+
+  "guide_s01_title": "1. Login screen",
+  "guide_s01_intro": "This is the gate to your data. Only people who know the password can enter. New users must use “Register” first (next section).",
+  "guide_s01_steps": "Open the app link your office gave you.\nType the 10-digit mobile number you used when you signed up.\nType your password (the secret word, at least 6 letters).\nPress the Login button.\nIf it says “invalid phone or password”, check the number and password and try again.",
+
+  "guide_s02_title": "2. Register (first-time account)",
+  "guide_s02_intro": "Use this only once, when your phone number is not in the system yet. After success you land on the Dashboard automatically.",
+  "guide_s02_steps": "Tap “Register” on the login page.\nType your full name (as you want workers to see it).\nType your own 10-digit mobile number.\nChoose a password and type it twice the same way.\nPress Register and wait until the Dashboard opens.\nWrite your password in a safe place at home — the app cannot show it again.",
+
+  "guide_s03_title": "3. Dashboard (home page after login)",
+  "guide_s03_intro": "Think of this as the day-board: how much money moved, how many sites are active, and attendance at a glance.",
+  "guide_s03_steps": "After login you should already be here.\nRead the big rupee (₹) numbers — usually green for income, red/orange for spending.\nCheck “projects on site” or similar lines to see running work.\nUse this screen every morning for a quick status check.",
+
+  "guide_s04_title": "4. Side menu (how to move around)",
+  "guide_s04_intro": "The three-line button ☰ opens a drawer. Everything important is listed there, so you never get lost.",
+  "guide_s04_steps": "Tap ☰ on the top-left.\nRead the list: Dashboard, Attendance, Projects, Workers, Roles, Transactions, How to use, Profile.\nTap any row to jump — the drawer closes by itself when you pick a page.\nCome back to “How to use” whenever you forget a step.",
+
+  "guide_s05_title": "5. Roles & Theka types (master list)",
+  "guide_s05_intro": "Before workers, list your job words here (Labour, Contractor…) and package-work names (Plumbing, Color…). Workers and bills will reuse these exact words.",
+  "guide_s05_steps": "Open Roles from the menu.\nUnder “quick add”, tap Labour (and other roles you really use).\nScroll to the yellow Theka section and tap quick types like Color if you use contractors.\nDo not worry about spelling — but do not repeat the same name twice.\nLeave this screen once the words you need are visible in the list.",
+
+  "guide_s06_title": "6. Projects list (all sites)",
+  "guide_s06_intro": "Each row is one construction site or job. From here you edit basics or open money (finance) for that site.",
+  "guide_s06_steps": "Open Projects from the menu.\nUse the pills (Running / Completed / Small / Medium / Big) to filter.\nUse the search line if you have many names.\nThe plus (+) button adds a new project (we cover that next).",
+
+  "guide_s07_title": "7. Add a new project",
+  "guide_s07_intro": "Give the site a clear name your team will recognise. Type and start date are the minimum the app needs here.",
+  "guide_s07_steps": "From Projects, tap Add / plus.\nType a clear project name (for example “Sharma Ji GK-2”).\nPick the start date on the calendar.\nChoose size type: Small, Medium, or Big.\nTap Save. If a red message appears, read it — usually a field is empty.",
+
+  "guide_s09_title": "8. Project finance (income & expenses)",
+  "guide_s09_intro": "This is the money diary for one project only: money received, material bought, and Theka (contract) bills.",
+  "guide_s09_steps": "Tap Finance on a project card.\nUse the three tabs: Summary, Income, Expense.\nIn Expense you can add Material (cement, sand…) or Contract/Theka (contractor work).\nIncome: fill amount, date, cash/online.\nAlways tap Save at the bottom of each form — if you do not save, money is not stored.",
+
+  "guide_s10_title": "9. Workers list (people)",
+  "guide_s10_intro": "Workers are the people you pay. Each card can mark attendance, open ledger (his account), or edit details.",
+  "guide_s10_steps": "Open Workers from the menu.\nUse search if the list is long.\nGreen “Active” means you still employ that person.\nTo add someone new, tap the Add worker button (covered next).",
+
+  "guide_s11_title": "10. Add worker form",
+  "guide_s11_intro": "Save name, phone, daily wage, and job role. Contractors also need a Theka sub-type (Plumbing, etc.).",
+  "guide_s11_steps": "Tap photo area only if you have a clear face photo (optional).\nType worker name and 10-digit phone (different from yours).\nTap the correct role button (Labour, Karigar, Contractor…).\nIf Contractor: open the Theka drop-down and pick (or add) the work type.\nType cost per day in ₹ and tap Save.",
+
+  "guide_s14_title": "11. Mark attendance (from Workers)",
+  "guide_s14_intro": "From the Workers list you can mark one person’s attendance without going to the main Attendance menu. A form opens on top of the list for that worker only.",
+  "guide_s14_steps": "Open Workers from the menu or bottom bar.\nFind the worker and tap Attendance (green calendar) on their card.\nChoose the project and date.\nTap Present or Absent.\nChoose Full day, Half day, or Other.\nCheck Day salary — it fills from their cost per day (you can adjust if needed).\nTurn on Pay money? only if you are recording a payment with this attendance.\nTap Save attendance.",
+
+  "guide_s15_title": "12. Worker ledger — all transactions for one person",
+  "guide_s15_intro": "Here you see every salary line (what is owed) and every payment for that worker only. Current balance is what you still owe after payments. Use this before handing over cash.",
+  "guide_s15_steps": "On Workers, open someone’s row and tap Ledger (blue book icon).\nRead Current balance at the top — what remains to pay this person.\nAdd earning — add or adjust money still owed (e.g. salary from attendance).\nRecord payment — when you pay cash or transfer; it reduces the balance.\nScroll the list: OWED / Salary lines (green, plus) increase what is due; PAID / Payment lines (red, minus) show money already given.\nDates and amounts should match your site register.\nYou can still open the separate Attendance or Transactions menu pages for full-site views."
 }

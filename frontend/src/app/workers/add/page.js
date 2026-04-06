@@ -15,6 +15,7 @@ import {
   PHONE_LENGTH,
   roleNameIsContractor,
   CONTRACTOR_ROLE_NAME,
+  isContractTradeNameTaken,
 } from '@/lib/validation';
 
 const ADD_NEW_TRADE = '__add_new__';
@@ -94,6 +95,10 @@ export default function AddWorkerPage() {
       setError(t('trade_name_min'));
       return;
     }
+    if (isContractTradeNameTaken(trades, name)) {
+      setError(t('trade_duplicate_name'));
+      return;
+    }
     setError('');
     setTradeSaving(true);
     try {
@@ -104,7 +109,9 @@ export default function AddWorkerPage() {
       setForm((f) => ({ ...f, contractTradeId: String(created.id) }));
       setNewTradeName('');
     } catch (err) {
-      setError(err.response?.data?.error || t('trade_add_failed'));
+      setError(
+        err.response?.status === 409 ? t('trade_duplicate_name') : (err.response?.data?.error || t('trade_add_failed')),
+      );
     } finally {
       setTradeSaving(false);
     }

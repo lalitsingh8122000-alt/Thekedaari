@@ -4,7 +4,7 @@ import { Plus, ShieldCheck, X, Users, Brush, Trash2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
 import api from '@/lib/api';
-import { normalizeText } from '@/lib/validation';
+import { normalizeText, isContractTradeNameTaken } from '@/lib/validation';
 
 const quickRoles = ['Labour', 'Karigar', 'Supervisor', 'Contractor'];
 
@@ -28,6 +28,7 @@ export default function RolesPage() {
   const [tradeSaving, setTradeSaving] = useState(false);
   const [customTradeName, setCustomTradeName] = useState('');
   const [error, setError] = useState('');
+  const [tradeError, setTradeError] = useState('');
   const { t } = useLanguage();
 
   const loadRoles = () =>
@@ -67,12 +68,19 @@ export default function RolesPage() {
   const addTrade = async (tradeName) => {
     const cleanName = normalizeText(tradeName);
     if (!cleanName || cleanName.length < 2) return;
+    if (isContractTradeNameTaken(trades, cleanName)) {
+      setTradeError(t('trade_duplicate_name'));
+      return;
+    }
+    setTradeError('');
     setTradeSaving(true);
     try {
       await api.post('/contract-trades', { name: cleanName });
       loadTrades();
-    } catch {
-      /* ignore */
+    } catch (err) {
+      setTradeError(
+        err.response?.status === 409 ? t('trade_duplicate_name') : (err.response?.data?.error || t('trade_add_failed')),
+      );
     } finally {
       setTradeSaving(false);
     }
@@ -81,13 +89,20 @@ export default function RolesPage() {
   const addCustomTrade = async () => {
     const cleanName = normalizeText(customTradeName);
     if (!cleanName || cleanName.length < 2) return;
+    if (isContractTradeNameTaken(trades, cleanName)) {
+      setTradeError(t('trade_duplicate_name'));
+      return;
+    }
+    setTradeError('');
     setTradeSaving(true);
     try {
       await api.post('/contract-trades', { name: cleanName });
       setCustomTradeName('');
       loadTrades();
-    } catch {
-      /* ignore */
+    } catch (err) {
+      setTradeError(
+        err.response?.status === 409 ? t('trade_duplicate_name') : (err.response?.data?.error || t('trade_add_failed')),
+      );
     } finally {
       setTradeSaving(false);
     }
@@ -162,6 +177,9 @@ export default function RolesPage() {
               <p className="text-xs text-gray-600 mt-0.5">{t('roles_theka_section_hint')}</p>
             </div>
           </div>
+          {tradeError && (
+            <div className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{tradeError}</div>
+          )}
           <p className="text-xs font-medium text-gray-500">{t('quick_add_trades')}</p>
           <div className="flex flex-wrap gap-2">
             {quickTradeNames.map((q) => (
@@ -183,7 +201,10 @@ export default function RolesPage() {
               maxLength={100}
               value={customTradeName}
               placeholder={t('roles_custom_trade_placeholder')}
-              onChange={(e) => setCustomTradeName(e.target.value)}
+              onChange={(e) => {
+                setCustomTradeName(e.target.value);
+                if (tradeError) setTradeError('');
+              }}
             />
             <button
               type="button"

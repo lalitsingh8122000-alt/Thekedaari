@@ -132,6 +132,8 @@ model LedgerEntry {
   comment      String?     @db.Text
   attendanceId Int?        @unique
   attendance   Attendance? @relation(fields: [attendanceId], references: [id])
+  expenseId    Int?        @unique
+  expense      Expense?    @relation(fields: [expenseId], references: [id], onDelete: Cascade)
   userId       Int
   user         User        @relation(fields: [userId], references: [id])
   createdAt    DateTime    @default(now())
@@ -172,6 +174,7 @@ model Expense {
   userId          Int
   user            User           @relation(fields: [userId], references: [id])
   createdAt       DateTime       @default(now())
+  ledgerEntry     LedgerEntry?
 
   @@index([projectId])
   @@index([userId])

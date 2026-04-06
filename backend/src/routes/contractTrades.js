@@ -28,6 +28,15 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ error: 'Trade name must be between 2 and 100 characters' });
     }
 
+    const siblings = await prisma.contractTrade.findMany({
+      where: { userId: req.userId },
+      select: { name: true },
+    });
+    const lower = name.toLowerCase();
+    if (siblings.some((s) => s.name.toLowerCase() === lower)) {
+      return res.status(409).json({ error: 'A work type with this name already exists' });
+    }
+
     const trade = await prisma.contractTrade.create({
       data: { name, userId: req.userId },
     });
