@@ -1,16 +1,31 @@
 const PHONE_REGEX = /^\d{10}$/;
 const VALID_WORKER_STATUS = new Set(['Active', 'Inactive']);
+// Stored in Expense.remarks; existing rows (Cement, Sand, Labour, Others) stay valid.
+const VALID_EXPENSE_REMARKS = new Set([
+  'Cement',
+  'Sand',
+  'Brick',
+  'Steel',
+  'Aggregate',
+  'Labour',
+  'Others',
+  'Contract',
+]);
 const VALID_PROJECT_TYPES = new Set(['Small', 'Medium', 'Big']);
 const VALID_PROJECT_STATUS = new Set(['Running', 'Completed']);
 const VALID_ATTENDANCE_TYPES = new Set(['FullDay', 'HalfDay', 'Other', 'Absent']);
 const VALID_PAYMENT_MODES = new Set(['Cash', 'Online']);
 const VALID_LEDGER_TYPES = new Set(['Credit', 'Debit']);
-const VALID_LEDGER_CATEGORIES = new Set(['Salary', 'Bonus', 'Payment', 'Other']);
-const VALID_EXPENSE_REMARKS = new Set(['Cement', 'Sand', 'Labour', 'Others']);
+const VALID_LEDGER_CATEGORIES = new Set(['Salary', 'Bonus', 'Payment', 'Other', 'Contract']);
 
 function normalizeString(value) {
   if (typeof value !== 'string') return '';
   return value.trim();
+}
+
+/** Workers with this role need a theka sub-type; role name must be exactly "Contractor" (any case). */
+function roleNameIsContractor(roleName) {
+  return normalizeString(roleName).toLowerCase() === 'contractor';
 }
 
 function normalizePhone(value) {
@@ -43,6 +58,7 @@ function isValidDate(value) {
 
 module.exports = {
   VALID_WORKER_STATUS,
+  roleNameIsContractor,
   VALID_PROJECT_TYPES,
   VALID_PROJECT_STATUS,
   VALID_ATTENDANCE_TYPES,

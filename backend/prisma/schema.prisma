@@ -15,9 +15,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  projects    Project[]
-  roles       Role[]
-  workers     Worker[]
+  projects      Project[]
+  roles         Role[]
+  contractTrades ContractTrade[]
+  workers       Worker[]
   attendances Attendance[]
   ledgers     LedgerEntry[]
   incomes     Income[]
@@ -55,19 +56,35 @@ model Role {
   @@index([userId])
 }
 
+model ContractTrade {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  workers  Worker[]
+  expenses Expense[]
+
+  @@index([userId])
+}
+
 model Worker {
-  id         Int      @id @default(autoincrement())
-  name       String   @db.VarChar(100)
-  phone      String   @db.VarChar(20)
-  photo      String?  @db.VarChar(500)
-  status     String   @default("Active") @db.VarChar(20)
-  costPerDay Float
-  roleId     Int
-  role       Role     @relation(fields: [roleId], references: [id])
-  userId     Int
-  user       User     @relation(fields: [userId], references: [id])
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id               Int            @id @default(autoincrement())
+  name             String         @db.VarChar(100)
+  phone            String         @db.VarChar(20)
+  photo            String?        @db.VarChar(500)
+  status           String         @default("Active") @db.VarChar(20)
+  workerType       String         @default("Labour") @db.VarChar(20)
+  costPerDay       Float
+  roleId           Int
+  role             Role           @relation(fields: [roleId], references: [id])
+  contractTradeId  Int?
+  contractTrade    ContractTrade? @relation(fields: [contractTradeId], references: [id])
+  userId           Int
+  user             User           @relation(fields: [userId], references: [id])
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 
   attendances   Attendance[]
   ledgerEntries LedgerEntry[]
@@ -75,6 +92,7 @@ model Worker {
 
   @@index([userId])
   @@index([roleId])
+  @@index([contractTradeId])
 }
 
 model Attendance {
@@ -140,20 +158,23 @@ model Income {
 }
 
 model Expense {
-  id        Int      @id @default(autoincrement())
-  projectId Int
-  project   Project  @relation(fields: [projectId], references: [id])
-  amount    Float
-  remarks   String   @db.VarChar(500)
-  notes     String?  @db.Text
-  workerId  Int?
-  worker    Worker?  @relation(fields: [workerId], references: [id])
-  date      DateTime @default(now())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
+  id              Int            @id @default(autoincrement())
+  projectId       Int
+  project         Project        @relation(fields: [projectId], references: [id])
+  amount          Float
+  remarks         String         @db.VarChar(500)
+  notes           String?        @db.Text
+  workerId        Int?
+  worker          Worker?        @relation(fields: [workerId], references: [id])
+  contractTradeId Int?
+  contractTrade   ContractTrade? @relation(fields: [contractTradeId], references: [id])
+  date            DateTime       @default(now())
+  userId          Int
+  user            User           @relation(fields: [userId], references: [id])
+  createdAt       DateTime       @default(now())
 
   @@index([projectId])
   @@index([userId])
   @@index([workerId])
+  @@index([contractTradeId])
 }

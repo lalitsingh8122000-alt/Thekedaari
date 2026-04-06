@@ -1,6 +1,7 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const auth = require('../middleware/auth');
+const { sendServerError } = require('../utils/serverError');
 const {
   VALID_PAYMENT_MODES,
   VALID_EXPENSE_REMARKS,
@@ -8,6 +9,7 @@ const {
   parseAmount,
   parseId,
   isValidDate,
+  roleNameIsContractor,
 } = require('../utils/validation');
 
 const router = express.Router();
@@ -23,7 +25,7 @@ router.get('/projects/:id/income', auth, async (req, res) => {
     });
     res.json(incomes);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    sendServerError(res, err, 'finance');
   }
 });
 
@@ -62,7 +64,7 @@ router.post('/projects/:id/income', auth, async (req, res) => {
 
     res.status(201).json(income);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    sendServerError(res, err, 'finance');
   }
 });
 
@@ -74,12 +76,13 @@ router.get('/projects/:id/expenses', auth, async (req, res) => {
       where: { projectId, userId: req.userId, remarks: { not: 'Labour' } },
       orderBy: { date: 'desc' },
       include: {
-        worker: { select: { id: true, name: true, phone: true, role: { select: { name: true } } } },
+        worker: { select: { id: true, name: true, phone: true, workerType: true, role: { select: { name: true } } } },
+        contractTrade: { select: { id: true, name: true } },
       },
     });
     res.json(expenses);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    sendServerError(res, err, 'finance');
   }
 });
 
@@ -89,6 +92,10 @@ router.post('/projects/:id/expenses', auth, async (req, res) => {
     const remarks = normalizeString(req.body.remarks);
     const notes = normalizeString(req.body.notes);
     const workerId = req.body.workerId !== undefined && req.body.workerId !== null ? parseId(req.body.workerId) : null;
+    const contractTradeIdBody =
+      req.body.contractTradeId !== undefined && req.body.contractTradeId !== null
+        ? parseId(req.body.contractTradeId)
+        : null;
     const date = req.body.date;
     const projectId = parseId(req.params.id);
 
@@ -105,6 +112,11 @@ router.post('/projects/:id/expenses', auth, async (req, res) => {
         error: 'Labour cost is recorded from attendance. Add cement, sand, or other expenses here.',
       });
     }
+    if (remarks === 'Contract') {
+      if (!workerId) {
+        return res.status(400).json({ error: 'Select a contractor for contract (theka) expense' });
+      }
+    }
     if (notes.length > 2000) return res.status(400).json({ error: 'Notes cannot exceed 2000 characters' });
     if (date !== undefined && date !== null && date !== '' && !isValidDate(date)) {
       return res.status(400).json({ error: 'Invalid expense date' });
@@ -112,12 +124,47 @@ router.post('/projects/:id/expenses', auth, async (req, res) => {
     if (req.body.workerId !== undefined && req.body.workerId !== null && !workerId) {
       return res.status(400).json({ error: 'Invalid worker' });
     }
+    if (
+      remarks === 'Contract' &&
+      req.body.contractTradeId !== undefined &&
+      req.body.contractTradeId !== null &&
+      req.body.contractTradeId !== '' &&
+      !contractTradeIdBody
+    ) {
+      return res.status(400).json({ error: 'Invalid contract trade' });
+    }
 
     const project = await prisma.project.findFirst({ where: { id: projectId, userId: req.userId } });
     if (!project) return res.status(404).json({ error: 'Project not found' });
+
+    let workerRow = null;
+    let resolvedTradeId = null;
     if (workerId) {
-      const worker = await prisma.worker.findFirst({ where: { id: workerId, userId: req.userId } });
-      if (!worker) return res.status(404).json({ error: 'Worker not found' });
+      workerRow = await prisma.worker.findFirst({
+        where: { id: workerId, userId: req.userId },
+        include: { role: true },
+      });
+      if (!workerRow) return res.status(404).json({ error: 'Worker not found' });
+    }
+    const isContractorPerson =
+      workerRow &&
+      (workerRow.workerType === 'Contractor' || roleNameIsContractor(workerRow.role?.name));
+    if (remarks === 'Contract') {
+      if (!isContractorPerson) {
+        return res.status(400).json({
+          error: 'Contract expense must be for a worker with the Contractor role',
+        });
+      }
+      resolvedTradeId = contractTradeIdBody || workerRow.contractTradeId;
+      if (!resolvedTradeId) {
+        return res.status(400).json({ error: 'Contract trade is required (set on worker or pass contractTradeId)' });
+      }
+      const trade = await prisma.contractTrade.findFirst({
+        where: { id: resolvedTradeId, userId: req.userId },
+      });
+      if (!trade) return res.status(404).json({ error: 'Contract trade not found' });
+    } else if (workerId && remarks !== 'Contract') {
+      // Unchanged: material expense with a linked person records payment in ledger
     }
 
     const result = await prisma.$transaction(async (tx) => {
@@ -128,15 +175,31 @@ router.post('/projects/:id/expenses', auth, async (req, res) => {
           remarks,
           notes: notes || null,
           workerId: workerId || null,
+          contractTradeId: remarks === 'Contract' ? resolvedTradeId : null,
           date: date ? new Date(date) : new Date(),
           userId: req.userId,
         },
         include: {
           worker: { select: { id: true, name: true } },
+          contractTrade: { select: { id: true, name: true } },
         },
       });
 
-      if (workerId) {
+      if (remarks === 'Contract' && workerId) {
+        const tradeRow = await tx.contractTrade.findFirst({
+          where: { id: resolvedTradeId, userId: req.userId },
+        });
+        await tx.ledgerEntry.create({
+          data: {
+            workerId,
+            amount,
+            type: 'Credit',
+            category: 'Contract',
+            remarks: `Theka — ${project.name} — ${tradeRow.name}${notes ? ` — ${notes}` : ''}`,
+            userId: req.userId,
+          },
+        });
+      } else if (workerId) {
         await tx.ledgerEntry.create({
           data: {
             workerId,
@@ -154,7 +217,7 @@ router.post('/projects/:id/expenses', auth, async (req, res) => {
 
     res.status(201).json(result);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    sendServerError(res, err, 'finance');
   }
 });
 
@@ -183,9 +246,15 @@ router.get('/projects/:id/summary', auth, async (req, res) => {
       _sum: { amount: true },
     });
 
+    const contractExpenses = await prisma.expense.aggregate({
+      where: { projectId, userId: req.userId, remarks: 'Contract' },
+      _sum: { amount: true },
+    });
+
     const totalIncome = incomes._sum.amount || 0;
     const materialExpense = materialExpenses._sum.amount || 0;
     const labourCost = labourPayments._sum.amount || 0;
+    const totalContractExpense = contractExpenses._sum.amount || 0;
     const totalExpense = materialExpense + labourCost;
     const profitLoss = totalIncome - totalExpense;
 
@@ -194,11 +263,12 @@ router.get('/projects/:id/summary', auth, async (req, res) => {
       totalIncome,
       totalMaterialExpense: materialExpense,
       totalLabourCost: labourCost,
+      totalContractExpense,
       totalExpense,
       profitLoss,
     });
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    sendServerError(res, err, 'finance');
   }
 });
 

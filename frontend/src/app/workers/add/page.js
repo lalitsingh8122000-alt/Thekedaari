@@ -1,26 +1,114 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Camera } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
 import api from '@/lib/api';
-import { normalizePhone, sanitizePhoneInput, isValidPhone, parsePositiveAmount, PHONE_LENGTH } from '@/lib/validation';
+import {
+  normalizeText,
+  normalizePhone,
+  sanitizePhoneInput,
+  isValidPhone,
+  parsePositiveAmount,
+  parseNonNegativeAmount,
+  PHONE_LENGTH,
+  roleNameIsContractor,
+  CONTRACTOR_ROLE_NAME,
+} from '@/lib/validation';
+
+const ADD_NEW_TRADE = '__add_new__';
 
 export default function AddWorkerPage() {
   const { t } = useLanguage();
   const router = useRouter();
   const fileRef = useRef();
   const [roles, setRoles] = useState([]);
+  const [trades, setTrades] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [preview, setPreview] = useState(null);
-  const [form, setForm] = useState({ name: '', phone: '', costPerDay: '', roleId: '', status: 'Active' });
+  const [form, setForm] = useState({
+    name: '', phone: '', costPerDay: '', roleId: '', status: 'Active', contractTradeId: '',
+  });
   const [photoFile, setPhotoFile] = useState(null);
+  const [newTradeName, setNewTradeName] = useState('');
+  const [addingTrade, setAddingTrade] = useState(false);
+  const [tradeSaving, setTradeSaving] = useState(false);
+  const [roleBootstrapping, setRoleBootstrapping] = useState(false);
 
   useEffect(() => {
-    api.get('/roles').then((r) => setRoles(r.data)).catch(() => {});
+    Promise.all([api.get('/roles'), api.get('/contract-trades')])
+      .then(([r, tr]) => {
+        setRoles(r.data);
+        setTrades(tr.data || []);
+      })
+      .catch(() => {});
   }, []);
+
+  const isContractor = useMemo(() => {
+    const role = roles.find((x) => String(x.id) === String(form.roleId));
+    return roleNameIsContractor(role?.name);
+  }, [roles, form.roleId]);
+
+  const hasContractorRole = useMemo(
+    () => roles.some((r) => roleNameIsContractor(r.name)),
+    [roles],
+  );
+
+  const ensureContractorRoleAndSelect = async () => {
+    setError('');
+    setRoleBootstrapping(true);
+    try {
+      let list = roles;
+      if (!list.some((r) => roleNameIsContractor(r.name))) {
+        try {
+          await api.post('/roles', { name: CONTRACTOR_ROLE_NAME });
+        } catch {
+          /* may already exist after races */
+        }
+        const rr = await api.get('/roles');
+        list = rr.data || [];
+        setRoles(list);
+      }
+      const cr = list.find((r) => roleNameIsContractor(r.name));
+      if (!cr) {
+        setError(t('contractor_role_create_failed'));
+        return;
+      }
+      setAddingTrade(false);
+      setNewTradeName('');
+      setForm((f) => ({
+        ...f,
+        roleId: String(cr.id),
+        contractTradeId: '',
+      }));
+    } finally {
+      setRoleBootstrapping(false);
+    }
+  };
+
+  const addTradeInline = async () => {
+    const name = normalizeText(newTradeName);
+    if (name.length < 2) {
+      setError(t('trade_name_min'));
+      return;
+    }
+    setError('');
+    setTradeSaving(true);
+    try {
+      const { data: created } = await api.post('/contract-trades', { name });
+      const tr = await api.get('/contract-trades');
+      setTrades(tr.data || []);
+      setAddingTrade(false);
+      setForm((f) => ({ ...f, contractTradeId: String(created.id) }));
+      setNewTradeName('');
+    } catch (err) {
+      setError(err.response?.data?.error || t('trade_add_failed'));
+    } finally {
+      setTradeSaving(false);
+    }
+  };
 
   const handlePhoto = (e) => {
     const file = e.target.files[0];
@@ -42,11 +130,18 @@ export default function AddWorkerPage() {
     e.preventDefault();
     setError('');
     const cleanedPhone = normalizePhone(form.phone);
-    const costPerDay = parsePositiveAmount(form.costPerDay);
+    const costPerDay = isContractor
+      ? parseNonNegativeAmount(form.costPerDay)
+      : parsePositiveAmount(form.costPerDay);
     if (form.name.trim().length < 2) return setError('Worker name must be at least 2 characters');
     if (!isValidPhone(cleanedPhone)) return setError('Phone number must be exactly 10 digits');
-    if (!costPerDay) return setError('Enter a valid cost per day amount');
+    if (costPerDay === null) {
+      return setError(isContractor ? t('cost_contractor_hint') : 'Enter a valid cost per day amount');
+    }
     if (!form.roleId) return setError('Please select a role');
+    if (isContractor) {
+      if (!form.contractTradeId) return setError(t('contract_trade_required'));
+    }
     setLoading(true);
     try {
       const data = new FormData();
@@ -55,6 +150,9 @@ export default function AddWorkerPage() {
       data.append('costPerDay', String(costPerDay));
       data.append('roleId', form.roleId);
       data.append('status', form.status);
+      if (isContractor) {
+        data.append('contractTradeId', String(form.contractTradeId));
+      }
       if (photoFile) data.append('photo', photoFile);
 
       await api.post('/workers', data, { headers: { 'Content-Type': 'multipart/form-data' } });
@@ -70,7 +168,7 @@ export default function AddWorkerPage() {
     <AppShell>
       <div className="space-y-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-2 rounded-xl bg-gray-100 active:bg-gray-200">
+          <button type="button" onClick={() => router.back()} className="p-2 rounded-xl bg-gray-100 active:bg-gray-200">
             <ArrowLeft size={22} />
           </button>
           <h2 className="page-title">{t('add_worker')}</h2>
@@ -105,27 +203,115 @@ export default function AddWorkerPage() {
           </div>
 
           <div>
-            <label className="label">{t('cost_per_day')} (₹)</label>
-            <input type="number" min="1" step="0.01" className="input-field" value={form.costPerDay} onChange={(e) => setForm({ ...form, costPerDay: e.target.value })} required />
+            <label className="label">{t('select_role')}</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {roles.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => {
+                    if (!roleNameIsContractor(r.name)) {
+                      setAddingTrade(false);
+                      setNewTradeName('');
+                    }
+                    setForm((f) => ({
+                      ...f,
+                      roleId: String(r.id),
+                      contractTradeId: roleNameIsContractor(r.name) ? f.contractTradeId : '',
+                    }));
+                  }}
+                  className={`py-3 rounded-xl font-semibold text-sm transition-colors ${
+                    String(form.roleId) === String(r.id) ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  {r.name}
+                </button>
+              ))}
+              {!hasContractorRole && (
+                <button
+                  type="button"
+                  disabled={roleBootstrapping}
+                  onClick={ensureContractorRoleAndSelect}
+                  className="py-3 rounded-xl font-semibold text-sm border-2 border-dashed border-amber-400 bg-amber-50 text-amber-900 disabled:opacity-60"
+                >
+                  {roleBootstrapping ? t('loading') : `+ ${t('contractor')}`}
+                </button>
+              )}
+            </div>
+            {roles.length === 0 && !hasContractorRole && (
+              <p className="text-sm text-gray-400 mt-2">
+                <button type="button" onClick={ensureContractorRoleAndSelect} className="text-primary-600 underline font-medium">
+                  {t('add_contractor_role_first')}
+                </button>
+                {' · '}
+                <button type="button" onClick={() => router.push('/roles')} className="text-primary-600 underline">{t('roles')}</button>
+              </p>
+            )}
+            <p className="text-xs text-gray-500 mt-1">{t('contractor_role_hint')}</p>
           </div>
 
-          <div>
-            <label className="label">{t('select_role')}</label>
-            {roles.length > 0 ? (
-              <div className="grid grid-cols-3 gap-2">
-                {roles.map((r) => (
-                  <button
-                    key={r.id} type="button" onClick={() => setForm({ ...form, roleId: r.id })}
-                    className={`py-3 rounded-xl font-semibold transition-colors ${
-                      form.roleId === r.id ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600'
-                    }`}
-                  >
-                    {r.name}
-                  </button>
+          {isContractor && (
+            <div className="space-y-2">
+              <label className="label">{t('theka_subcategory')}</label>
+              <select
+                className="input-field"
+                value={addingTrade ? ADD_NEW_TRADE : (form.contractTradeId || '')}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === ADD_NEW_TRADE) {
+                    setAddingTrade(true);
+                    setNewTradeName('');
+                    setForm((f) => ({ ...f, contractTradeId: '' }));
+                    return;
+                  }
+                  setAddingTrade(false);
+                  setNewTradeName('');
+                  setForm((f) => ({ ...f, contractTradeId: v }));
+                }}
+              >
+                <option value="">{t('select_trade')}</option>
+                {trades.map((tr) => (
+                  <option key={tr.id} value={tr.id}>{tr.name}</option>
                 ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-400">{t('no_data')} - <button type="button" onClick={() => router.push('/roles')} className="text-primary-600 underline">{t('add_role')}</button></p>
+                <option value={ADD_NEW_TRADE}>{t('theka_add_new_option')}</option>
+              </select>
+              {addingTrade && (
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    className="input-field flex-1 bg-white"
+                    maxLength={100}
+                    value={newTradeName}
+                    placeholder={t('theka_new_type_placeholder')}
+                    onChange={(e) => setNewTradeName(e.target.value)}
+                    autoComplete="off"
+                  />
+                  <button
+                    type="button"
+                    disabled={tradeSaving}
+                    onClick={addTradeInline}
+                    className="btn-primary py-2.5 px-4 font-semibold text-sm whitespace-nowrap disabled:opacity-50 sm:shrink-0"
+                  >
+                    {tradeSaving ? t('loading') : t('theka_add_use')}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div>
+            <label className="label">{t('cost_per_day')} (₹)</label>
+            <input
+              type="number"
+              min={isContractor ? '0' : '1'}
+              step="0.01"
+              className="input-field"
+              value={form.costPerDay}
+              onChange={(e) => setForm({ ...form, costPerDay: e.target.value })}
+              required
+            />
+            {isContractor && (
+              <p className="text-xs text-gray-500 mt-1">{t('cost_contractor_hint')}</p>
             )}
           </div>
 
@@ -134,7 +320,9 @@ export default function AddWorkerPage() {
             <div className="grid grid-cols-2 gap-2">
               {['Active', 'Inactive'].map((s) => (
                 <button
-                  key={s} type="button" onClick={() => setForm({ ...form, status: s })}
+                  key={s}
+                  type="button"
+                  onClick={() => setForm({ ...form, status: s })}
                   className={`py-3 rounded-xl font-semibold text-lg ${
                     form.status === s ? s === 'Active' ? 'bg-green-500 text-white' : 'bg-gray-600 text-white' : 'bg-gray-100 text-gray-600'
                   }`}

@@ -188,7 +188,9 @@ export default function WorkerLedgerPage() {
                                 ? t('bonus')
                                 : entry.category === 'Payment'
                                   ? t('payment')
-                                  : t('other')}
+                                  : entry.category === 'Contract'
+                                    ? t('contract_theka')
+                                    : t('other')}
                           </span>
                         </div>
                         {entry.remarks && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{entry.remarks}</p>}

@@ -4,6 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const auth = require('../middleware/auth');
+const { sendServerError } = require('../utils/serverError');
 const {
   VALID_WORKER_STATUS,
   normalizeString,
@@ -11,6 +12,7 @@ const {
   isValidPhone,
   parseAmount,
   parseId,
+  roleNameIsContractor,
 } = require('../utils/validation');
 
 const router = express.Router();
@@ -59,11 +61,11 @@ router.get('/', auth, async (req, res) => {
     const workers = await prisma.worker.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      include: { role: true },
+      include: { role: true, contractTrade: true },
     });
     res.json(workers);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    sendServerError(res, err, 'workers GET list');
   }
 });
 
@@ -73,12 +75,12 @@ router.get('/:id', auth, async (req, res) => {
     if (!workerId) return res.status(400).json({ error: 'Invalid worker id' });
     const worker = await prisma.worker.findFirst({
       where: { id: workerId, userId: req.userId },
-      include: { role: true },
+      include: { role: true, contractTrade: true },
     });
     if (!worker) return res.status(404).json({ error: 'Worker not found' });
     res.json(worker);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    sendServerError(res, err, 'workers GET :id');
   }
 });
 
@@ -89,6 +91,7 @@ router.post('/', auth, upload.single('photo'), async (req, res) => {
     const costPerDay = parseAmount(req.body.costPerDay);
     const roleId = parseId(req.body.roleId);
     const status = req.body.status ? normalizeString(req.body.status) : 'Active';
+    const contractTradeId = parseId(req.body.contractTradeId);
 
     if (!name || !phone || costPerDay === null || !roleId) {
       return res.status(400).json({ error: 'Name, phone, cost per day, and role are required' });
@@ -99,14 +102,28 @@ router.post('/', auth, upload.single('photo'), async (req, res) => {
     if (!isValidPhone(phone)) {
       return res.status(400).json({ error: 'Phone number must be exactly 10 digits' });
     }
-    if (costPerDay <= 0 || costPerDay > 1000000) {
-      return res.status(400).json({ error: 'Cost per day must be between 1 and 10,00,000' });
-    }
     if (!VALID_WORKER_STATUS.has(status)) {
       return res.status(400).json({ error: 'Invalid worker status' });
     }
     const role = await prisma.role.findFirst({ where: { id: roleId, userId: req.userId } });
     if (!role) return res.status(400).json({ error: 'Invalid role' });
+
+    const contractorByRole = roleNameIsContractor(role.name);
+    const workerType = contractorByRole ? 'Contractor' : 'Labour';
+    if (contractorByRole) {
+      if (costPerDay < 0 || costPerDay > 1000000) {
+        return res.status(400).json({ error: 'Cost per day must be between 0 and 10,00,000' });
+      }
+      if (!contractTradeId) {
+        return res.status(400).json({ error: 'Add a theka sub-type under Roles, then select it for this contractor' });
+      }
+      const trade = await prisma.contractTrade.findFirst({
+        where: { id: contractTradeId, userId: req.userId },
+      });
+      if (!trade) return res.status(400).json({ error: 'Invalid contract trade' });
+    } else if (costPerDay <= 0 || costPerDay > 1000000) {
+      return res.status(400).json({ error: 'Cost per day must be between 1 and 10,00,000' });
+    }
 
     const worker = await prisma.worker.create({
       data: {
@@ -115,15 +132,17 @@ router.post('/', auth, upload.single('photo'), async (req, res) => {
         costPerDay,
         roleId,
         status,
+        workerType,
+        contractTradeId: contractorByRole ? contractTradeId : null,
         photo: req.file ? `/uploads/${req.file.filename}` : null,
         userId: req.userId,
       },
-      include: { role: true },
+      include: { role: true, contractTrade: true },
     });
 
     res.status(201).json(worker);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    sendServerError(res, err, 'workers POST');
   }
 });
 
@@ -133,6 +152,7 @@ router.put('/:id', auth, upload.single('photo'), async (req, res) => {
     if (!workerId) return res.status(400).json({ error: 'Invalid worker id' });
     const existing = await prisma.worker.findFirst({
       where: { id: workerId, userId: req.userId },
+      include: { role: true },
     });
     if (!existing) return res.status(404).json({ error: 'Worker not found' });
 
@@ -151,13 +171,6 @@ router.put('/:id', auth, upload.single('photo'), async (req, res) => {
       }
       data.phone = phone;
     }
-    if (req.body.costPerDay !== undefined) {
-      const costPerDay = parseAmount(req.body.costPerDay);
-      if (costPerDay === null || costPerDay <= 0 || costPerDay > 1000000) {
-        return res.status(400).json({ error: 'Cost per day must be between 1 and 10,00,000' });
-      }
-      data.costPerDay = costPerDay;
-    }
     if (req.body.roleId !== undefined) {
       const roleId = parseId(req.body.roleId);
       if (!roleId) return res.status(400).json({ error: 'Invalid role' });
@@ -172,17 +185,60 @@ router.put('/:id', auth, upload.single('photo'), async (req, res) => {
       }
       data.status = status;
     }
+    if (req.body.contractTradeId !== undefined) {
+      const tid = parseId(req.body.contractTradeId);
+      if (req.body.contractTradeId !== '' && !tid) {
+        return res.status(400).json({ error: 'Invalid contract trade' });
+      }
+      data.contractTradeId = tid || null;
+    }
     if (req.file) data.photo = `/uploads/${req.file.filename}`;
+
+    const effectiveRoleId = data.roleId !== undefined ? data.roleId : existing.roleId;
+    const role = await prisma.role.findFirst({ where: { id: effectiveRoleId, userId: req.userId } });
+    if (!role) return res.status(400).json({ error: 'Invalid role' });
+
+    const contractorByRole = roleNameIsContractor(role.name);
+    data.workerType = contractorByRole ? 'Contractor' : 'Labour';
+    if (!contractorByRole) {
+      data.contractTradeId = null;
+    } else {
+      const tid =
+        data.contractTradeId !== undefined ? data.contractTradeId : existing.contractTradeId;
+      if (!tid) {
+        return res.status(400).json({ error: 'Add a theka sub-type under Roles, then select it for this contractor' });
+      }
+      const trade = await prisma.contractTrade.findFirst({
+        where: { id: tid, userId: req.userId },
+      });
+      if (!trade) return res.status(400).json({ error: 'Invalid contract trade' });
+      data.contractTradeId = tid;
+    }
+
+    if (req.body.costPerDay !== undefined) {
+      const costPerDay = parseAmount(req.body.costPerDay);
+      if (costPerDay === null) {
+        return res.status(400).json({ error: 'Invalid cost per day' });
+      }
+      if (contractorByRole) {
+        if (costPerDay < 0 || costPerDay > 1000000) {
+          return res.status(400).json({ error: 'Cost per day must be between 0 and 10,00,000' });
+        }
+      } else if (costPerDay <= 0 || costPerDay > 1000000) {
+        return res.status(400).json({ error: 'Cost per day must be between 1 and 10,00,000' });
+      }
+      data.costPerDay = costPerDay;
+    }
 
     const worker = await prisma.worker.update({
       where: { id: workerId },
       data,
-      include: { role: true },
+      include: { role: true, contractTrade: true },
     });
 
     res.json(worker);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    sendServerError(res, err, 'workers PUT');
   }
 });
 

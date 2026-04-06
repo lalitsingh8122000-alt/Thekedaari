@@ -1,6 +1,7 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const auth = require('../middleware/auth');
+const { sendServerError } = require('../utils/serverError');
 const {
   VALID_LEDGER_TYPES,
   VALID_LEDGER_CATEGORIES,
@@ -8,6 +9,7 @@ const {
   parseAmount,
   parseId,
   isValidDate,
+  roleNameIsContractor,
 } = require('../utils/validation');
 
 const router = express.Router();
@@ -44,7 +46,7 @@ router.get('/:workerId', auth, async (req, res) => {
 
     res.json({ worker, ledger: ledger.reverse(), currentBalance: balance });
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    sendServerError(res, err, 'ledger GET');
   }
 });
 
@@ -72,8 +74,17 @@ router.post('/', auth, async (req, res) => {
 
     const worker = await prisma.worker.findFirst({
       where: { id: workerId, userId: req.userId },
+      include: { role: true },
     });
     if (!worker) return res.status(404).json({ error: 'Worker not found' });
+    const isContractorPerson =
+      worker.workerType === 'Contractor' || roleNameIsContractor(worker.role?.name);
+
+    if (type === 'Credit' && category === 'Contract') {
+      return res.status(400).json({
+        error: 'Contract (theka) dues are added from project finance, not manual ledger.',
+      });
+    }
 
     const isPaymentToWorker = type === 'Debit' && category === 'Payment';
     if (isPaymentToWorker) {
@@ -109,13 +120,15 @@ router.post('/', auth, async (req, res) => {
         const noteParts = ['Worker ledger payment'];
         if (remarks) noteParts.push(remarks);
         if (comment) noteParts.push(comment);
+        const expenseRemarks = isContractorPerson ? 'Contract' : 'Labour';
         await tx.expense.create({
           data: {
             projectId,
             amount,
-            remarks: 'Labour',
+            remarks: expenseRemarks,
             notes: noteParts.join(' — '),
             workerId,
+            contractTradeId: isContractorPerson ? worker.contractTradeId : null,
             date: expenseDate,
             userId: req.userId,
           },
@@ -127,7 +140,7 @@ router.post('/', auth, async (req, res) => {
 
     res.status(201).json(entry);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    sendServerError(res, err, 'ledger POST');
   }
 });
 

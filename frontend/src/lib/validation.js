@@ -4,6 +4,14 @@ export function normalizeText(value) {
   return String(value ?? '').trim();
 }
 
+/** Matches backend: role name "Contractor" (any case) gets theka sub-type. */
+export function roleNameIsContractor(roleName) {
+  return normalizeText(roleName).toLowerCase() === 'contractor';
+}
+
+/** API role name stored as "Contractor" so backend roleNameIsContractor matches. */
+export const CONTRACTOR_ROLE_NAME = 'Contractor';
+
 export function normalizePhone(value) {
   const digits = String(value ?? '').replace(/\D/g, '');
   if (digits.length === 12 && digits.startsWith('91')) return digits.slice(2);
@@ -21,6 +29,13 @@ export function sanitizePhoneInput(value) {
 export function parsePositiveAmount(value) {
   const num = Number(value);
   if (!Number.isFinite(num) || num <= 0) return null;
+  return Math.round(num * 100) / 100;
+}
+
+/** For contractor daily rate: 0 allowed */
+export function parseNonNegativeAmount(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0) return null;
   return Math.round(num * 100) / 100;
 }
 

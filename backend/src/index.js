@@ -12,6 +12,7 @@ if (!process.env.DATABASE_URL) {
 const authRoutes = require('./routes/auth');
 const projectRoutes = require('./routes/projects');
 const roleRoutes = require('./routes/roles');
+const contractTradeRoutes = require('./routes/contractTrades');
 const workerRoutes = require('./routes/workers');
 const attendanceRoutes = require('./routes/attendance');
 const ledgerRoutes = require('./routes/ledger');
@@ -37,6 +38,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/roles', roleRoutes);
+app.use('/api/contract-trades', contractTradeRoutes);
 app.use('/api/workers', workerRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/ledger', ledgerRoutes);

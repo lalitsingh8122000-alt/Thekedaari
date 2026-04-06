@@ -8,6 +8,8 @@
     "start": "node src/index.js",
     "db:push": "node scripts/prisma-with-env.js db push",
     "db:migrate": "node scripts/prisma-with-env.js migrate deploy",
+    "db:generate": "node scripts/prisma-with-env.js generate",
+    "db:apply-theka": "node scripts/apply-theka-if-missing.js && node scripts/prisma-with-env.js generate",
     "db:studio": "node scripts/prisma-with-env.js studio"
   },
   "dependencies": {
