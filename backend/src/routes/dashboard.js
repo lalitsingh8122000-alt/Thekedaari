@@ -15,7 +15,7 @@ router.get('/', auth, async (req, res) => {
     });
 
     const totalMaterialExpense = await prisma.expense.aggregate({
-      where: { userId, remarks: { not: 'Labour' } },
+      where: { userId, remarks: { notIn: ['Labour', 'Contract'] } },
       _sum: { amount: true },
     });
 
@@ -24,10 +24,16 @@ router.get('/', auth, async (req, res) => {
       _sum: { amount: true },
     });
 
+    const totalContractExpenseAgg = await prisma.expense.aggregate({
+      where: { userId, remarks: 'Contract' },
+      _sum: { amount: true },
+    });
+
     const income = totalIncome._sum.amount || 0;
     const materialExpense = totalMaterialExpense._sum.amount || 0;
     const labourCost = totalLabourPayments._sum.amount || 0;
-    const totalExpense = materialExpense + labourCost;
+    const contractExpense = totalContractExpenseAgg._sum.amount || 0;
+    const totalExpense = materialExpense + labourCost + contractExpense;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -127,6 +133,7 @@ router.get('/', auth, async (req, res) => {
       totalExpense,
       totalMaterialExpense: materialExpense,
       totalLabourCost: labourCost,
+      totalContractExpense: contractExpense,
       profitLoss: income - totalExpense,
       todayAttendance,
       todayExpense: todayExpense._sum.amount || 0,
