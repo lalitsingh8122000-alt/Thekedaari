@@ -16,7 +16,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 const menuItems = [
   { key: 'dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { key: 'attendance', path: '/attendance', icon: CalendarCheck },
+  { key: 'nav_attendance_report', path: '/attendance', icon: CalendarCheck },
   { key: 'projects', path: '/projects', icon: FolderKanban },
   { key: 'workers', path: '/workers', icon: Users, subtitle: 'master_data' },
   { key: 'roles', path: '/roles', icon: ShieldCheck },

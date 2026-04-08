@@ -9,6 +9,7 @@ if (!process.env.DATABASE_URL) {
     dbTarget === 'aws' ? process.env.DATABASE_URL_AWS : process.env.DATABASE_URL_LOCAL;
 }
 
+const { PrismaClient } = require('@prisma/client');
 const authRoutes = require('./routes/auth');
 const projectRoutes = require('./routes/projects');
 const roleRoutes = require('./routes/roles');
@@ -18,6 +19,8 @@ const attendanceRoutes = require('./routes/attendance');
 const ledgerRoutes = require('./routes/ledger');
 const financeRoutes = require('./routes/finance');
 const dashboardRoutes = require('./routes/dashboard');
+
+const prismaHealth = new PrismaClient();
 
 const app = express();
 app.disable('etag');
@@ -45,8 +48,19 @@ app.use('/api/ledger', ledgerRoutes);
 app.use('/api/finance', financeRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Thekedaar API is running' });
+app.get('/api/health', async (req, res) => {
+  try {
+    await prismaHealth.$queryRaw`SELECT 1`;
+    res.json({ status: 'ok', database: 'up', message: 'Thekedaar API is running' });
+  } catch (e) {
+    console.error('[health] database unreachable:', e.message);
+    res.status(503).json({
+      status: 'unhealthy',
+      database: 'down',
+      message: 'API is running but cannot connect to MySQL. Start the DB or fix DATABASE_URL.',
+      ...(process.env.NODE_ENV !== 'production' && e.message && { detail: e.message }),
+    });
+  }
 });
 
 app.listen(PORT, '0.0.0.0', () => {

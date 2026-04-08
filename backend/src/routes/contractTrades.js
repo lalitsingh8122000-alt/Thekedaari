@@ -3,12 +3,14 @@ const { PrismaClient } = require('@prisma/client');
 const auth = require('../middleware/auth');
 const { sendServerError } = require('../utils/serverError');
 const { normalizeString, parseId } = require('../utils/validation');
+const { ensureDefaultContractTrades } = require('../utils/defaultContractTrades');
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
 router.get('/', auth, async (req, res) => {
   try {
+    await ensureDefaultContractTrades(prisma, req.userId);
     const trades = await prisma.contractTrade.findMany({
       where: { userId: req.userId },
       orderBy: { createdAt: 'asc' },

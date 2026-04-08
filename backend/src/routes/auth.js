@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
 const auth = require('../middleware/auth');
 const { normalizeString, normalizePhone, isValidPhone } = require('../utils/validation');
+const { ensureDefaultContractTrades } = require('../utils/defaultContractTrades');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -37,8 +38,12 @@ router.post('/register', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({
-      data: { name, phone, password: hashedPassword },
+    const user = await prisma.$transaction(async (tx) => {
+      const u = await tx.user.create({
+        data: { name, phone, password: hashedPassword },
+      });
+      await ensureDefaultContractTrades(tx, u.id);
+      return u;
     });
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '30d' });

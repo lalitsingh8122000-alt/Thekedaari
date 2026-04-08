@@ -1,0 +1,28 @@
+# Local MySQL for development — matches backend/.env.example DATABASE_URL_LOCAL
+# Usage: docker compose up -d
+# Then: cd backend && npx prisma migrate deploy
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: thekedaari-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: thekedaar_db
+      MYSQL_USER: thekedaar
+      MYSQL_PASSWORD: Thekedaar@Prod2026
+      MYSQL_ROOT_PASSWORD: root_local_dev_only
+    ports:
+      - "3306:3306"
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-proot_local_dev_only"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+    volumes:
+      - thekedaari_mysql_data:/var/lib/mysql
+
+volumes:
+  thekedaari_mysql_data:

@@ -24,7 +24,7 @@
   "payments": "Payments",
   "transactions": "Transactions",
   "attendance": "Attendance",
-  "daily_attendance": "Daily Attendance",
+  "nav_attendance_report": "Attendance report",
 
   "total_income": "Total Income",
   "total_expense": "Total Expense",
@@ -91,6 +91,7 @@
   "theka_add_use": "Add & use",
   "trade_add_failed": "Could not add that type.",
   "trade_duplicate_name": "This work type name already exists. Use a different name.",
+  "role_duplicate_name": "This role name already exists. Use a different name.",
   "roles_custom_trade_placeholder": "Custom sub-type name…",
   "roles_custom_trade_button": "Add custom",
   "quick_add_trades": "Quick add",
@@ -123,6 +124,12 @@
   "attendance_project_required": "Please select a project.",
   "select_worker": "Select Worker",
   "attendance_date": "Date",
+  "attendance_page_subtitle": "See who is present or absent for the date you choose. You cannot edit the list on this screen.",
+  "attendance_filter_section": "View for",
+  "attendance_mark_cta": "Mark attendance",
+  "attendance_mark_helper": "To mark or change attendance, use Mark attendance above (opens Workers), or open Workers from the menu, select a worker, then tap Attendance.",
+  "attendance_no_records_project": "No attendance for this project on this date.",
+  "attendance_no_records_date": "No attendance on this date.",
   "attendance_type": "Attendance Type",
   "full_day": "Full Day",
   "half_day": "Half Day",
@@ -272,10 +279,10 @@
   "guide_s11_steps": "Tap photo area only if you have a clear face photo (optional).\nType worker name and 10-digit phone (different from yours).\nTap the correct role button (Labour, Karigar, Contractor…).\nIf Contractor: open the Theka drop-down and pick (or add) the work type.\nType cost per day in ₹ and tap Save.",
 
   "guide_s14_title": "11. Mark attendance (from Workers)",
-  "guide_s14_intro": "From the Workers list you can mark one person’s attendance without going to the main Attendance menu. A form opens on top of the list for that worker only.",
+  "guide_s14_intro": "From the Workers list you can mark one person’s attendance. Attendance report in the menu is view-only; marking is done here on each worker’s card.",
   "guide_s14_steps": "Open Workers from the menu or bottom bar.\nFind the worker and tap Attendance (green calendar) on their card.\nChoose the project and date.\nTap Present or Absent.\nChoose Full day, Half day, or Other.\nCheck Day salary — it fills from their cost per day (you can adjust if needed).\nTurn on Pay money? only if you are recording a payment with this attendance.\nTap Save attendance.",
 
   "guide_s15_title": "12. Worker ledger — all transactions for one person",
   "guide_s15_intro": "Here you see every salary line (what is owed) and every payment for that worker only. Current balance is what you still owe after payments. Use this before handing over cash.",
-  "guide_s15_steps": "On Workers, open someone’s row and tap Ledger (blue book icon).\nRead Current balance at the top — what remains to pay this person.\nAdd earning — add or adjust money still owed (e.g. salary from attendance).\nRecord payment — when you pay cash or transfer; it reduces the balance.\nScroll the list: OWED / Salary lines (green, plus) increase what is due; PAID / Payment lines (red, minus) show money already given.\nDates and amounts should match your site register.\nYou can still open the separate Attendance or Transactions menu pages for full-site views."
+  "guide_s15_steps": "On Workers, open someone’s row and tap Ledger (blue book icon).\nRead Current balance at the top — what remains to pay this person.\nAdd earning — add or adjust money still owed (e.g. salary from attendance).\nRecord payment — when you pay cash or transfer; it reduces the balance.\nScroll the list: OWED / Salary lines (green, plus) increase what is due; PAID / Payment lines (red, minus) show money already given.\nDates and amounts should match your site register.\nYou can still open Attendance report or Transactions for full-site views."
 }

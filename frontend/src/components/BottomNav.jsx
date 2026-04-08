@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 const navItems = [
   { key: 'dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { key: 'attendance', path: '/attendance', icon: CalendarCheck },
+  { key: 'nav_attendance_report', path: '/attendance', icon: CalendarCheck },
   { key: 'workers', path: '/workers', icon: Users },
   { key: 'projects', path: '/projects', icon: FolderKanban },
 ];

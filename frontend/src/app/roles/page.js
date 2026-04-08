@@ -1,14 +1,12 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Plus, ShieldCheck, X, Users, Brush, Trash2 } from 'lucide-react';
+import { Plus, ShieldCheck, X, Users } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
 import api from '@/lib/api';
-import { normalizeText, isContractTradeNameTaken } from '@/lib/validation';
+import { normalizeText } from '@/lib/validation';
 
 const quickRoles = ['Labour', 'Karigar', 'Supervisor', 'Contractor'];
-
-const quickTradeNames = ['Color', 'Furniture', 'Marble', 'Plumbing', 'Steel', 'Electrical', 'POP'];
 
 function quickRoleLabel(r, t) {
   if (r === 'Labour') return t('labour');
@@ -20,26 +18,19 @@ function quickRoleLabel(r, t) {
 
 export default function RolesPage() {
   const [roles, setRoles] = useState([]);
-  const [trades, setTrades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [roleName, setRoleName] = useState('');
   const [saving, setSaving] = useState(false);
-  const [tradeSaving, setTradeSaving] = useState(false);
-  const [customTradeName, setCustomTradeName] = useState('');
   const [error, setError] = useState('');
-  const [tradeError, setTradeError] = useState('');
   const { t } = useLanguage();
 
   const loadRoles = () =>
     api.get('/roles').then((r) => setRoles(r.data)).catch(() => {});
 
-  const loadTrades = () =>
-    api.get('/contract-trades').then((r) => setTrades(r.data || [])).catch(() => setTrades([]));
-
   const load = () => {
     setLoading(true);
-    Promise.all([loadRoles(), loadTrades()]).finally(() => setLoading(false));
+    loadRoles().finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, []);
@@ -59,62 +50,13 @@ export default function RolesPage() {
       setShowModal(false);
       load();
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to add role');
+      if (err.response?.status === 409) {
+        setError(t('role_duplicate_name'));
+      } else {
+        setError(err.response?.data?.error || 'Failed to add role');
+      }
     } finally {
       setSaving(false);
-    }
-  };
-
-  const addTrade = async (tradeName) => {
-    const cleanName = normalizeText(tradeName);
-    if (!cleanName || cleanName.length < 2) return;
-    if (isContractTradeNameTaken(trades, cleanName)) {
-      setTradeError(t('trade_duplicate_name'));
-      return;
-    }
-    setTradeError('');
-    setTradeSaving(true);
-    try {
-      await api.post('/contract-trades', { name: cleanName });
-      loadTrades();
-    } catch (err) {
-      setTradeError(
-        err.response?.status === 409 ? t('trade_duplicate_name') : (err.response?.data?.error || t('trade_add_failed')),
-      );
-    } finally {
-      setTradeSaving(false);
-    }
-  };
-
-  const addCustomTrade = async () => {
-    const cleanName = normalizeText(customTradeName);
-    if (!cleanName || cleanName.length < 2) return;
-    if (isContractTradeNameTaken(trades, cleanName)) {
-      setTradeError(t('trade_duplicate_name'));
-      return;
-    }
-    setTradeError('');
-    setTradeSaving(true);
-    try {
-      await api.post('/contract-trades', { name: cleanName });
-      setCustomTradeName('');
-      loadTrades();
-    } catch (err) {
-      setTradeError(
-        err.response?.status === 409 ? t('trade_duplicate_name') : (err.response?.data?.error || t('trade_add_failed')),
-      );
-    } finally {
-      setTradeSaving(false);
-    }
-  };
-
-  const removeTrade = async (tradeId) => {
-    if (!confirm(t('confirm_delete_trade'))) return;
-    try {
-      await api.delete(`/contract-trades/${tradeId}`);
-      loadTrades();
-    } catch (err) {
-      alert(err.response?.data?.error || 'Cannot delete');
     }
   };
 
@@ -168,74 +110,6 @@ export default function RolesPage() {
             ))}
           </div>
         )}
-
-        <div className="card space-y-3 border border-amber-100 bg-amber-50/40">
-          <div className="flex items-start gap-2">
-            <Brush size={22} className="text-amber-700 shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-bold text-gray-800">{t('roles_theka_section_title')}</h3>
-              <p className="text-xs text-gray-600 mt-0.5">{t('roles_theka_section_hint')}</p>
-            </div>
-          </div>
-          {tradeError && (
-            <div className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{tradeError}</div>
-          )}
-          <p className="text-xs font-medium text-gray-500">{t('quick_add_trades')}</p>
-          <div className="flex flex-wrap gap-2">
-            {quickTradeNames.map((q) => (
-              <button
-                key={q}
-                type="button"
-                disabled={tradeSaving}
-                onClick={() => addTrade(q)}
-                className="py-2 px-3 rounded-xl text-sm font-semibold bg-white border border-amber-200 text-amber-900 active:bg-amber-100 disabled:opacity-50"
-              >
-                {q}
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              className="input-field flex-1"
-              maxLength={100}
-              value={customTradeName}
-              placeholder={t('roles_custom_trade_placeholder')}
-              onChange={(e) => {
-                setCustomTradeName(e.target.value);
-                if (tradeError) setTradeError('');
-              }}
-            />
-            <button
-              type="button"
-              disabled={tradeSaving}
-              onClick={addCustomTrade}
-              className="btn-outline py-2.5 px-4 font-semibold text-sm whitespace-nowrap disabled:opacity-50"
-            >
-              {t('roles_custom_trade_button')}
-            </button>
-          </div>
-          {trades.length === 0 ? (
-            <p className="text-sm text-gray-500">{t('roles_theka_empty')}</p>
-          ) : (
-            <ul className="space-y-1.5">
-              {trades.map((tr) => (
-                <li key={tr.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-white border border-gray-100">
-                  <span className="font-medium text-gray-800">{tr.name}</span>
-                  {(tr._count?.workers === 0 && tr._count?.expenses === 0) ? (
-                    <button type="button" onClick={() => removeTrade(tr.id)} className="p-1.5 text-gray-400 hover:text-red-600" aria-label="Delete">
-                      <Trash2 size={16} />
-                    </button>
-                  ) : (
-                    <span className="text-[10px] text-gray-400">
-                      {tr._count?.workers ?? 0} · {tr._count?.expenses ?? 0}
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
       </div>
 
       {showModal && (
@@ -249,16 +123,20 @@ export default function RolesPage() {
 
             <p className="text-gray-500 text-sm">Quick add / जल्दी जोड़ें:</p>
             <div className="grid grid-cols-2 gap-2">
-              {quickRoles.map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => addRole(r)}
-                  className="py-3 rounded-xl font-semibold bg-primary-50 text-primary-700 active:bg-primary-100"
-                >
-                  {quickRoleLabel(r, t)}
-                </button>
-              ))}
+              {quickRoles.map((r) => {
+                const taken = roles.some((x) => String(x.name).toLowerCase() === r.toLowerCase());
+                return (
+                  <button
+                    key={r}
+                    type="button"
+                    disabled={taken || saving}
+                    onClick={() => addRole(r)}
+                    className="py-3 rounded-xl font-semibold bg-primary-50 text-primary-700 active:bg-primary-100 disabled:opacity-45 disabled:cursor-not-allowed"
+                  >
+                    {quickRoleLabel(r, t)}
+                  </button>
+                );
+              })}
             </div>
 
             <div className="border-t pt-4">

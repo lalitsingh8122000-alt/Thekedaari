@@ -27,6 +27,15 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ error: 'Role name must be between 2 and 100 characters' });
     }
 
+    const existing = await prisma.role.findMany({
+      where: { userId: req.userId },
+      select: { name: true },
+    });
+    const lower = name.toLowerCase();
+    if (existing.some((r) => r.name.toLowerCase() === lower)) {
+      return res.status(409).json({ error: 'A role with this name already exists' });
+    }
+
     const role = await prisma.role.create({
       data: { name, userId: req.userId },
     });
