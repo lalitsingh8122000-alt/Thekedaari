@@ -1,7 +1,9 @@
 import './globals.css';
 import Providers from '@/components/Providers';
+import { getSiteUrl } from '@/lib/siteUrl';
 
 export const metadata = {
+  metadataBase: new URL(getSiteUrl()),
   title: 'ठेकेदार - Thekedaar',
   description: 'Construction Workforce & Project Management System',
   manifest: '/manifest.json',

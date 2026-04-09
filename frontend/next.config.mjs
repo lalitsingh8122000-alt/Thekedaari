@@ -16,6 +16,22 @@ const nextConfig = {
       { protocol: 'https', hostname: '**' },
     ],
   },
+  async redirects() {
+    return [
+      { source: '/thekedaar-software.html', destination: '/thekedaar-software', permanent: true },
+      {
+        source: '/contractor-management-software.html',
+        destination: '/contractor-management-software',
+        permanent: true,
+      },
+      { source: '/mazdoor-attendance-app.html', destination: '/mazdoor-attendance-app', permanent: true },
+      {
+        source: '/construction-hisaab-kitab.html',
+        destination: '/construction-hisaab-kitab',
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

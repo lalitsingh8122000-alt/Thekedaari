@@ -581,6 +581,15 @@ export const landingBodyHtml = `<!-- ══════════ NAV ══�
                 </ul>
             </div>
             <div class="footer-col">
+                <h5>Guides</h5>
+                <ul>
+                    <li><a href="/thekedaar-software">Thekedaar Software</a></li>
+                    <li><a href="/contractor-management-software">Contractor Management</a></li>
+                    <li><a href="/mazdoor-attendance-app">Mazdoor Attendance App</a></li>
+                    <li><a href="/construction-hisaab-kitab">Construction Hisaab Kitab</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
                 <h5>Support</h5>
                 <ul>
                     <li><a href="/login">Help Center</a></li>

@@ -15,14 +15,14 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  projects      Project[]
-  roles         Role[]
+  projects       Project[]
+  roles          Role[]
   contractTrades ContractTrade[]
-  workers       Worker[]
-  attendances Attendance[]
-  ledgers     LedgerEntry[]
-  incomes     Income[]
-  expenses    Expense[]
+  workers        Worker[]
+  attendances    Attendance[]
+  ledgers        LedgerEntry[]
+  incomes        Income[]
+  expenses       Expense[]
 }
 
 model Project {
@@ -70,21 +70,21 @@ model ContractTrade {
 }
 
 model Worker {
-  id               Int            @id @default(autoincrement())
-  name             String         @db.VarChar(100)
-  phone            String         @db.VarChar(20)
-  photo            String?        @db.VarChar(500)
-  status           String         @default("Active") @db.VarChar(20)
-  workerType       String         @default("Labour") @db.VarChar(20)
-  costPerDay       Float
-  roleId           Int
-  role             Role           @relation(fields: [roleId], references: [id])
-  contractTradeId  Int?
-  contractTrade    ContractTrade? @relation(fields: [contractTradeId], references: [id])
-  userId           Int
-  user             User           @relation(fields: [userId], references: [id])
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  id              Int            @id @default(autoincrement())
+  name            String         @db.VarChar(100)
+  phone           String         @db.VarChar(20)
+  photo           String?        @db.VarChar(500)
+  status          String         @default("Active") @db.VarChar(20)
+  workerType      String         @default("Labour") @db.VarChar(20)
+  costPerDay      Float
+  roleId          Int
+  role            Role           @relation(fields: [roleId], references: [id])
+  contractTradeId Int?
+  contractTrade   ContractTrade? @relation(fields: [contractTradeId], references: [id])
+  userId          Int
+  user            User           @relation(fields: [userId], references: [id])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   attendances   Attendance[]
   ledgerEntries LedgerEntry[]
@@ -180,4 +180,60 @@ model Expense {
   @@index([userId])
   @@index([workerId])
   @@index([contractTradeId])
+}
+
+/// CRM / ERP monitor dashboard leads (managed by Prisma migrations)
+model Lead {
+  id             BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  companyId      BigInt?    @map("company_id") @db.UnsignedBigInt
+  name           String     @db.VarChar(150)
+  phone          String     @db.VarChar(20)
+  email          String?    @db.VarChar(150)
+  city           String?    @db.VarChar(100)
+  state          String?    @db.VarChar(100)
+  pincode        String?    @db.VarChar(10)
+  address        String?    @db.Text
+  source         String?    @db.VarChar(100)
+  status         LeadStatus @default(new_lead)
+  leadStage      LeadStage  @default(cold) @map("lead_stage")
+  assignedTo     BigInt?    @map("assigned_to") @db.UnsignedBigInt
+  remarks        String?    @db.Text
+  lastCallAt     DateTime?  @map("last_call_at")
+  nextFollowupAt DateTime?  @map("next_followup_at")
+  convertedAt    DateTime?  @map("converted_at")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  @@index([phone], map: "idx_phone")
+  @@index([status], map: "idx_status")
+  @@index([assignedTo], map: "idx_assigned_to")
+  @@index([companyId], map: "idx_company")
+  @@index([createdAt], map: "idx_leads_created_at")
+  @@index([nextFollowupAt], map: "idx_leads_next_followup_at")
+  @@index([leadStage], map: "idx_leads_lead_stage")
+  @@index([source], map: "idx_leads_source")
+  @@index([assignedTo, status], map: "idx_leads_assigned_status")
+  @@map("leads")
+}
+
+enum LeadStatus {
+  new_lead
+  call_pending
+  call_in_progress
+  call_not_answered
+  call_back
+  interested
+  demo_scheduled
+  demo_done
+  demo_pending
+  not_interested
+  wrong_number
+  converted
+  lost
+}
+
+enum LeadStage {
+  cold
+  warm
+  hot
 }
