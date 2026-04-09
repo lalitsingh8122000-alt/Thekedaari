@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Plus, TrendingUp, Banknote, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -13,8 +13,6 @@ const defaultForm = () => ({
   category: 'Payment',
   remarks: '',
   comment: '',
-  projectId: '',
-  date: new Date().toISOString().slice(0, 10),
 });
 
 export default function WorkerLedgerPage() {
@@ -22,12 +20,12 @@ export default function WorkerLedgerPage() {
   const router = useRouter();
   const { id } = useParams();
   const [data, setData] = useState(null);
-  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   /** 'addBalance' | 'payWorker' */
   const [showModal, setShowModal] = useState(null);
   const [form, setForm] = useState(defaultForm);
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const load = () => {
     api
@@ -41,39 +39,34 @@ export default function WorkerLedgerPage() {
     load();
   }, [id]);
 
-  useEffect(() => {
-    api
-      .get('/projects')
-      .then((r) => setProjects(Array.isArray(r.data) ? r.data : []))
-      .catch(() => setProjects([]));
-  }, []);
-
-  const defaultProjectId = useMemo(() => {
-    const running = projects.find((p) => p.status === 'Running');
-    return running?.id ?? projects[0]?.id ?? '';
-  }, [projects]);
-
   const fmt = (n) => '₹' + Math.abs(n || 0).toLocaleString('en-IN');
+
+  const closeModal = () => {
+    setShowModal(null);
+    setSaving(false);
+    setError('');
+  };
 
   const openAddBalance = () => {
     setError('');
+    setSaving(false);
     setForm({ ...defaultForm(), type: 'Credit', category: 'Bonus' });
     setShowModal('addBalance');
   };
 
   const openPayWorker = () => {
     setError('');
+    setSaving(false);
     setForm({
       ...defaultForm(),
       type: 'Debit',
       category: 'Payment',
-      projectId: defaultProjectId ? String(defaultProjectId) : '',
-      date: new Date().toISOString().slice(0, 10),
     });
     setShowModal('payWorker');
   };
 
   const handleAdd = async () => {
+    if (saving) return;
     setError('');
     const amount = parsePositiveAmount(form.amount);
     if (!amount) return setError('Please enter a valid amount');
@@ -88,13 +81,7 @@ export default function WorkerLedgerPage() {
       comment: form.comment.trim(),
     };
 
-    if (showModal === 'payWorker' && form.category === 'Payment') {
-      const pid = parseInt(form.projectId, 10);
-      if (!pid) return setError(t('ledger_project_required'));
-      payload.projectId = pid;
-      payload.date = form.date;
-    }
-
+    setSaving(true);
     try {
       await api.post('/ledger', payload);
       setShowModal(null);
@@ -103,6 +90,8 @@ export default function WorkerLedgerPage() {
       load();
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to save ledger entry');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -112,10 +101,23 @@ export default function WorkerLedgerPage() {
     return t('ledger_settled');
   };
 
+  /** Signed balance: >0 = worker is owed (burden on thekedaar) → red; <0 = advance / thekedaar paid ahead → green */
   const balanceTone = (balance) => {
-    if (balance > 0) return { border: 'border-l-amber-500', text: 'text-amber-700' };
-    if (balance < 0) return { border: 'border-l-sky-600', text: 'text-sky-700' };
-    return { border: 'border-l-slate-400', text: 'text-slate-700' };
+    if (balance > 0) {
+      return {
+        border: 'border-l-red-500',
+        text: 'text-red-600',
+        hint: 'text-red-600/85',
+      };
+    }
+    if (balance < 0) {
+      return {
+        border: 'border-l-emerald-500',
+        text: 'text-emerald-600',
+        hint: 'text-emerald-700/90',
+      };
+    }
+    return { border: 'border-l-slate-400', text: 'text-slate-700', hint: 'text-gray-500' };
   };
 
   return (
@@ -142,7 +144,11 @@ export default function WorkerLedgerPage() {
               <p className={`text-2xl sm:text-3xl font-bold ${balanceTone(data.currentBalance).text}`}>
                 {fmt(data.currentBalance)}
               </p>
-              <p className="text-xs text-gray-500 mt-1.5 leading-snug max-w-xs mx-auto">{balanceHint(data.currentBalance)}</p>
+              <p
+                className={`text-xs mt-1.5 leading-snug max-w-xs mx-auto ${balanceTone(data.currentBalance).hint || 'text-gray-500'}`}
+              >
+                {balanceHint(data.currentBalance)}
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
@@ -193,7 +199,11 @@ export default function WorkerLedgerPage() {
                                     : t('other')}
                           </span>
                         </div>
-                        {entry.remarks && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{entry.remarks}</p>}
+                        {(entry.remarks || entry.comment) && (
+                          <p className="text-xs text-gray-500 mt-1 line-clamp-3 whitespace-pre-wrap break-words">
+                            {[entry.remarks, entry.comment].filter(Boolean).join(entry.remarks && entry.comment ? ' · ' : '')}
+                          </p>
+                        )}
                         <p className="text-[11px] text-gray-400 mt-0.5">
                           {new Date(entry.createdAt).toLocaleDateString('en-IN')}
                         </p>
@@ -217,14 +227,17 @@ export default function WorkerLedgerPage() {
       </div>
 
       {showModal && (
-        <div className="modal-overlay z-[70]">
-          <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl max-h-[90vh] flex flex-col">
+        <div className="modal-overlay z-[70]" onClick={closeModal} role="presentation">
+          <div
+            className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="overflow-y-auto flex-1 p-3 sm:p-5 space-y-2.5 sm:space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-base font-bold pr-2">
                   {showModal === 'addBalance' ? t('ledger_modal_add_title') : t('ledger_modal_pay_title')}
                 </h3>
-                <button type="button" onClick={() => setShowModal(null)} className="p-1 shrink-0">
+                <button type="button" onClick={closeModal} className="p-1 shrink-0">
                   <X size={20} />
                 </button>
               </div>
@@ -244,33 +257,9 @@ export default function WorkerLedgerPage() {
               </div>
 
               {showModal === 'payWorker' && form.category === 'Payment' && (
-                <>
-                  <div>
-                    <label className="block text-gray-600 font-medium mb-1 text-xs">{t('select_project')}</label>
-                    <select
-                      className="input-field !py-2.5 text-sm"
-                      value={form.projectId}
-                      onChange={(e) => setForm({ ...form, projectId: e.target.value })}
-                    >
-                      <option value="">{t('ledger_pick_project')}</option>
-                      {projects.map((p) => (
-                        <option key={p.id} value={String(p.id)}>
-                          {p.name} {p.status === 'Running' ? '' : `(${p.status})`}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-[11px] text-gray-500 mt-1.5 leading-snug">{t('ledger_project_help')}</p>
-                  </div>
-                  <div>
-                    <label className="block text-gray-600 font-medium mb-1 text-xs">{t('date')}</label>
-                    <input
-                      type="date"
-                      className="input-field !py-2 text-sm"
-                      value={form.date}
-                      onChange={(e) => setForm({ ...form, date: e.target.value })}
-                    />
-                  </div>
-                </>
+                <p className="text-[11px] text-gray-500 leading-snug bg-slate-50 border border-slate-100 rounded-xl px-3 py-2">
+                  {t('ledger_payment_no_project_hint')}
+                </p>
               )}
 
               <div>
@@ -307,11 +296,12 @@ export default function WorkerLedgerPage() {
               <button
                 type="button"
                 onClick={handleAdd}
-                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-white text-sm transition-all active:scale-[0.99] ${
+                disabled={saving}
+                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-white text-sm transition-all active:scale-[0.99] disabled:opacity-60 disabled:pointer-events-none ${
                   showModal === 'addBalance' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'
                 }`}
               >
-                <Plus size={18} /> {t('save')}
+                <Plus size={18} /> {saving ? t('loading') : t('save')}
               </button>
             </div>
           </div>

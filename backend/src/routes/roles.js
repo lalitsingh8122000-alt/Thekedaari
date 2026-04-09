@@ -2,15 +2,17 @@ const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const auth = require('../middleware/auth');
 const { normalizeString } = require('../utils/validation');
+const { ensureDefaultRoles } = require('../utils/defaultRoles');
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
 router.get('/', auth, async (req, res) => {
   try {
+    await ensureDefaultRoles(prisma, req.userId);
     const roles = await prisma.role.findMany({
       where: { userId: req.userId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { id: 'asc' },
       include: { _count: { select: { workers: true } } },
     });
     res.json(roles);

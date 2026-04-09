@@ -1,8 +1,8 @@
 'use client';
 import { useEffect, useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import {
-  Plus, Users, CalendarCheck, BookOpen, Pencil, X,
+  ArrowLeft, Users, CalendarCheck, X,
   IndianRupee, Banknote, UserCheck, UserX, Search,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -10,11 +10,15 @@ import AppShell from '@/components/AppShell';
 import api from '@/lib/api';
 import { parsePositiveAmount, isValidDateInput } from '@/lib/validation';
 
-export default function WorkersPage() {
+export default function ProjectAttendancePage() {
+  const params = useParams();
+  const id = params?.id;
+  const projectIdNum = parseInt(String(id), 10);
+
+  const [project, setProject] = useState(null);
   const [workers, setWorkers] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState('Active');
   const [showAttendance, setShowAttendance] = useState(null);
   const [attForm, setAttForm] = useState({
     projectId: '', date: new Date().toISOString().split('T')[0],
@@ -31,16 +35,31 @@ export default function WorkersPage() {
   const { t } = useLanguage();
   const router = useRouter();
 
-  const load = () => {
-    const params = {};
-    if (filterStatus) params.status = filterStatus;
+  const loadData = () => {
+    if (!Number.isFinite(projectIdNum) || projectIdNum < 1) return;
+    setLoading(true);
     Promise.all([
-      api.get('/workers', { params }),
-      api.get('/projects', { params: { status: 'Running' } }),
-    ]).then(([w, p]) => { setWorkers(w.data); setProjects(p.data); }).catch(() => {}).finally(() => setLoading(false));
+      api.get(`/projects/${projectIdNum}`),
+      api.get('/workers', { params: { status: 'Active' } }),
+      api.get('/projects'),
+    ])
+      .then(([projRes, wRes, pRes]) => {
+        setProject(projRes.data);
+        setWorkers(wRes.data);
+        setProjects(pRes.data);
+      })
+      .catch(() => router.replace('/projects'))
+      .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [filterStatus]);
+  useEffect(() => {
+    if (!Number.isFinite(projectIdNum) || projectIdNum < 1) {
+      router.replace('/projects');
+      return;
+    }
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   const otherProjects = useMemo(
     () => projects.filter((p) => String(p.id) !== String(attForm.projectId)),
@@ -66,7 +85,7 @@ export default function WorkersPage() {
     setExistingAttendance(null);
     setError('');
     setAttForm({
-      projectId: '',
+      projectId: String(projectIdNum),
       date: new Date().toISOString().split('T')[0],
       status: 'Present',
       type: 'FullDay',
@@ -90,14 +109,17 @@ export default function WorkersPage() {
         params: { workerId, startDate: selectedDate, endDate: selectedDate },
       });
       const rows = Array.isArray(res.data) ? res.data : [];
+      const primaryRows = rows.filter(
+        (r) => String(r.projectId) === String(projectIdNum)
+      );
       let record = null;
-      if (rows.length === 1) {
-        record = rows[0];
-      } else if (rows.length >= 2) {
+      if (primaryRows.length === 1) {
+        record = primaryRows[0];
+      } else if (primaryRows.length >= 2) {
         record =
-          rows.find((r) => r.splitSecondaries?.length > 0) ||
-          rows.find((r) => !r.primarySplitId) ||
-          rows[0];
+          primaryRows.find((r) => r.splitSecondaries?.length > 0) ||
+          primaryRows.find((r) => !r.primarySplitId) ||
+          primaryRows[0];
       }
       setExistingAttendance(record);
       if (record) {
@@ -110,7 +132,7 @@ export default function WorkersPage() {
             : Number(record.payment) || 0;
         setAttForm((f) => ({
           ...f,
-          projectId: record.projectId != null ? String(record.projectId) : f.projectId,
+          projectId: String(projectIdNum),
           status: isAbsent ? 'Absent' : 'Present',
           type: isAbsent ? f.type : (record.type || 'FullDay'),
           salary: split ? totalSplitSalary : (record.salary ?? f.salary),
@@ -123,6 +145,7 @@ export default function WorkersPage() {
       } else {
         setAttForm((f) => ({
           ...f,
+          projectId: String(projectIdNum),
           secondSite: false,
           secondProjectId: '',
         }));
@@ -222,7 +245,7 @@ export default function WorkersPage() {
         await api.post('/attendance', payload);
       }
       setShowAttendance(null);
-      load();
+      loadData();
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to mark attendance');
     } finally { setSaving(false); }
@@ -233,25 +256,22 @@ export default function WorkersPage() {
   return (
     <AppShell>
       <div className="space-y-3 sm:space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="page-title">{t('workers')}</h2>
-          <button onClick={() => router.push('/workers/add')} className="btn-primary flex items-center gap-1.5 sm:gap-2 py-2 px-3 sm:px-4 text-sm sm:text-base">
-            <Plus size={18} /> {t('add_worker')}
+        <div className="flex items-start gap-2 sm:gap-3">
+          <button
+            type="button"
+            onClick={() => router.push('/projects')}
+            className="p-2 rounded-xl bg-gray-100 active:bg-gray-200 shrink-0"
+            aria-label={t('projects')}
+          >
+            <ArrowLeft size={20} />
           </button>
-        </div>
-
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {['', 'Active', 'Inactive'].map((s) => (
-            <button
-              key={s}
-              onClick={() => setFilterStatus(s)}
-              className={`px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${
-                filterStatus === s ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 border'
-              }`}
-            >
-              {s === '' ? t('all') : s === 'Active' ? t('active') : t('inactive')}
-            </button>
-          ))}
+          <div className="min-w-0">
+            <h2 className="page-title leading-tight">{t('project_attendance_title')}</h2>
+            {project?.name && (
+              <p className="text-sm font-semibold text-primary-700 mt-0.5 truncate">{project.name}</p>
+            )}
+            <p className="text-xs text-gray-500 mt-1">{t('project_attendance_subtitle')}</p>
+          </div>
         </div>
 
         <div className="relative">
@@ -301,29 +321,14 @@ export default function WorkersPage() {
                     {w.status === 'Active' ? t('active') : t('inactive')}
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-                  <button
-                    onClick={() => openAttendance(w)}
-                    className="flex flex-col items-center gap-0.5 py-2 sm:py-3 bg-green-50 rounded-xl text-green-700 font-semibold active:bg-green-100"
-                  >
-                    <CalendarCheck size={18} />
-                    <span className="text-[10px] sm:text-xs">{t('attendance')}</span>
-                  </button>
-                  <button
-                    onClick={() => router.push(`/workers/${w.id}/ledger`)}
-                    className="flex flex-col items-center gap-0.5 py-2 sm:py-3 bg-blue-50 rounded-xl text-blue-700 font-semibold active:bg-blue-100"
-                  >
-                    <BookOpen size={18} />
-                    <span className="text-[10px] sm:text-xs">{t('ledger')}</span>
-                  </button>
-                  <button
-                    onClick={() => router.push(`/workers/${w.id}/edit`)}
-                    className="flex flex-col items-center gap-0.5 py-2 sm:py-3 bg-gray-50 rounded-xl text-gray-700 font-semibold active:bg-gray-100"
-                  >
-                    <Pencil size={18} />
-                    <span className="text-[10px] sm:text-xs">{t('edit')}</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => openAttendance(w)}
+                  className="w-full flex items-center justify-center gap-2 py-3 bg-green-50 rounded-xl text-green-700 font-semibold active:bg-green-100 border border-green-100"
+                >
+                  <CalendarCheck size={20} />
+                  <span>{t('mark_attendance')}</span>
+                </button>
               </div>
             ))}
           </div>
@@ -363,22 +368,10 @@ export default function WorkersPage() {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-gray-600 font-medium mb-1 text-xs">{t('select_project')}</label>
-                  <select
-                    className="input-field text-xs !py-2"
-                    value={attForm.projectId}
-                    onChange={(e) => {
-                      const pid = e.target.value;
-                      setAttForm((f) => ({
-                        ...f,
-                        projectId: pid,
-                        secondProjectId:
-                          f.secondProjectId && String(f.secondProjectId) === String(pid) ? '' : f.secondProjectId,
-                      }));
-                    }}
-                  >
-                    <option value="">{t('select_project')}</option>
-                    {projects.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
-                  </select>
+                  <div className="input-field text-xs !py-2 bg-gray-50 text-gray-800 font-medium border-gray-200">
+                    {projects.find((x) => String(x.id) === String(attForm.projectId))?.name || project?.name || '—'}
+                  </div>
+                  <p className="text-[10px] text-gray-500 mt-1 leading-snug">{t('project_attendance_site_locked')}</p>
                 </div>
                 <div>
                   <label className="block text-gray-600 font-medium mb-1 text-xs">{t('attendance_date')}</label>

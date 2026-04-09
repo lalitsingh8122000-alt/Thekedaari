@@ -7,6 +7,14 @@ export default function PWARegister() {
   useEffect(() => {
     attachPwaInstallListeners();
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+    /* Next.js dev (HMR) often breaks SW fetch/update; only register in production. */
+    if (process.env.NODE_ENV === 'development') {
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        regs.forEach((r) => r.unregister());
+      });
+      return;
+    }
+
     let hasRefreshedForNewSw = false;
     let intervalId;
     const onControllerChange = () => {
@@ -19,8 +27,9 @@ export default function PWARegister() {
     navigator.serviceWorker
       .register('/sw.js', { scope: '/' })
       .then((registration) => {
-        // Periodically check for newer service worker after deploys.
-        intervalId = window.setInterval(() => registration.update(), 60 * 1000);
+        intervalId = window.setInterval(() => {
+          registration.update().catch(() => {});
+        }, 60 * 1000);
       })
       .catch(() => {});
 

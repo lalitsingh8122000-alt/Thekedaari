@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Pencil, IndianRupee, FolderKanban, Search } from 'lucide-react';
+import { Plus, Pencil, IndianRupee, FolderKanban, Search, CalendarCheck } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
 import api from '@/lib/api';
@@ -118,18 +118,27 @@ export default function ProjectsPage() {
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                   <button
+                    type="button"
                     onClick={() => router.push(`/projects/${p.id}/edit`)}
-                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-gray-100 rounded-xl text-gray-700 font-semibold active:bg-gray-200"
+                    className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2.5 sm:py-3 bg-gray-100 rounded-xl text-gray-700 font-semibold text-xs sm:text-sm active:bg-gray-200"
                   >
-                    <Pencil size={18} /> {t('edit')}
+                    <Pencil size={17} className="shrink-0" /> {t('edit')}
                   </button>
                   <button
+                    type="button"
                     onClick={() => router.push(`/projects/${p.id}/finance`)}
-                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-50 rounded-xl text-green-700 font-semibold active:bg-green-100"
+                    className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2.5 sm:py-3 bg-green-50 rounded-xl text-green-700 font-semibold text-xs sm:text-sm active:bg-green-100"
                   >
-                    <IndianRupee size={18} /> {t('finance')}
+                    <IndianRupee size={17} className="shrink-0" /> {t('finance')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/projects/${p.id}/attendance`)}
+                    className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2.5 sm:py-3 bg-emerald-50 rounded-xl text-emerald-800 font-semibold text-xs sm:text-sm active:bg-emerald-100 border border-emerald-100"
+                  >
+                    <CalendarCheck size={17} className="shrink-0 text-emerald-600" /> {t('project_card_attendance')}
                   </button>
                 </div>
               </div>

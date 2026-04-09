@@ -5,6 +5,7 @@ const { PrismaClient } = require('@prisma/client');
 const auth = require('../middleware/auth');
 const { normalizeString, normalizePhone, isValidPhone } = require('../utils/validation');
 const { ensureDefaultContractTrades } = require('../utils/defaultContractTrades');
+const { ensureDefaultRoles } = require('../utils/defaultRoles');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -43,6 +44,7 @@ router.post('/register', async (req, res) => {
         data: { name, phone, password: hashedPassword },
       });
       await ensureDefaultContractTrades(tx, u.id);
+      await ensureDefaultRoles(tx, u.id);
       return u;
     });
 
