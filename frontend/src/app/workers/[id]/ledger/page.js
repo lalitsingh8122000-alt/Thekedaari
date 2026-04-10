@@ -40,6 +40,7 @@ export default function WorkerLedgerPage() {
   }, [id]);
 
   const fmt = (n) => '₹' + Math.abs(n || 0).toLocaleString('en-IN');
+  const fmtDay = (iso) => (iso ? new Date(iso).toLocaleDateString('en-IN') : '');
 
   const closeModal = () => {
     setShowModal(null);
@@ -204,9 +205,21 @@ export default function WorkerLedgerPage() {
                             {[entry.remarks, entry.comment].filter(Boolean).join(entry.remarks && entry.comment ? ' · ' : '')}
                           </p>
                         )}
-                        <p className="text-[11px] text-gray-400 mt-0.5">
-                          {new Date(entry.createdAt).toLocaleDateString('en-IN')}
-                        </p>
+                        <div className="text-[11px] text-gray-400 mt-0.5 space-y-0.5">
+                          {entry.attendance?.date && (
+                            <p className="text-gray-600 font-medium">
+                              {t('ledger_work_date')}: {fmtDay(entry.attendance.date)}
+                            </p>
+                          )}
+                          {!entry.attendance && entry.expense?.date && (
+                            <p className="text-gray-600 font-medium">
+                              {t('ledger_expense_date')}: {fmtDay(entry.expense.date)}
+                            </p>
+                          )}
+                          <p>
+                            {t('ledger_recorded_on')}: {fmtDay(entry.createdAt)}
+                          </p>
+                        </div>
                       </div>
                       <div className="text-right flex-shrink-0">
                         <p className={`font-bold text-sm sm:text-base tabular-nums ${isOwed ? 'text-emerald-700' : 'text-red-600'}`}>

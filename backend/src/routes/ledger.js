@@ -29,6 +29,7 @@ router.get('/:workerId', auth, async (req, res) => {
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       include: {
         attendance: { select: { date: true, type: true, project: { select: { name: true } } } },
+        expense: { select: { date: true, project: { select: { name: true } } } },
       },
     });
 

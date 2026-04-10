@@ -65,7 +65,21 @@ export default function DashboardPage() {
               <div className="stat-card cursor-pointer" onClick={() => router.push('/workers')}>
                 <CalendarCheck size={28} className="text-blue-500 mb-1" />
                 <p className="text-xs text-gray-500">{t('today_attendance')}</p>
-                <p className="text-2xl font-bold text-gray-800">{data.todayAttendance}</p>
+                <div className="flex items-end justify-between gap-2 mt-1 w-full">
+                  <div className="flex flex-col items-center flex-1">
+                    <p className="text-2xl font-bold text-emerald-600 tabular-nums leading-none">
+                      {data.todayPresent ?? 0}
+                    </p>
+                    <p className="text-[10px] text-gray-500 mt-0.5">{t('present')}</p>
+                  </div>
+                  <div className="w-px h-8 bg-gray-200 self-center" />
+                  <div className="flex flex-col items-center flex-1">
+                    <p className="text-2xl font-bold text-rose-500 tabular-nums leading-none">
+                      {data.todayAbsent ?? 0}
+                    </p>
+                    <p className="text-[10px] text-gray-500 mt-0.5">{t('absent')}</p>
+                  </div>
+                </div>
               </div>
               <div className="stat-card">
                 <IndianRupee size={28} className="text-orange-500 mb-1" />

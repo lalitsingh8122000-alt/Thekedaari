@@ -35,14 +35,36 @@ router.get('/', auth, async (req, res) => {
     const contractExpense = totalContractExpenseAgg._sum.amount || 0;
     const totalExpense = materialExpense + labourCost + contractExpense;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // Build today's date in IST (UTC+5:30) — attendance is saved as `YYYY-MM-DDT00:00:00.000Z`
+    // so we need the IST calendar date, then construct the same UTC-midnight boundaries.
+    const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000); // shift to IST
+    const yy = nowIST.getUTCFullYear();
+    const mm = String(nowIST.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(nowIST.getUTCDate()).padStart(2, '0');
+    const todayISO = `${yy}-${mm}-${dd}`;
+    const today = new Date(`${todayISO}T00:00:00.000Z`);
+    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
 
-    const todayAttendance = await prisma.attendance.count({
+    const todayAttendanceRows = await prisma.attendance.findMany({
       where: { userId, date: { gte: today, lt: tomorrow } },
+      select: { workerId: true, type: true },
     });
+
+    /** Per worker: absent wins if any row is Absent (split half-days produce multiple non-absent rows). */
+    const workerDay = new Map();
+    for (const row of todayAttendanceRows) {
+      const cur = workerDay.get(row.workerId) ?? { absent: false, present: false };
+      if (row.type === 'Absent') cur.absent = true;
+      else cur.present = true;
+      workerDay.set(row.workerId, cur);
+    }
+    let todayPresent = 0;
+    let todayAbsent = 0;
+    for (const v of workerDay.values()) {
+      if (v.absent) todayAbsent += 1;
+      else if (v.present) todayPresent += 1;
+    }
+    const todayAttendance = todayAttendanceRows.length;
 
     const todayExpense = await prisma.expense.aggregate({
       where: { userId, date: { gte: today, lt: tomorrow } },
@@ -136,6 +158,8 @@ router.get('/', auth, async (req, res) => {
       totalContractExpense: contractExpense,
       profitLoss: income - totalExpense,
       todayAttendance,
+      todayPresent,
+      todayAbsent,
       todayExpense: todayExpense._sum.amount || 0,
       activeProjects,
       activeWorkers,
