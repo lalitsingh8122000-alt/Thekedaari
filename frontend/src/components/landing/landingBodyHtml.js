@@ -9,7 +9,7 @@ export const landingBodyHtml = `<!-- ══════════ NAV ══�
             <li><a href="#features">Features</a></li>
             <li><a href="#screens">Screens</a></li>
             <li><a href="#how">How It Works</a></li>
-            <li><a href="#about">About</a></li>
+            <li><a href="/about-us">About Us</a></li>
             <li><a href="/blogs">Blog</a></li>
         </ul>
         <div class="nav-right">
@@ -591,11 +591,12 @@ export const landingBodyHtml = `<!-- ══════════ NAV ══�
                 </ul>
             </div>
             <div class="footer-col">
-                <h5>Support</h5>
+                <h5>Company</h5>
                 <ul>
-                    <li><a href="/login">Help Center</a></li>
-                    <li><a href="/login">Login</a></li>
-                    <li><a href="/register">Register</a></li>
+                    <li><a href="/about-us">About Us</a></li>
+                    <li><a href="/blogs">Blog</a></li>
+                    <li><a href="/contact-us">Contact Us</a></li>
+                    <li><a href="/privacy-policy">Privacy Policy</a></li>
                 </ul>
             </div>
 
