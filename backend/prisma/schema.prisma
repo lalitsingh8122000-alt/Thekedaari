@@ -182,6 +182,21 @@ model Expense {
   @@index([contractTradeId])
 }
 
+/// SEO blog posts — managed by Prisma migrations so deploys never drop this table
+model Blog {
+  id              Int      @id @default(autoincrement())
+  title           String?  @db.VarChar(255)
+  slug            String?  @unique @db.VarChar(255)
+  metaTitle       String?  @map("meta_title") @db.VarChar(255)
+  metaDescription String?  @map("meta_description") @db.Text
+  content         String?  @db.LongText
+  image           String?  @db.VarChar(255)
+  status          Int      @default(1) @db.TinyInt
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("blogs")
+}
+
 /// CRM / ERP monitor dashboard leads (managed by Prisma migrations)
 model Lead {
   id             BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
