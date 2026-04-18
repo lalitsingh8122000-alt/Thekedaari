@@ -62,7 +62,7 @@ export default function DeleteAccountPage() {
           </div>
           <p>To delete your Thekedaari account and all associated data, follow these simple steps:</p>
           <ul>
-            <li>Email us at: <a href="mailto:support@thekedaari.com" style={{ color: '#60A5FA', textDecoration: 'none', fontWeight: 600 }}>support@thekedaari.com</a></li>
+            <li>Email us at: <a href="mailto:lalitsingh8122000@gmail.com" style={{ color: '#60A5FA', textDecoration: 'none', fontWeight: 600 }}>lalitsingh8122000@gmail.com</a></li>
             <li>Send your registered mobile number or email address in the email</li>
             <li>We will process your request and delete your account within <strong style={{ color: '#F1F5F9' }}>3–5 working days</strong></li>
           </ul>
@@ -113,8 +113,8 @@ export default function DeleteAccountPage() {
           <h3>Need Help?</h3>
           <p>If you have any questions about the account deletion process, reach out to us.</p>
           <div className="contact-row">
-            <a href="mailto:support@thekedaari.com" className="contact-chip">
-              <span className="ch-ico">✉️</span> support@thekedaari.com
+            <a href="mailto:lalitsingh8122000@gmail.com" className="contact-chip">
+              <span className="ch-ico">✉️</span> lalitsingh8122000@gmail.com
             </a>
           </div>
         </div>
