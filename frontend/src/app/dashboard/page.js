@@ -59,6 +59,16 @@ export default function DashboardPage() {
                   </span>
                 </p>
               </div>
+              <div className="stat-card border-l-4 border-emerald-500" onClick={() => router.push('/workers')}>
+                <ArrowUpCircle size={28} className="text-emerald-500 mb-1" />
+                <p className="text-xs text-gray-500">{t('labour_plus_amount')}</p>
+                <p className="text-lg font-bold text-emerald-600">{fmt(data.labourPlusAmount)}</p>
+              </div>
+              <div className="stat-card border-l-4 border-red-500" onClick={() => router.push('/workers')}>
+                <ArrowDownCircle size={28} className="text-red-500 mb-1" />
+                <p className="text-xs text-gray-500">{t('labour_amount_to_pay')}</p>
+                <p className="text-lg font-bold text-red-600">{fmt(data.labourAmountToPay)}</p>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

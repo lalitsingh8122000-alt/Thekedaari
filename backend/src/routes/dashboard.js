@@ -35,6 +35,26 @@ router.get('/', auth, async (req, res) => {
     const contractExpense = totalContractExpenseAgg._sum.amount || 0;
     const totalExpense = materialExpense + labourCost + contractExpense;
 
+    const ledgerBalances = await prisma.ledgerEntry.groupBy({
+      by: ['workerId', 'type'],
+      where: { userId },
+      _sum: { amount: true },
+    });
+
+    const workerBalances = new Map();
+    for (const row of ledgerBalances) {
+      const amount = row._sum.amount || 0;
+      const current = workerBalances.get(row.workerId) || 0;
+      workerBalances.set(row.workerId, row.type === 'Credit' ? current + amount : current - amount);
+    }
+
+    let labourAmountToPay = 0;
+    let labourPlusAmount = 0;
+    for (const balance of workerBalances.values()) {
+      if (balance > 0) labourAmountToPay += balance;
+      if (balance < 0) labourPlusAmount += Math.abs(balance);
+    }
+
     // Build today's date in IST (UTC+5:30) — attendance is saved as `YYYY-MM-DDT00:00:00.000Z`
     // so we need the IST calendar date, then construct the same UTC-midnight boundaries.
     const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000); // shift to IST
@@ -157,6 +177,8 @@ router.get('/', auth, async (req, res) => {
       totalLabourCost: labourCost,
       totalContractExpense: contractExpense,
       profitLoss: income - totalExpense,
+      labourPlusAmount,
+      labourAmountToPay,
       todayAttendance,
       todayPresent,
       todayAbsent,

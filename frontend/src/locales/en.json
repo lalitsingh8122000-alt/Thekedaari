@@ -35,6 +35,8 @@
   "profit_loss": "Profit / Loss",
   "profit": "Profit",
   "loss": "Loss",
+  "labour_plus_amount": "Advance Paid to Labour",
+  "labour_amount_to_pay": "Labour Amount To Pay",
   "today_attendance": "Today's Attendance",
   "today_expense": "Today's Expense",
   "active_projects": "Active Projects",
