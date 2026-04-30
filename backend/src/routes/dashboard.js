@@ -37,7 +37,13 @@ router.get('/', auth, async (req, res) => {
 
     const ledgerBalances = await prisma.ledgerEntry.groupBy({
       by: ['workerId', 'type'],
-      where: { userId },
+      where: {
+        userId,
+        worker: {
+          workerType: { not: 'Contractor' },
+          role: { name: { not: 'Contractor' } },
+        },
+      },
       _sum: { amount: true },
     });
 
