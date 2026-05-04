@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
   ArrowLeft, Plus, TrendingUp, TrendingDown, Save,
-  ArrowUpCircle, ArrowDownCircle, X, Pencil, Trash2,
+  ArrowUpCircle, ArrowDownCircle, X, Pencil, Trash2, Store,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
@@ -26,6 +26,7 @@ export default function ProjectFinancePage() {
   const [expenses, setExpenses] = useState([]);
   const [workers, setWorkers] = useState([]);
   const [contractTrades, setContractTrades] = useState([]);
+  const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(null);
   const [error, setError] = useState('');
@@ -35,6 +36,7 @@ export default function ProjectFinancePage() {
     paymentMode: 'Cash',
     remarks: '',
     notes: '',
+    vendorId: '',
   });
   const [contractForm, setContractForm] = useState({
     contractorId: '',
@@ -51,18 +53,20 @@ export default function ProjectFinancePage() {
 
   const load = async () => {
     try {
-      const [s, i, e, w, tr] = await Promise.all([
+      const [s, i, e, w, tr, vn] = await Promise.all([
         api.get(`/finance/projects/${id}/summary`),
         api.get(`/finance/projects/${id}/income`),
         api.get(`/finance/projects/${id}/expenses`),
         api.get('/workers', { params: { status: 'Active' } }),
         api.get('/contract-trades'),
+        api.get('/vendors', { params: { status: 'Active' } }),
       ]);
       setSummary(s.data);
       setIncomes(i.data);
       setExpenses(e.data);
       setWorkers(Array.isArray(w.data) ? w.data : []);
       setContractTrades(Array.isArray(tr.data) ? tr.data : []);
+      setVendors(Array.isArray(vn.data) ? vn.data : []);
     } catch {} finally { setLoading(false); }
   };
 
@@ -71,7 +75,7 @@ export default function ProjectFinancePage() {
   const fmt = (n) => '₹' + (n || 0).toLocaleString('en-IN');
 
   const resetForm = () => {
-    setForm({ amount: '', date: new Date().toISOString().split('T')[0], paymentMode: 'Cash', remarks: '', notes: '' });
+    setForm({ amount: '', date: new Date().toISOString().split('T')[0], paymentMode: 'Cash', remarks: '', notes: '', vendorId: '' });
     setContractForm({
       contractorId: '',
       contractTradeId: '',
@@ -157,6 +161,7 @@ export default function ProjectFinancePage() {
           remarks: form.remarks,
           notes: form.notes.trim(),
         };
+        if (form.vendorId) body.vendorId = parseInt(form.vendorId, 10);
         if (editingExpenseId != null) {
           await api.patch(`/finance/expenses/${editingExpenseId}`, body);
         } else {
@@ -379,6 +384,7 @@ export default function ProjectFinancePage() {
                                 paymentMode: 'Cash',
                                 remarks: e.remarks,
                                 notes: e.notes || '',
+                                vendorId: e.vendorId != null ? String(e.vendorId) : '',
                               });
                               setShowModal('expense');
                             }
@@ -402,6 +408,11 @@ export default function ProjectFinancePage() {
                       <p className="text-xs text-amber-800 mt-1 font-medium">
                         {e.remarks === 'Contract' ? t('contractor') : t('paid_to')}: {e.worker.name}
                         {e.contractTrade?.name ? ` · ${e.contractTrade.name}` : ''}
+                      </p>
+                    )}
+                    {e.vendor && (
+                      <p className="text-xs text-purple-700 mt-1 font-medium flex items-center gap-1">
+                        <Store size={12} /> {t('vendor_from')}: {e.vendor.name}
                       </p>
                     )}
                     {e.notes && <p className="text-xs text-gray-500 mt-1">{e.notes}</p>}
@@ -575,6 +586,22 @@ export default function ProjectFinancePage() {
                       ? setContractForm({ ...contractForm, notes: e.target.value })
                       : setForm({ ...form, notes: e.target.value }))}
                   />
+                </div>
+              )}
+
+              {showModal === 'expense' && vendors.length > 0 && (
+                <div>
+                  <label className="block text-gray-600 font-medium mb-1 text-xs">{t('vendor_select')}</label>
+                  <select
+                    className="input-field !py-2 text-sm"
+                    value={form.vendorId}
+                    onChange={(e) => setForm({ ...form, vendorId: e.target.value })}
+                  >
+                    <option value="">— {t('vendor_select')} —</option>
+                    {vendors.map((v) => (
+                      <option key={v.id} value={v.id}>{v.name}</option>
+                    ))}
+                  </select>
                 </div>
               )}
             </div>

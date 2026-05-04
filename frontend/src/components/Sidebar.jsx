@@ -11,6 +11,7 @@ import {
   UserCircle,
   BookOpen,
   Headphones,
+  Store,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -19,6 +20,7 @@ const menuItems = [
   { key: 'nav_attendance_report', path: '/attendance', icon: CalendarCheck },
   { key: 'projects', path: '/projects', icon: FolderKanban },
   { key: 'workers', path: '/workers', icon: Users, subtitle: 'master_data' },
+  { key: 'vendors', path: '/vendors', icon: Store },
   { key: 'roles', path: '/roles', icon: ShieldCheck },
   { key: 'transactions', path: '/transactions', icon: ArrowLeftRight },
   { key: 'how_to_use', path: '/how-to-use', icon: BookOpen },

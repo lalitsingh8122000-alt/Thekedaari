@@ -78,6 +78,7 @@ router.get('/projects/:id/expenses', auth, async (req, res) => {
       include: {
         worker: { select: { id: true, name: true, phone: true, workerType: true, role: { select: { name: true } } } },
         contractTrade: { select: { id: true, name: true } },
+        vendor: { select: { id: true, name: true } },
       },
     });
     res.json(expenses);
@@ -96,6 +97,7 @@ router.post('/projects/:id/expenses', auth, async (req, res) => {
       req.body.contractTradeId !== undefined && req.body.contractTradeId !== null
         ? parseId(req.body.contractTradeId)
         : null;
+    const vendorId = req.body.vendorId !== undefined && req.body.vendorId !== null ? parseId(req.body.vendorId) : null;
     const date = req.body.date;
     const projectId = parseId(req.params.id);
 
@@ -164,7 +166,13 @@ router.post('/projects/:id/expenses', auth, async (req, res) => {
       });
       if (!trade) return res.status(404).json({ error: 'Contract trade not found' });
     } else if (workerId && remarks !== 'Contract') {
-      // Unchanged: material expense with a linked person records payment in ledger
+      // material expense with a linked person records payment in ledger
+    }
+
+    let vendorRow = null;
+    if (vendorId && remarks !== 'Contract') {
+      vendorRow = await prisma.vendor.findFirst({ where: { id: vendorId, userId: req.userId } });
+      if (!vendorRow) return res.status(404).json({ error: 'Vendor not found' });
     }
 
     const result = await prisma.$transaction(async (tx) => {
@@ -176,12 +184,14 @@ router.post('/projects/:id/expenses', auth, async (req, res) => {
           notes: notes || null,
           workerId: workerId || null,
           contractTradeId: remarks === 'Contract' ? resolvedTradeId : null,
+          vendorId: (remarks !== 'Contract' && vendorId) ? vendorId : null,
           date: date ? new Date(date) : new Date(),
           userId: req.userId,
         },
         include: {
           worker: { select: { id: true, name: true } },
           contractTrade: { select: { id: true, name: true } },
+          vendor: { select: { id: true, name: true } },
         },
       });
 
@@ -208,6 +218,20 @@ router.post('/projects/:id/expenses', auth, async (req, res) => {
             type: 'Debit',
             category: 'Payment',
             remarks: `Payment - ${remarks}${notes ? ' - ' + notes : ''}`,
+            userId: req.userId,
+            expenseId: expense.id,
+          },
+        });
+      }
+
+      if (vendorRow && remarks !== 'Contract') {
+        await tx.vendorLedgerEntry.create({
+          data: {
+            vendorId,
+            amount,
+            type: 'Credit',
+            category: 'Material',
+            remarks: `${remarks} — ${project.name}${notes ? ` — ${notes}` : ''}`,
             userId: req.userId,
             expenseId: expense.id,
           },
@@ -303,6 +327,7 @@ router.patch('/expenses/:expenseId', auth, async (req, res) => {
       req.body.contractTradeId !== undefined && req.body.contractTradeId !== null
         ? parseId(req.body.contractTradeId)
         : null;
+    const vendorId = req.body.vendorId !== undefined && req.body.vendorId !== null ? parseId(req.body.vendorId) : null;
     const dateRaw = req.body.date;
     const projectId = existing.projectId;
     const project = existing.project;
@@ -373,8 +398,15 @@ router.patch('/expenses/:expenseId', auth, async (req, res) => {
       if (!trade) return res.status(404).json({ error: 'Contract trade not found' });
     }
 
+    let vendorRow = null;
+    if (vendorId && remarks !== 'Contract') {
+      vendorRow = await prisma.vendor.findFirst({ where: { id: vendorId, userId: req.userId } });
+      if (!vendorRow) return res.status(404).json({ error: 'Vendor not found' });
+    }
+
     const updated = await prisma.$transaction(async (tx) => {
       await tx.ledgerEntry.deleteMany({ where: { expenseId } });
+      await tx.vendorLedgerEntry.deleteMany({ where: { expenseId } });
 
       const expense = await tx.expense.update({
         where: { id: expenseId },
@@ -384,11 +416,13 @@ router.patch('/expenses/:expenseId', auth, async (req, res) => {
           notes: notes || null,
           workerId: workerId || null,
           contractTradeId: remarks === 'Contract' ? resolvedTradeId : null,
+          vendorId: (remarks !== 'Contract' && vendorId) ? vendorId : null,
           date: nextExpenseDate,
         },
         include: {
           worker: { select: { id: true, name: true, phone: true, workerType: true, role: { select: { name: true } } } },
           contractTrade: { select: { id: true, name: true } },
+          vendor: { select: { id: true, name: true } },
         },
       });
 
@@ -415,6 +449,20 @@ router.patch('/expenses/:expenseId', auth, async (req, res) => {
             type: 'Debit',
             category: 'Payment',
             remarks: `Payment - ${remarks}${notes ? ' - ' + notes : ''}`,
+            userId: req.userId,
+            expenseId: expense.id,
+          },
+        });
+      }
+
+      if (vendorRow && remarks !== 'Contract') {
+        await tx.vendorLedgerEntry.create({
+          data: {
+            vendorId,
+            amount,
+            type: 'Credit',
+            category: 'Material',
+            remarks: `${remarks} — ${project.name}${notes ? ` — ${notes}` : ''}`,
             userId: req.userId,
             expenseId: expense.id,
           },

@@ -20,6 +20,8 @@ const ledgerRoutes = require('./routes/ledger');
 const financeRoutes = require('./routes/finance');
 const dashboardRoutes = require('./routes/dashboard');
 const blogRoutes = require('./routes/blogs');
+const vendorRoutes = require('./routes/vendors');
+const vendorLedgerRoutes = require('./routes/vendorLedger');
 
 const prismaHealth = new PrismaClient();
 
@@ -49,6 +51,8 @@ app.use('/api/ledger', ledgerRoutes);
 app.use('/api/finance', financeRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/blogs', blogRoutes);
+app.use('/api/vendors', vendorRoutes);
+app.use('/api/vendor-ledger', vendorLedgerRoutes);
 
 app.get('/api/health', async (req, res) => {
   try {
