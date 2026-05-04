@@ -53,6 +53,7 @@ export default function EditWorkerPage() {
   );
 
   const ensureContractorRoleAndSelect = async () => {
+    if (roleBootstrapping) return;
     setError('');
     setRoleBootstrapping(true);
     try {
@@ -85,6 +86,7 @@ export default function EditWorkerPage() {
   };
 
   const addTradeInline = async () => {
+    if (tradeSaving) return;
     const name = normalizeText(newTradeName);
     if (name.length < 2) {
       setError(t('trade_name_min'));
@@ -150,6 +152,7 @@ export default function EditWorkerPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (saving) return;
     setError('');
     const cleanedPhone = normalizePhone(form.phone);
     const costPerDay = isContractor

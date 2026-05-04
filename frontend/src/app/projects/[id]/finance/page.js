@@ -46,6 +46,8 @@ export default function ProjectFinancePage() {
   const [editingIncomeId, setEditingIncomeId] = useState(null);
   const [editingExpenseId, setEditingExpenseId] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [deleteSaving, setDeleteSaving] = useState(false);
 
   const load = async () => {
     try {
@@ -98,6 +100,7 @@ export default function ProjectFinancePage() {
   }, [contractors, contractForm.contractTradeId]);
 
   const handleSaveModal = async () => {
+    if (saving) return;
     setError('');
     if (showModal === 'expenseContract') {
       const amount = parsePositiveAmount(contractForm.amount);
@@ -106,6 +109,7 @@ export default function ProjectFinancePage() {
       if (!contractForm.contractTradeId) return setError(t('contract_expense_select_work_type'));
       if (!contractForm.contractorId) return setError(t('select_contractor'));
       if (contractForm.notes.trim().length > 2000) return setError('Notes cannot exceed 2000 characters');
+      setSaving(true);
       try {
         const body = {
           amount,
@@ -126,6 +130,8 @@ export default function ProjectFinancePage() {
         load();
       } catch (err) {
         setError(err.response?.data?.error || 'Failed to save record');
+      } finally {
+        setSaving(false);
       }
       return;
     }
@@ -135,6 +141,7 @@ export default function ProjectFinancePage() {
     if (showModal === 'expense' && !form.remarks) return setError('Please select an expense category');
     if (showModal === 'income' && form.remarks.trim().length > 500) return setError('Remarks cannot exceed 500 characters');
     if (showModal === 'expense' && form.notes.trim().length > 2000) return setError('Notes cannot exceed 2000 characters');
+    setSaving(true);
     try {
       if (showModal === 'income') {
         const payload = { amount, date: form.date, paymentMode: form.paymentMode, remarks: form.remarks.trim() };
@@ -162,11 +169,14 @@ export default function ProjectFinancePage() {
       load();
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to save record');
+    } finally {
+      setSaving(false);
     }
   };
 
   const confirmDelete = async () => {
-    if (!pendingDelete) return;
+    if (!pendingDelete || deleteSaving) return;
+    setDeleteSaving(true);
     try {
       if (pendingDelete.kind === 'income') {
         await api.delete(`/finance/income/${pendingDelete.id}`);
@@ -180,6 +190,8 @@ export default function ProjectFinancePage() {
       const msg = err.response?.data?.error || 'Failed to delete';
       if (typeof window !== 'undefined') window.alert(msg);
       setPendingDelete(null);
+    } finally {
+      setDeleteSaving(false);
     }
   };
 
@@ -571,11 +583,12 @@ export default function ProjectFinancePage() {
               <button
                 type="button"
                 onClick={handleSaveModal}
+                disabled={saving}
                 className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-white text-sm transition-all ${
                   showModal === 'income' ? 'bg-green-500 active:bg-green-600' : showModal === 'expenseContract' ? 'bg-amber-500 active:bg-amber-600' : 'bg-red-500 active:bg-red-600'
-                }`}
+                } disabled:opacity-60 disabled:pointer-events-none`}
               >
-                <Save size={18} /> {t('save')}
+                <Save size={18} /> {saving ? t('loading') : t('save')}
               </button>
             </div>
           </div>
@@ -598,9 +611,10 @@ export default function ProjectFinancePage() {
               <button
                 type="button"
                 onClick={confirmDelete}
-                className="flex-1 py-2.5 rounded-xl font-semibold bg-red-600 text-white active:bg-red-700"
+                disabled={deleteSaving}
+                className="flex-1 py-2.5 rounded-xl font-semibold bg-red-600 text-white active:bg-red-700 disabled:opacity-60 disabled:pointer-events-none"
               >
-                {t('delete')}
+                {deleteSaving ? t('loading') : t('delete')}
               </button>
             </div>
           </div>

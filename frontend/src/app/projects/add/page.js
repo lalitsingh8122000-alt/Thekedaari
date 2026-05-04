@@ -20,6 +20,7 @@ export default function AddProjectPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setError('');
     const cleanName = form.name.trim();
     if (cleanName.length < 2) return setError('Project name must be at least 2 characters');

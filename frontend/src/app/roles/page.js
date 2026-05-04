@@ -36,6 +36,7 @@ export default function RolesPage() {
   useEffect(() => { load(); }, []);
 
   const addRole = async (name) => {
+    if (saving) return;
     const cleanName = normalizeText(name);
     if (!cleanName) return;
     if (cleanName.length < 2) {
@@ -81,7 +82,7 @@ export default function RolesPage() {
             <p className="text-gray-500 mb-4">Quick add / जल्दी जोड़ें:</p>
             <div className="flex flex-wrap gap-2 justify-center">
               {quickRoles.map((r) => (
-                <button key={r} type="button" onClick={() => addRole(r)} className="btn-outline py-2 px-4">
+                <button key={r} type="button" onClick={() => addRole(r)} disabled={saving} className="btn-outline py-2 px-4 disabled:opacity-45 disabled:cursor-not-allowed">
                   {quickRoleLabel(r, t)}
                 </button>
               ))}

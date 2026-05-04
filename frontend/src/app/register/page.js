@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Phone, Lock, UserPlus, AlertCircle } from 'lucide-react';
+import { User, Phone, Lock, UserPlus, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { normalizePhone, sanitizePhoneInput, isValidPhone, PHONE_LENGTH } from '@/lib/validation';
@@ -13,6 +13,8 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { registerUser, user, loading: authLoading } = useAuth();
@@ -27,6 +29,7 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setError('');
     const cleanedPhone = normalizePhone(phone);
     if (!isValidPhone(cleanedPhone)) {
@@ -113,27 +116,43 @@ export default function RegisterPage() {
         <div className="relative">
           <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-primary-600/50 pointer-events-none" size={20} />
           <input
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             placeholder={t('password')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="auth-field"
+            className="auth-field pr-12"
             autoComplete="new-password"
             required
           />
+          <button
+            type="button"
+            onClick={() => setShowPassword((value) => !value)}
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-primary-600/60 hover:text-primary-700"
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+          >
+            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
         </div>
 
         <div className="relative">
           <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-primary-600/50 pointer-events-none" size={20} />
           <input
-            type="password"
+            type={showConfirmPassword ? 'text' : 'password'}
             placeholder={t('confirm_password')}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="auth-field"
+            className="auth-field pr-12"
             autoComplete="new-password"
             required
           />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword((value) => !value)}
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-primary-600/60 hover:text-primary-700"
+            aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+          >
+            {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
         </div>
 
         <button type="submit" disabled={loading} className="auth-submit">
