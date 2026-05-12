@@ -623,8 +623,8 @@ export default function ProjectFinancePage() {
       )}
 
       {pendingDelete && (
-        <div className="modal-overlay z-[80]">
-          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl mx-4 p-5 space-y-4">
+        <div className="modal-overlay z-[80] pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] sm:pb-0">
+          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl mx-4 sm:mx-0 p-5 space-y-4">
             <p className="font-bold text-gray-900">{t('finance_delete_title')}</p>
             <p className="text-sm text-gray-600 leading-relaxed">{t('finance_delete_body')}</p>
             <div className="flex gap-2">
