@@ -6,6 +6,7 @@ const auth = require('../middleware/auth');
 const { normalizeString, normalizePhone, isValidPhone } = require('../utils/validation');
 const { ensureDefaultContractTrades } = require('../utils/defaultContractTrades');
 const { ensureDefaultRoles } = require('../utils/defaultRoles');
+const { sendRouteError } = require('../utils/serverError');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -55,8 +56,7 @@ router.post('/register', async (req, res) => {
       user: { id: user.id, name: user.name, phone: user.phone, createdAt: user.createdAt },
     });
   } catch (err) {
-    console.error('Auth register error:', err);
-    res.status(500).json({ error: 'Server error' });
+    sendRouteError(res, err, 'auth register');
   }
 });
 
@@ -93,8 +93,7 @@ router.post('/login', async (req, res) => {
       user: { id: user.id, name: user.name, phone: user.phone, createdAt: user.createdAt },
     });
   } catch (err) {
-    console.error('Auth login error:', err);
-    res.status(500).json({ error: 'Server error' });
+    sendRouteError(res, err, 'auth login');
   }
 });
 
@@ -107,7 +106,7 @@ router.get('/me', auth, async (req, res) => {
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(user);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    sendRouteError(res, err, 'auth me');
   }
 });
 
