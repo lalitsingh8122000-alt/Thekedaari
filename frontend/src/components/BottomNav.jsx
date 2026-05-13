@@ -10,14 +10,16 @@ const navItems = [
   { key: 'projects', path: '/projects', icon: FolderKanban },
 ];
 
-export default function BottomNav() {
+export default function BottomNav({ sidebarOpen = false }) {
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useLanguage();
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden"
+      className={`fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden transition-opacity duration-200 ${
+        sidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
+      }`}
       style={{
         zIndex: 40,
         paddingBottom: 'var(--safe-bottom)',
