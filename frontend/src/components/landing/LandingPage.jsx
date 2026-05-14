@@ -49,8 +49,14 @@ export default function LandingPage() {
               <Link href="/register" className="landing-btn-primary">
                 Start Free — No Card Required
               </Link>
-              <a href="#features" className="landing-btn-outline">
-                See Features
+              <a
+                href="https://play.google.com/store/apps/details?id=com.thekedaari.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="landing-btn-playstore"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.302 2.302-2.302 2.302-2.698-2.302 2.698-2.302zM5.864 2.658L16.8 8.99l-2.302 2.302L5.864 2.658z"/></svg>
+                Get it on Google Play
               </a>
             </div>
             <div className="landing-hero-trust">
@@ -60,11 +66,11 @@ export default function LandingPage() {
               </div>
               <div className="landing-trust-item">
                 <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
-                <span>Works Offline</span>
+                <span>24/7 Customer Support</span>
               </div>
               <div className="landing-trust-item">
                 <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
-                <span>Install on Phone</span>
+                <span>Available on Play Store</span>
               </div>
             </div>
           </div>
@@ -280,9 +286,15 @@ export default function LandingPage() {
             <Link href="/register" className="landing-btn-primary">
               Create Free Account
             </Link>
-            <Link href="/login" className="landing-btn-white">
-              Already have an account? Log In
-            </Link>
+            <a
+              href="https://play.google.com/store/apps/details?id=com.thekedaari.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="landing-btn-white"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.302 2.302-2.302 2.302-2.698-2.302 2.698-2.302zM5.864 2.658L16.8 8.99l-2.302 2.302L5.864 2.658z"/></svg>
+              Download on Google Play
+            </a>
           </div>
         </div>
       </section>
