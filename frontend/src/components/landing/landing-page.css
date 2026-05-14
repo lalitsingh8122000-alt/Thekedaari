@@ -751,6 +751,7 @@
   border: none;
   cursor: pointer;
   transition: background 0.2s, transform 0.15s;
+  white-space: nowrap;
 }
 
 .landing-page .landing-nav-install-btn:hover:not(:disabled) {
@@ -847,37 +848,52 @@
   .landing-nav {
     height: auto;
     min-height: 56px;
-    padding: 10px clamp(1rem, 4vw, 1.5rem);
+    padding: 10px 16px;
   }
 
   .landing-nav-logo {
-    font-size: 1.05rem;
+    font-size: 1rem;
     gap: 8px;
   }
 
   .landing-logo-img {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
   }
 
   .landing-nav-actions {
-    gap: 8px;
+    gap: 6px;
   }
 
-  .landing-btn-outline-sm,
+  .landing-btn-outline-sm {
+    display: none;
+  }
+
   .landing-btn-primary-sm {
-    padding: 7px 12px;
+    padding: 8px 14px;
     font-size: 0.8rem;
-    border-radius: 7px;
+    border-radius: 8px;
+  }
+
+  .landing-page .landing-nav-install-label {
+    display: none;
+  }
+
+  .landing-page .landing-nav-install-btn {
+    padding: 8px 10px;
+  }
+
+  .landing-page .landing-nav-installed-text {
+    display: none;
   }
 
   .landing-hero {
-    padding: 80px clamp(1rem, 5vw, 2rem) 40px;
+    padding: 80px 20px 40px;
   }
 
   .landing-hero-content {
     grid-template-columns: 1fr;
-    gap: 2.5rem;
+    gap: 2rem;
     text-align: center;
   }
 
@@ -887,47 +903,126 @@
     align-items: center;
   }
 
+  .landing-hero-title {
+    font-size: 1.75rem;
+    letter-spacing: -0.3px;
+  }
+
   .landing-hero-subtitle {
+    font-size: 0.95rem;
     max-width: 100%;
+    margin-bottom: 1.5rem;
   }
 
   .landing-hero-actions {
     justify-content: center;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .landing-btn-primary {
+    padding: 14px 24px;
+    font-size: 0.92rem;
+    justify-content: center;
+    width: 100%;
   }
 
   .landing-btn-playstore {
-    padding: 12px 20px;
-    font-size: 0.88rem;
+    padding: 13px 20px;
+    font-size: 0.9rem;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .landing-btn-outline {
+    padding: 13px 20px;
+    font-size: 0.9rem;
+    justify-content: center;
+    width: 100%;
   }
 
   .landing-hero-trust {
     justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .landing-trust-item {
+    font-size: 0.82rem;
+  }
+
+  .landing-hero-right {
+    display: flex;
+    justify-content: center;
   }
 
   .landing-hero-phone {
-    max-width: 260px;
+    max-width: 220px;
+    border-radius: 28px;
+    padding: 8px;
+  }
+
+  .landing-badge {
+    font-size: 0.72rem;
+    padding: 5px 12px;
+    margin-bottom: 1rem;
+  }
+
+  .landing-stats-bar {
+    padding: 30px 20px;
   }
 
   .landing-stats-inner {
     grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
+    gap: 1.25rem;
   }
 
   .landing-stat-number {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
+  }
+
+  .landing-stat-label {
+    font-size: 0.78rem;
+  }
+
+  .landing-features {
+    padding: 50px 20px;
   }
 
   .landing-features-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .landing-feature-card {
+    padding: 22px 20px;
+  }
+
+  .landing-section-title {
+    font-size: 1.5rem;
+    letter-spacing: -0.3px;
+  }
+
+  .landing-section-subtitle {
+    font-size: 0.92rem;
+  }
+
+  .landing-screens {
+    padding: 50px 0;
+  }
+
+  .landing-section-header {
+    padding: 0 20px;
+    margin-bottom: 2rem;
   }
 
   .landing-screens-grid {
     overflow-x: auto;
     justify-content: flex-start;
-    padding: 20px clamp(1rem, 5vw, 2rem);
-    gap: 16px;
+    padding: 10px 20px 20px;
+    gap: 14px;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
@@ -937,13 +1032,21 @@
   }
 
   .landing-phone-mockup {
-    width: 160px;
-    border-radius: 22px;
-    padding: 6px;
+    width: 150px;
+    border-radius: 20px;
+    padding: 5px;
   }
 
   .landing-phone-mockup img {
-    border-radius: 16px;
+    border-radius: 15px;
+  }
+
+  .landing-screen-item span {
+    font-size: 0.78rem;
+  }
+
+  .landing-how {
+    padding: 50px 20px;
   }
 
   .landing-how-grid {
@@ -951,17 +1054,82 @@
     gap: 1.5rem;
   }
 
-  .landing-testimonials-grid {
-    grid-template-columns: 1fr;
+  .landing-how-number {
+    width: 48px;
+    height: 48px;
+    font-size: 1rem;
   }
 
-  .landing-footer-top {
+  .landing-how-step h3 {
+    font-size: 0.9rem;
+  }
+
+  .landing-how-step p {
+    font-size: 0.82rem;
+  }
+
+  .landing-testimonials {
+    padding: 50px 20px;
+  }
+
+  .landing-testimonials-grid {
     grid-template-columns: 1fr;
-    gap: 2rem;
+    gap: 16px;
+  }
+
+  .landing-testimonial-card {
+    padding: 22px 20px;
+  }
+
+  .landing-cta {
+    padding: 50px 20px;
   }
 
   .landing-cta-inner h2 {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
+  }
+
+  .landing-cta-inner p {
+    font-size: 0.92rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .landing-cta-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .landing-cta .landing-btn-primary,
+  .landing-btn-white {
+    justify-content: center;
+    padding: 13px 20px;
+    font-size: 0.9rem;
+  }
+
+  .landing-footer {
+    padding: 40px 20px 24px;
+  }
+
+  .landing-footer-top {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  .landing-footer-brand {
+    grid-column: 1 / -1;
+  }
+
+  .landing-footer-col h5 {
+    font-size: 0.75rem;
+    margin-bottom: 10px;
+  }
+
+  .landing-footer-col ul {
+    gap: 8px;
+  }
+
+  .landing-footer-col ul li a {
+    font-size: 0.82rem;
   }
 
   .landing-whatsapp-float {
@@ -972,18 +1140,18 @@
   }
 
   .landing-whatsapp-float svg {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
   }
 }
 
 @media (max-width: 380px) {
-  .landing-btn-outline-sm {
+  .landing-nav-logo span {
     display: none;
   }
 
   .landing-btn-primary-sm {
-    padding: 7px 10px;
+    padding: 7px 12px;
     font-size: 0.76rem;
   }
 
@@ -994,5 +1162,27 @@
 
   .landing-page .landing-nav-install-label {
     display: none;
+  }
+
+  .landing-hero-title {
+    font-size: 1.5rem;
+  }
+
+  .landing-stats-inner {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .landing-stat-number {
+    font-size: 1.25rem;
+  }
+
+  .landing-how-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .landing-footer-top {
+    grid-template-columns: 1fr;
   }
 }
