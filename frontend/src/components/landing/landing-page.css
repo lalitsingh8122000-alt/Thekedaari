@@ -752,61 +752,19 @@
   cursor: pointer;
   transition: background 0.2s, transform 0.15s;
   white-space: nowrap;
+  text-decoration: none;
 }
 
-.landing-page .landing-nav-install-btn:hover:not(:disabled) {
+.landing-page .landing-nav-install-btn:hover {
   background: #047857;
   transform: translateY(-1px);
-}
-
-.landing-page .landing-nav-install-btn:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
+  color: #fff;
 }
 
 .landing-page .landing-nav-install-icon {
   flex-shrink: 0;
 }
 
-.landing-page .landing-nav-installed {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 12px;
-  border-radius: 8px;
-  background: #ecfdf5;
-  color: #059669;
-  font-size: 0.78rem;
-  font-weight: 600;
-}
-
-.landing-page .landing-nav-install-hint {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
-  width: min(288px, calc(100vw - 2rem));
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
-  z-index: 1001;
-  text-align: left;
-}
-
-.landing-page .landing-nav-install-hint-intro {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #0f172a;
-  margin-bottom: 8px;
-  line-height: 1.45;
-}
-
-.landing-page .landing-nav-install-hint-line {
-  font-size: 0.72rem;
-  color: #64748b;
-  line-height: 1.5;
-}
 
 /* ═══════════════════════════════════════
    RESPONSIVE
@@ -881,10 +839,6 @@
 
   .landing-page .landing-nav-install-btn {
     padding: 8px 10px;
-  }
-
-  .landing-page .landing-nav-installed-text {
-    display: none;
   }
 
   .landing-hero {
