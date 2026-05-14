@@ -129,7 +129,7 @@ export default async function BlogsListPage() {
       </footer>
 
       <style>{`
-        .blogs-hero { position: relative; overflow: hidden; }
+        .blogs-hero { position: relative; overflow: hidden; background: linear-gradient(180deg, #fff 0%, #f0f4f8 100%); }
         .blogs-grid-section { padding: 48px 0 32px; }
         .blogs-grid {
           display: grid;
@@ -137,27 +137,28 @@ export default async function BlogsListPage() {
           gap: 24px;
         }
         .blog-card {
-          background: linear-gradient(180deg, rgba(12,32,57,.96), rgba(7,22,41,.96));
-          border: 1px solid rgba(74,144,226,.18);
-          border-radius: 20px;
+          background: #fff;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
           overflow: hidden;
           display: flex;
           flex-direction: column;
           transition: transform .2s, box-shadow .2s;
         }
         .blog-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 24px 48px rgba(0,0,0,.45);
+          transform: translateY(-3px);
+          box-shadow: 0 12px 32px rgba(37,99,235,.08);
+          border-color: #bfdbfe;
         }
         .blog-card-img-wrap { width: 100%; aspect-ratio: 16/9; overflow: hidden; }
         .blog-card-img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .blog-card-body { padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
-        .blog-card-date { font-size: .78rem; color: var(--seo-lp-cyan); font-weight: 700; letter-spacing: .04em; }
+        .blog-card-date { font-size: .78rem; color: #2563eb; font-weight: 700; letter-spacing: .04em; }
         .blog-card-title {
           font-size: 1.12rem;
           font-weight: 800;
           line-height: 1.35;
-          color: var(--seo-lp-text);
+          color: #0f172a;
           margin: 0;
           display: -webkit-box;
           -webkit-line-clamp: 2;
@@ -166,7 +167,7 @@ export default async function BlogsListPage() {
         }
         .blog-card-excerpt {
           font-size: .9rem;
-          color: var(--seo-lp-muted);
+          color: #64748b;
           line-height: 1.7;
           margin: 0;
           flex: 1;
@@ -180,16 +181,16 @@ export default async function BlogsListPage() {
           align-items: center;
           gap: 4px;
           font-size: .88rem;
-          font-weight: 800;
-          color: var(--seo-lp-cyan);
+          font-weight: 700;
+          color: #2563eb;
           margin-top: 4px;
           transition: color .2s;
         }
-        .blog-card-link:hover { color: #fff; }
+        .blog-card-link:hover { color: #1d4ed8; }
         .blogs-empty {
           text-align: center;
           padding: 80px 0;
-          color: var(--seo-lp-muted);
+          color: #64748b;
           font-size: 1.1rem;
         }
         @media (max-width: 900px) {

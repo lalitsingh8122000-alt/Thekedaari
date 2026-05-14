@@ -168,7 +168,7 @@ export const landingBodyHtml = `<!-- ══════════ NAV ══�
         <div class="tb-sep"></div>
         <div class="tb-item"><span class="ic">🇮🇳</span> Hindi & English Support</div>
         <div class="tb-sep"></div>
-        <div class="tb-item"><span class="ic">⚡</span> Works Offline</div>
+        <div class="tb-item"><span class="ic">⚡</span> 24/7 Customer Support</div>
         <div class="tb-sep"></div>
         <div class="tb-item"><span class="ic">🔒</span> 100% Secure & Private</div>
         <div class="tb-sep"></div>

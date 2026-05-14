@@ -105,7 +105,7 @@ export default function AboutUsPage() {
               <h2>Ek Simple <em>Problem</em> se Shuru Hua Safar</h2>
               <p>Bharat mein lakho contractors roze ek hi problem face karte hain — workers ka hisaab copy register mein, salary ka calculation galat, aur project ka budget kabhi clear nahi.</p>
               <p>Thekedaari ka idea usi frustration se aaya. Jab ek construction site pe 15–20 workers ka attendance manual register mein likhna padta tha, aur fir salary calculate karna padta tha — tab ek tech solution ki zaroorat mehsoos hui.</p>
-              <p>2026 mein, ek simple PWA ke roop mein Thekedaari launch hua. Mission tha: <strong style={{ color: '#fff' }}>Har Indian contractor ke haath mein ek smart tool de do.</strong></p>
+              <p>2026 mein, ek simple PWA ke roop mein Thekedaari launch hua. Mission tha: <strong style={{ color: '#0f172a' }}>Har Indian contractor ke haath mein ek smart tool de do.</strong></p>
             </div>
             <div>
               <div className="quote-card">
@@ -314,7 +314,7 @@ export default function AboutUsPage() {
             </a>
             <div className="footer-links">
               <a href="/">Home</a>
-              <a href="/about-us" style={{ color: 'var(--au-blue3)' }}>About Us</a>
+              <a href="/about-us" style={{ color: 'var(--au-blue)' }}>About Us</a>
               <a href="/blogs">Blog</a>
               <a href="/privacy-policy">Privacy Policy</a>
               <a href="/register">Register</a>
@@ -327,25 +327,22 @@ export default function AboutUsPage() {
 
         <style>{`
           .au-root {
-            --au-black:  #080C14;
-            --au-dark:   #0D1220;
-            --au-dark2:  #111827;
-            --au-card:   #141B2D;
-            --au-border: rgba(255,255,255,0.07);
-            --au-border2:rgba(255,255,255,0.12);
             --au-blue:   #2563EB;
             --au-blue2:  #3B82F6;
-            --au-blue3:  #60A5FA;
-            --au-glow:   rgba(37,99,235,0.35);
-            --au-green:  #10B981;
-            --au-green2: #34D399;
-            --au-amber:  #F59E0B;
-            --au-red:    #EF4444;
-            --au-text:   #F1F5F9;
-            --au-text2:  #94A3B8;
-            --au-text3:  #64748B;
-            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-            background: var(--au-black);
+            --au-blue3:  #1d4ed8;
+            --au-green:  #059669;
+            --au-green2: #10B981;
+            --au-amber:  #D97706;
+            --au-red:    #DC2626;
+            --au-text:   #0f172a;
+            --au-text2:  #64748b;
+            --au-text3:  #94a3b8;
+            --au-bg:     #f8fafc;
+            --au-card:   #ffffff;
+            --au-border: #e2e8f0;
+            --au-border2:#cbd5e1;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--au-bg);
             color: var(--au-text);
             -webkit-font-smoothing: antialiased;
             min-height: 100vh;
@@ -354,80 +351,71 @@ export default function AboutUsPage() {
           /* NAV */
           .au-root nav {
             position:fixed; top:0; left:0; right:0; z-index:999;
-            height:72px; display:flex; align-items:center; justify-content:space-between;
-            padding:0 5vw; background:rgba(8,12,20,.92); backdrop-filter:blur(20px);
+            height:64px; display:flex; align-items:center; justify-content:space-between;
+            padding:0 5vw; background:rgba(255,255,255,.95); backdrop-filter:blur(12px);
             border-bottom:1px solid var(--au-border);
           }
-          .au-root .nav-logo { display:flex; align-items:center; gap:10px; font-size:1.2rem; font-weight:800; color:#fff; text-decoration:none; }
+          .au-root .nav-logo { display:flex; align-items:center; gap:10px; font-size:1.2rem; font-weight:700; color:var(--au-text); text-decoration:none; }
           .au-root .nav-right { display:flex; gap:12px; }
           .au-root .nav-link {
             padding:8px 18px; border-radius:8px; color:var(--au-text2); text-decoration:none;
-            font-size:.87rem; font-weight:500; border:1px solid var(--au-border2); transition:all .2s;
+            font-size:.87rem; font-weight:500; border:1px solid var(--au-border); transition:all .2s;
           }
-          .au-root .nav-link:hover { color:#fff; border-color:rgba(255,255,255,.25); }
+          .au-root .nav-link:hover { color:var(--au-blue); border-color:var(--au-blue); }
           .au-root .nav-cta {
             padding:8px 20px; border-radius:8px; background:var(--au-blue); color:#fff;
-            text-decoration:none; font-size:.87rem; font-weight:700;
-            transition:all .2s; box-shadow:0 0 20px var(--au-glow);
+            text-decoration:none; font-size:.87rem; font-weight:600;
+            transition:all .2s;
           }
-          .au-root .nav-cta:hover { background:var(--au-blue2); }
+          .au-root .nav-cta:hover { background:var(--au-blue3); }
           /* HERO */
           .au-root .page-hero {
-            padding:140px 5vw 80px;
-            background:linear-gradient(180deg,var(--au-dark) 0%,var(--au-black) 100%);
+            padding:120px 5vw 60px;
+            background:linear-gradient(180deg,#ffffff 0%,#f0f4f8 100%);
             text-align:center; position:relative; overflow:hidden;
-          }
-          .au-root .page-hero::before {
-            content:''; position:absolute; inset:0;
-            background:radial-gradient(ellipse 70% 60% at 50% 0%,rgba(37,99,235,.15) 0%,transparent 70%); pointer-events:none;
-          }
-          .au-root .page-hero::after {
-            content:''; position:absolute; inset:0;
-            background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);
-            background-size:50px 50px;
-            mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 0%,transparent 100%); pointer-events:none;
           }
           .au-root .page-hero-inner { position:relative; z-index:1; }
           .au-root .page-tag {
-            display:inline-flex; align-items:center; gap:6px; padding:5px 14px; border-radius:100px;
-            background:rgba(37,99,235,.1); border:1px solid rgba(37,99,235,.25);
-            font-size:.75rem; font-weight:700; letter-spacing:1px; color:var(--au-blue3);
+            display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:100px;
+            background:#eff6ff; border:1px solid #bfdbfe;
+            font-size:.75rem; font-weight:700; letter-spacing:1px; color:var(--au-blue);
             text-transform:uppercase; margin-bottom:1.2rem;
           }
           .au-root .page-hero h1 {
-            font-size:clamp(2.2rem,4.5vw,3.5rem); font-weight:800; letter-spacing:-1.5px;
-            color:#fff; margin-bottom:1rem; line-height:1.15;
+            font-size:clamp(2.2rem,4.5vw,3.5rem); font-weight:800; letter-spacing:-1px;
+            color:var(--au-text); margin-bottom:1rem; line-height:1.15;
           }
-          .au-root .page-hero h1 em { font-family:'Georgia',serif; font-style:italic; font-weight:400; color:var(--au-blue3); }
+          .au-root .page-hero h1 em { font-style:italic; font-weight:400; color:var(--au-blue); }
           .au-root .page-hero p { font-size:1.05rem; color:var(--au-text2); max-width:580px; margin:0 auto; line-height:1.75; }
           /* MAIN */
           .au-root .main-wrap { max-width:1100px; margin:0 auto; padding:0 5vw; }
           /* STORY */
           .au-root .story-section {
-            padding:90px 0 70px; display:grid; grid-template-columns:1fr 1fr; gap:6rem; align-items:center;
+            padding:80px 0 60px; display:grid; grid-template-columns:1fr 1fr; gap:5rem; align-items:center;
           }
           .au-root .story-tag {
             display:inline-block; padding:4px 12px; border-radius:100px;
-            background:rgba(37,99,235,.1); border:1px solid rgba(37,99,235,.2);
-            font-size:.72rem; font-weight:700; letter-spacing:1px; color:var(--au-blue3);
+            background:#eff6ff; border:1px solid #bfdbfe;
+            font-size:.72rem; font-weight:700; letter-spacing:1px; color:var(--au-blue);
             text-transform:uppercase; margin-bottom:1rem;
           }
           .au-root .story-section h2 {
-            font-size:clamp(1.8rem,3vw,2.6rem); font-weight:800; letter-spacing:-1px;
-            color:#fff; margin-bottom:1.2rem; line-height:1.2;
+            font-size:clamp(1.8rem,3vw,2.6rem); font-weight:800; letter-spacing:-.5px;
+            color:var(--au-text); margin-bottom:1.2rem; line-height:1.2;
           }
-          .au-root .story-section h2 em { font-family:'Georgia',serif; font-style:italic; font-weight:400; color:var(--au-green2); }
+          .au-root .story-section h2 em { font-style:italic; font-weight:400; color:var(--au-green2); }
           .au-root .story-section p { font-size:.95rem; color:var(--au-text2); line-height:1.8; margin-bottom:18px; }
           .au-root .quote-card {
-            background:var(--au-card); border:1px solid var(--au-border2); border-radius:20px;
+            background:var(--au-card); border:1px solid var(--au-border); border-radius:20px;
             padding:32px; position:relative; overflow:hidden;
+            box-shadow:0 4px 16px rgba(0,0,0,.04);
           }
           .au-root .quote-card::before {
-            content:''; position:absolute; top:0; left:0; right:0; height:2px;
+            content:''; position:absolute; top:0; left:0; right:0; height:3px;
             background:linear-gradient(90deg,var(--au-blue),var(--au-green2));
           }
-          .au-root .quote-mark { font-size:5rem; color:rgba(37,99,235,.15); line-height:.8; margin-bottom:12px; }
-          .au-root .quote-text { font-size:1rem; color:var(--au-text); line-height:1.75; font-style:italic; margin-bottom:20px; }
+          .au-root .quote-mark { font-size:5rem; color:rgba(37,99,235,.12); line-height:.8; margin-bottom:12px; }
+          .au-root .quote-text { font-size:1rem; color:var(--au-text2); line-height:1.75; font-style:italic; margin-bottom:20px; }
           .au-root .quote-author { display:flex; align-items:center; gap:12px; }
           .au-root .q-av {
             width:44px; height:44px; border-radius:50%;
@@ -435,63 +423,62 @@ export default function AboutUsPage() {
             display:flex; align-items:center; justify-content:center;
             font-weight:800; font-size:1rem; color:#fff;
           }
-          .au-root .q-name { font-weight:700; color:#fff; font-size:.95rem; }
+          .au-root .q-name { font-weight:700; color:var(--au-text); font-size:.95rem; }
           .au-root .q-role { font-size:.78rem; color:var(--au-text2); margin-top:2px; }
           /* PROBLEM */
-          .au-root .problem-section { padding:0 0 80px; border-top:1px solid var(--au-border); padding-top:80px; }
-          .au-root .sec-title { font-size:clamp(1.8rem,3vw,2.5rem); font-weight:800; letter-spacing:-1px; color:#fff; margin-bottom:1rem; }
-          .au-root .sec-title em { font-family:'Georgia',serif; font-style:italic; color:var(--au-red); }
+          .au-root .problem-section { padding:80px 0; border-top:1px solid var(--au-border); }
+          .au-root .sec-title { font-size:clamp(1.8rem,3vw,2.5rem); font-weight:800; letter-spacing:-.5px; color:var(--au-text); margin-bottom:1rem; }
+          .au-root .sec-title em { font-style:italic; color:var(--au-red); }
           .au-root .sec-sub { font-size:.95rem; color:var(--au-text2); max-width:600px; line-height:1.75; margin-bottom:3rem; }
           .au-root .problem-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
           .au-root .prob-card {
-            background:var(--au-dark); border:1px solid var(--au-border); border-radius:18px; padding:24px; transition:all .3s;
+            background:var(--au-card); border:1px solid var(--au-border); border-radius:16px; padding:24px; transition:all .2s;
           }
-          .au-root .prob-card:hover { background:var(--au-card); border-color:var(--au-border2); transform:translateY(-4px); }
+          .au-root .prob-card:hover { border-color:#bfdbfe; box-shadow:0 8px 24px rgba(37,99,235,.06); transform:translateY(-2px); }
           .au-root .prob-icon { font-size:1.8rem; margin-bottom:14px; }
           .au-root .prob-card h3 { font-size:.95rem; font-weight:700; color:var(--au-text); margin-bottom:8px; }
           .au-root .prob-card p { font-size:.85rem; color:var(--au-text2); line-height:1.65; }
           /* SOLUTION */
           .au-root .solution-section { padding:80px 0; border-top:1px solid var(--au-border); }
           .au-root .solution-header { text-align:center; margin-bottom:4rem; }
-          .au-root .solution-header h2 { font-size:clamp(1.8rem,3vw,2.5rem); font-weight:800; letter-spacing:-1px; color:#fff; margin-bottom:1rem; }
-          .au-root .solution-header h2 em { font-family:'Georgia',serif; font-style:italic; color:var(--au-green2); }
+          .au-root .solution-header h2 { font-size:clamp(1.8rem,3vw,2.5rem); font-weight:800; letter-spacing:-.5px; color:var(--au-text); margin-bottom:1rem; }
+          .au-root .solution-header h2 em { font-style:italic; color:var(--au-green2); }
           .au-root .solution-header p { font-size:.95rem; color:var(--au-text2); max-width:560px; margin:0 auto; line-height:1.75; }
           .au-root .solution-steps { display:flex; flex-direction:column; }
           .au-root .sol-step { display:grid; grid-template-columns:80px 1fr; align-items:stretch; }
           .au-root .sol-left { display:flex; flex-direction:column; align-items:center; }
           .au-root .sol-num {
             width:56px; height:56px; border-radius:50%;
-            background:var(--au-dark2); border:2px solid var(--au-blue);
+            background:#eff6ff; border:2px solid #bfdbfe;
             display:flex; align-items:center; justify-content:center;
-            font-size:1rem; font-weight:800; color:var(--au-blue3); flex-shrink:0;
-            box-shadow:0 0 20px rgba(37,99,235,.2); z-index:1;
+            font-size:1rem; font-weight:800; color:var(--au-blue); flex-shrink:0; z-index:1;
           }
           .au-root .sol-line {
             width:2px; flex:1; min-height:40px;
-            background:linear-gradient(180deg,var(--au-blue) 0%,transparent 100%);
-            margin:4px 0; opacity:.3;
+            background:linear-gradient(180deg,#bfdbfe 0%,transparent 100%);
+            margin:4px 0;
           }
           .au-root .sol-step:last-child .sol-line { display:none; }
           .au-root .sol-content { padding:0 0 48px 28px; }
-          .au-root .sol-content h3 { font-size:1.05rem; font-weight:700; color:#fff; margin-bottom:8px; }
+          .au-root .sol-content h3 { font-size:1.05rem; font-weight:700; color:var(--au-text); margin-bottom:8px; }
           .au-root .sol-content p { font-size:.88rem; color:var(--au-text2); line-height:1.7; }
           .au-root .sol-badge {
             display:inline-block; margin-top:10px; padding:4px 12px; border-radius:100px;
-            background:rgba(37,99,235,.1); border:1px solid rgba(37,99,235,.2);
-            font-size:.72rem; color:var(--au-blue3); font-weight:600;
+            background:#eff6ff; border:1px solid #bfdbfe;
+            font-size:.72rem; color:var(--au-blue); font-weight:600;
           }
           /* VALUES */
           .au-root .values-section { padding:80px 0; border-top:1px solid var(--au-border); }
           .au-root .values-header { margin-bottom:3rem; }
-          .au-root .values-header h2 { font-size:clamp(1.8rem,3vw,2.5rem); font-weight:800; letter-spacing:-1px; color:#fff; margin-bottom:1rem; }
-          .au-root .values-header h2 em { font-family:'Georgia',serif; font-style:italic; color:var(--au-amber); }
+          .au-root .values-header h2 { font-size:clamp(1.8rem,3vw,2.5rem); font-weight:800; letter-spacing:-.5px; color:var(--au-text); margin-bottom:1rem; }
+          .au-root .values-header h2 em { font-style:italic; color:var(--au-amber); }
           .au-root .values-header p { font-size:.95rem; color:var(--au-text2); max-width:560px; line-height:1.75; }
           .au-root .values-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:20px; }
           .au-root .val-card {
-            background:var(--au-dark); border:1px solid var(--au-border); border-radius:18px; padding:28px;
-            transition:all .3s; position:relative; overflow:hidden;
+            background:var(--au-card); border:1px solid var(--au-border); border-radius:16px; padding:28px;
+            transition:all .2s; position:relative; overflow:hidden;
           }
-          .au-root .val-card:hover { background:var(--au-card); border-color:var(--au-border2); transform:translateY(-4px); }
+          .au-root .val-card:hover { border-color:#bfdbfe; box-shadow:0 8px 24px rgba(37,99,235,.06); transform:translateY(-2px); }
           .au-root .val-card::after {
             content:''; position:absolute; top:0; left:0; bottom:0; width:3px; border-radius:3px 0 0 3px;
           }
@@ -500,22 +487,22 @@ export default function AboutUsPage() {
           .au-root .val-card.v3::after { background:var(--au-amber); }
           .au-root .val-card.v4::after { background:var(--au-red); }
           .au-root .val-icon { font-size:1.8rem; margin-bottom:14px; }
-          .au-root .val-card h3 { font-size:1rem; font-weight:700; color:#fff; margin-bottom:8px; }
+          .au-root .val-card h3 { font-size:1rem; font-weight:700; color:var(--au-text); margin-bottom:8px; }
           .au-root .val-card p { font-size:.87rem; color:var(--au-text2); line-height:1.65; }
           /* TEAM */
           .au-root .team-section { padding:80px 0; border-top:1px solid var(--au-border); }
           .au-root .team-header { margin-bottom:3rem; }
-          .au-root .team-header h2 { font-size:clamp(1.8rem,3vw,2.5rem); font-weight:800; letter-spacing:-1px; color:#fff; margin-bottom:1rem; }
-          .au-root .team-header h2 em { font-family:'Georgia',serif; font-style:italic; color:var(--au-blue3); }
+          .au-root .team-header h2 { font-size:clamp(1.8rem,3vw,2.5rem); font-weight:800; letter-spacing:-.5px; color:var(--au-text); margin-bottom:1rem; }
+          .au-root .team-header h2 em { font-style:italic; color:var(--au-blue); }
           .au-root .team-header p { font-size:.95rem; color:var(--au-text2); max-width:560px; line-height:1.75; }
           .au-root .team-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
           .au-root .team-card {
-            background:var(--au-dark); border:1px solid var(--au-border); border-radius:20px; padding:28px;
-            text-align:center; transition:all .3s; position:relative; overflow:hidden;
+            background:var(--au-card); border:1px solid var(--au-border); border-radius:16px; padding:28px;
+            text-align:center; transition:all .2s; position:relative; overflow:hidden;
           }
-          .au-root .team-card:hover { background:var(--au-card); border-color:var(--au-border2); transform:translateY(-4px); }
+          .au-root .team-card:hover { border-color:#bfdbfe; box-shadow:0 8px 24px rgba(37,99,235,.06); transform:translateY(-2px); }
           .au-root .team-card::before {
-            content:''; position:absolute; top:0; left:0; right:0; height:2px;
+            content:''; position:absolute; top:0; left:0; right:0; height:3px;
             background:linear-gradient(90deg,var(--au-blue),var(--au-green2)); opacity:0; transition:opacity .3s;
           }
           .au-root .team-card:hover::before { opacity:1; }
@@ -524,39 +511,38 @@ export default function AboutUsPage() {
             display:flex; align-items:center; justify-content:center;
             font-size:1.6rem; font-weight:800; color:#fff;
           }
-          .au-root .team-name { font-size:1.05rem; font-weight:800; color:#fff; margin-bottom:4px; }
-          .au-root .team-role { font-size:.82rem; color:var(--au-blue3); font-weight:600; margin-bottom:12px; }
+          .au-root .team-name { font-size:1.05rem; font-weight:800; color:var(--au-text); margin-bottom:4px; }
+          .au-root .team-role { font-size:.82rem; color:var(--au-blue); font-weight:600; margin-bottom:12px; }
           .au-root .team-desc { font-size:.83rem; color:var(--au-text2); line-height:1.65; }
           .au-root .team-since {
             margin-top:14px; padding:6px 14px; border-radius:8px;
-            background:rgba(37,99,235,.08); border:1px solid rgba(37,99,235,.15);
+            background:#eff6ff; border:1px solid #bfdbfe;
             font-size:.72rem; color:var(--au-text2); display:inline-block;
           }
           /* STATS */
           .au-root .stats-band { padding:60px 0; border-top:1px solid var(--au-border); }
           .au-root .stats-row {
             display:grid; grid-template-columns:repeat(4,1fr);
-            gap:1px; background:var(--au-border); border-radius:20px; overflow:hidden;
+            gap:1px; background:var(--au-border); border-radius:16px; overflow:hidden;
           }
-          .au-root .sb-item { background:var(--au-dark2); padding:36px 28px; text-align:center; transition:background .2s; }
-          .au-root .sb-item:hover { background:var(--au-card); }
+          .au-root .sb-item { background:var(--au-card); padding:36px 28px; text-align:center; transition:background .2s; }
+          .au-root .sb-item:hover { background:#f0f4f8; }
           .au-root .sb-num {
             font-size:2.4rem; font-weight:800; letter-spacing:-1.5px;
-            background:linear-gradient(135deg,#fff,var(--au-blue3));
-            -webkit-background-clip:text; background-clip:text; color:transparent; line-height:1;
+            color:var(--au-blue); line-height:1;
           }
           .au-root .sb-label { font-size:.82rem; color:var(--au-text2); margin-top:8px; font-weight:500; }
           /* TECH */
           .au-root .tech-section { padding:80px 0; border-top:1px solid var(--au-border); }
-          .au-root .tech-section h2 { font-size:clamp(1.6rem,2.5vw,2.2rem); font-weight:800; letter-spacing:-1px; color:#fff; margin-bottom:1rem; }
-          .au-root .tech-section h2 em { font-family:'Georgia',serif; font-style:italic; color:var(--au-blue3); }
+          .au-root .tech-section h2 { font-size:clamp(1.6rem,2.5vw,2.2rem); font-weight:800; letter-spacing:-.5px; color:var(--au-text); margin-bottom:1rem; }
+          .au-root .tech-section h2 em { font-style:italic; color:var(--au-blue); }
           .au-root .tech-section p { font-size:.95rem; color:var(--au-text2); max-width:580px; line-height:1.75; margin-bottom:2.5rem; }
           .au-root .tech-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
           .au-root .tech-chip {
-            background:var(--au-dark); border:1px solid var(--au-border); border-radius:14px; padding:18px 20px;
-            display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; transition:all .25s;
+            background:var(--au-card); border:1px solid var(--au-border); border-radius:14px; padding:18px 20px;
+            display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; transition:all .2s;
           }
-          .au-root .tech-chip:hover { background:var(--au-card); border-color:rgba(37,99,235,.3); transform:translateY(-3px); }
+          .au-root .tech-chip:hover { border-color:#bfdbfe; box-shadow:0 4px 12px rgba(37,99,235,.06); transform:translateY(-2px); }
           .au-root .tc-icon { font-size:1.6rem; }
           .au-root .tc-name { font-size:.82rem; font-weight:700; color:var(--au-text); }
           .au-root .tc-desc { font-size:.72rem; color:var(--au-text3); }
@@ -564,37 +550,37 @@ export default function AboutUsPage() {
           .au-root .cta-section { padding:80px 0 100px; text-align:center; position:relative; }
           .au-root .cta-bg {
             position:absolute; inset:0;
-            background:radial-gradient(ellipse 60% 60% at 50% 50%,rgba(37,99,235,.12) 0%,transparent 70%); pointer-events:none;
+            background:linear-gradient(135deg,#2563eb,#1d4ed8); border-radius:24px; pointer-events:none;
           }
-          .au-root .cta-inner { position:relative; z-index:1; }
-          .au-root .cta-inner h2 { font-size:clamp(2rem,3.5vw,2.8rem); font-weight:800; letter-spacing:-1.5px; color:#fff; margin-bottom:1rem; }
-          .au-root .cta-inner h2 em { font-family:'Georgia',serif; font-style:italic; color:var(--au-blue3); }
-          .au-root .cta-inner p { font-size:.95rem; color:var(--au-text2); margin-bottom:2rem; }
+          .au-root .cta-inner { position:relative; z-index:1; background:linear-gradient(135deg,#2563eb,#1d4ed8); border-radius:24px; padding:60px 40px; }
+          .au-root .cta-inner h2 { font-size:clamp(2rem,3.5vw,2.8rem); font-weight:800; letter-spacing:-.5px; color:#fff; margin-bottom:1rem; }
+          .au-root .cta-inner h2 em { font-style:italic; color:#bfdbfe; }
+          .au-root .cta-inner p { font-size:.95rem; color:rgba(255,255,255,.85); margin-bottom:2rem; }
           .au-root .cta-btns { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
           .au-root .btn-cta {
             display:inline-flex; align-items:center; gap:10px; padding:14px 32px; border-radius:12px;
-            background:var(--au-blue); color:#fff; font-size:.95rem; font-weight:700; text-decoration:none;
-            transition:all .25s; box-shadow:0 0 32px var(--au-glow);
+            background:#fff; color:var(--au-blue); font-size:.95rem; font-weight:700; text-decoration:none;
+            transition:all .2s; box-shadow:0 4px 14px rgba(0,0,0,.1);
           }
-          .au-root .btn-cta:hover { background:var(--au-blue2); transform:translateY(-2px); }
+          .au-root .btn-cta:hover { background:#f8fafc; transform:translateY(-2px); }
           .au-root .btn-ghost {
             display:inline-flex; align-items:center; gap:10px; padding:14px 28px; border-radius:12px;
-            background:rgba(255,255,255,.05); border:1px solid var(--au-border2); color:var(--au-text);
-            font-size:.95rem; font-weight:600; text-decoration:none; transition:all .25s;
+            background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff;
+            font-size:.95rem; font-weight:600; text-decoration:none; transition:all .2s;
           }
-          .au-root .btn-ghost:hover { background:rgba(255,255,255,.09); transform:translateY(-2px); }
+          .au-root .btn-ghost:hover { background:rgba(255,255,255,.25); transform:translateY(-2px); }
           /* SEC DIVIDER */
-          .au-root .sec-divider { height:1px; background:linear-gradient(90deg,transparent,var(--au-border2),transparent); }
+          .au-root .sec-divider { height:1px; background:var(--au-border); }
           /* FOOTER */
-          .au-root footer { background:var(--au-dark); border-top:1px solid var(--au-border); padding:50px 5vw 28px; }
+          .au-root footer { background:var(--au-card); border-top:1px solid var(--au-border); padding:50px 5vw 28px; }
           .au-root .footer-inner {
             max-width:1100px; margin:0 auto;
             display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px;
           }
-          .au-root .footer-logo { display:flex; align-items:center; gap:8px; font-size:1.1rem; font-weight:800; color:#fff; text-decoration:none; }
+          .au-root .footer-logo { display:flex; align-items:center; gap:8px; font-size:1.1rem; font-weight:700; color:var(--au-text); text-decoration:none; }
           .au-root .footer-links { display:flex; gap:2rem; flex-wrap:wrap; }
           .au-root .footer-links a { text-decoration:none; color:var(--au-text2); font-size:.85rem; transition:color .2s; }
-          .au-root .footer-links a:hover { color:#fff; }
+          .au-root .footer-links a:hover { color:var(--au-blue); }
           .au-root .footer-copy {
             max-width:1100px; margin:24px auto 0; border-top:1px solid var(--au-border); padding-top:20px;
             font-size:.78rem; color:var(--au-text3); text-align:center;
