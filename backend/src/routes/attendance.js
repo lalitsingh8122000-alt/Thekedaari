@@ -49,6 +49,10 @@ function labourExpenseNotesBase(attendanceId) {
   return `Attendance wage att:${attendanceId}`;
 }
 
+function overtimeRemarksBase(attendanceId) {
+  return `Overtime att:${attendanceId}`;
+}
+
 async function removeOldPaymentStyleLabourExpenses(tx, userId, attendanceId) {
   await tx.expense.deleteMany({
     where: {
@@ -67,6 +71,38 @@ async function deleteLabourWageExpense(tx, userId, attendanceId) {
       notes: { startsWith: labourExpenseNotesBase(attendanceId) },
     },
   });
+}
+
+async function syncOvertimeLedger(tx, userId, attendanceId, workerId, overtimeAmount, projectName) {
+  const remarks = `${overtimeRemarksBase(attendanceId)} — ${projectName}`;
+  const existing = await tx.ledgerEntry.findFirst({
+    where: {
+      userId,
+      category: 'Bonus',
+      remarks: { startsWith: overtimeRemarksBase(attendanceId) },
+    },
+  });
+  if (existing) {
+    if (overtimeAmount > 0) {
+      await tx.ledgerEntry.update({
+        where: { id: existing.id },
+        data: { amount: overtimeAmount, remarks },
+      });
+    } else {
+      await tx.ledgerEntry.delete({ where: { id: existing.id } });
+    }
+  } else if (overtimeAmount > 0) {
+    await tx.ledgerEntry.create({
+      data: {
+        workerId,
+        amount: overtimeAmount,
+        type: 'Credit',
+        category: 'Bonus',
+        remarks,
+        userId,
+      },
+    });
+  }
 }
 
 async function upsertLabourExpenseForAttendance(
@@ -172,6 +208,14 @@ router.get('/', auth, async (req, res) => {
       },
       orderBy: { createdAt: 'desc' },
     });
+    const overtimeLedgers = await prisma.ledgerEntry.findMany({
+      where: {
+        userId: req.userId,
+        category: 'Bonus',
+        remarks: { contains: 'Overtime att:' },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
 
     const paymentMap = {};
     paymentLedgers.forEach((p) => {
@@ -186,17 +230,28 @@ router.get('/', auth, async (req, res) => {
         };
       }
     });
+    const overtimeMap = {};
+    overtimeLedgers.forEach((entry) => {
+      const match = entry.remarks?.match(/Overtime att:(\d+)/);
+      if (match) {
+        const attId = parseInt(match[1], 10);
+        if (overtimeMap[attId] !== undefined) return;
+        overtimeMap[attId] = entry.amount;
+      }
+    });
 
     const result = attendance.map((a) => {
       const { displayPayment, note } = displayPaymentForSplitRow(a, paymentMap);
       const partner = a.primarySplitId ? a.splitParent : a.splitSecondaries?.[0] || null;
       const payAnchor = getPrimaryAttendanceId(a);
       const paymentTotal = paymentMap[payAnchor]?.amount ?? 0;
+      const overtime = overtimeMap[payAnchor] ?? 0;
       return {
         ...a,
         payment: displayPayment,
         paymentNote: note,
         paymentTotal,
+        overtime,
         splitPartner: partner,
         isSplitHalfDay: isSplitPair(a),
       };
@@ -218,6 +273,7 @@ router.post('/', auth, async (req, res) => {
     const type = normalizeString(req.body.type);
     const salary = req.body.salary;
     const payment = req.body.payment;
+    const overtime = req.body.overtime;
     const paymentNote = normalizeString(req.body.paymentNote);
 
     if (!workerId || !projectId || !date || !type) {
@@ -284,6 +340,10 @@ router.post('/', auth, async (req, res) => {
     const paymentAmount = payment ? parseAmount(payment) : 0;
     if (paymentAmount === null || paymentAmount < 0 || paymentAmount > 100000000) {
       return res.status(400).json({ error: 'Invalid payment amount' });
+    }
+    const overtimeAmount = overtime ? parseAmount(overtime) : 0;
+    if (overtimeAmount === null || overtimeAmount < 0 || overtimeAmount > 100000000) {
+      return res.status(400).json({ error: 'Invalid overtime amount' });
     }
 
     if (isSplitHalf) {
@@ -382,12 +442,21 @@ router.post('/', auth, async (req, res) => {
             },
           });
         }
+        await syncOvertimeLedger(
+          tx,
+          req.userId,
+          att1.id,
+          workerId,
+          overtimeAmount,
+          att1.project.name
+        );
 
         return {
           ...att1,
           splitSecondary: att2,
           payment: paymentAmount ? Math.round((paymentAmount / 2) * 100) / 100 : 0,
           paymentNote: paymentNote || '',
+          overtime: overtimeAmount,
           isSplitHalfDay: true,
         };
       });
@@ -452,8 +521,16 @@ router.post('/', auth, async (req, res) => {
           },
         });
       }
+      await syncOvertimeLedger(
+        tx,
+        req.userId,
+        attendance.id,
+        workerId,
+        overtimeAmount,
+        attendance.project.name
+      );
 
-      return { ...attendance, payment: paymentAmount, paymentNote: paymentNote || '' };
+      return { ...attendance, payment: paymentAmount, paymentNote: paymentNote || '', overtime: overtimeAmount };
     });
 
     res.status(201).json(result);
@@ -465,7 +542,7 @@ router.post('/', auth, async (req, res) => {
 
 router.put('/:id', auth, async (req, res) => {
   try {
-    const { projectId, date, type, salary, payment, paymentNote, removeSplit, secondProjectId: bodySecondProjectId } =
+    const { projectId, date, type, salary, payment, overtime, paymentNote, removeSplit, secondProjectId: bodySecondProjectId } =
       req.body;
     const id = parseId(req.params.id);
     if (!id) return res.status(400).json({ error: 'Invalid attendance id' });
@@ -540,6 +617,10 @@ router.put('/:id', auth, async (req, res) => {
     const paymentAmount = payment !== undefined ? parseAmount(payment) : null;
     if (paymentAmount !== null && (paymentAmount < 0 || paymentAmount > 100000000)) {
       return res.status(400).json({ error: 'Invalid payment amount' });
+    }
+    const overtimeAmount = overtime !== undefined ? parseAmount(overtime) : null;
+    if (overtimeAmount !== null && (overtimeAmount < 0 || overtimeAmount > 100000000)) {
+      return res.status(400).json({ error: 'Invalid overtime amount' });
     }
     if (date !== undefined && !isValidDate(date)) return res.status(400).json({ error: 'Invalid attendance date' });
     const cleanPaymentNote = paymentNote !== undefined ? normalizeString(paymentNote) : undefined;
@@ -667,6 +748,16 @@ router.put('/:id', auth, async (req, res) => {
           projectName: attendance.project.name,
           attDate: attendance.date,
         });
+        if (overtimeAmount !== null) {
+          await syncOvertimeLedger(
+            tx,
+            req.userId,
+            prim.id,
+            existing.workerId,
+            overtimeAmount,
+            attendance.project.name
+          );
+        }
 
         return attendance;
       }
@@ -776,6 +867,16 @@ router.put('/:id', auth, async (req, res) => {
           projectName: attSecondary.project.name,
           attDate: attSecondary.date,
         });
+        if (overtimeAmount !== null) {
+          await syncOvertimeLedger(
+            tx,
+            req.userId,
+            primId,
+            existing.workerId,
+            overtimeAmount,
+            attPrimary.project.name
+          );
+        }
 
         return attPrimary;
       }
@@ -889,6 +990,16 @@ router.put('/:id', auth, async (req, res) => {
           projectName: attSecondary.project.name,
           attDate: attSecondary.date,
         });
+        if (overtimeAmount !== null) {
+          await syncOvertimeLedger(
+            tx,
+            req.userId,
+            prim.id,
+            existing.workerId,
+            overtimeAmount,
+            attPrimary.project.name
+          );
+        }
 
         return existing.id === prim.id ? attPrimary : attSecondary;
       }
@@ -957,6 +1068,17 @@ router.put('/:id', auth, async (req, res) => {
           existing.workerId,
           paymentAmount,
           cleanPaymentNote || ''
+        );
+      }
+      if (overtimeAmount !== null) {
+        const overtimeLedgerAnchorId = existing.primarySplitId || id;
+        await syncOvertimeLedger(
+          tx,
+          req.userId,
+          overtimeLedgerAnchorId,
+          existing.workerId,
+          overtimeAmount,
+          attendance.project.name
         );
       }
 
