@@ -13,7 +13,7 @@ const router = express.Router();
 const prisma = new PrismaClient();
 
 const attendanceInclude = {
-  worker: { select: { id: true, name: true, costPerDay: true } },
+  worker: { select: { id: true, name: true, costPerDay: true, role: { select: { name: true } } } },
   project: { select: { id: true, name: true } },
   ledgerEntry: { select: { id: true, amount: true } },
   splitSecondaries: {
@@ -241,7 +241,7 @@ router.get('/', auth, async (req, res) => {
     });
 
     const result = attendance.map((a) => {
-      const { displayPayment, note } = displayPaymentForSplitRow(a, paymentMap);
+      const { amount: displayPayment, note } = displayPaymentForSplitRow(a, paymentMap);
       const partner = a.primarySplitId ? a.splitParent : a.splitSecondaries?.[0] || null;
       const payAnchor = getPrimaryAttendanceId(a);
       const paymentTotal = paymentMap[payAnchor]?.amount ?? 0;

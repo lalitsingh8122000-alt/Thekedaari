@@ -28,9 +28,18 @@ echo "[2/7] Installing backend dependencies..."
 cd "$APP_DIR/backend"
 npm install --production
 
-echo "[3/7] Generating Prisma client & pushing schema..."
+echo "[3/7] Generating Prisma client & applying migrations..."
 npx prisma generate
-npx prisma db push
+# prisma migrate deploy:
+#   - Runs ONLY migrations that haven't been applied yet
+#   - Safe for production: never drops columns/tables without an explicit migration
+#   - Tracks every change in the _prisma_migrations table
+#   - No-op if schema is already up to date
+#
+# FIRST-TIME SETUP: If the _prisma_migrations table doesn't exist yet,
+# run this ONCE before deploying:
+#   ./deploy/setup-prod-migrations.sh
+npx prisma migrate deploy
 
 # --- Frontend setup ---
 echo "[4/7] Installing frontend dependencies..."

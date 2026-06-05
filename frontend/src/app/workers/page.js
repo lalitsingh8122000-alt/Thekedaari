@@ -76,6 +76,8 @@ export default function WorkersPage() {
       paymentNote: '',
       secondSite: false,
       secondProjectId: '',
+      wantOvertime: false,
+      overtime: '',
     });
   };
 
@@ -119,6 +121,8 @@ export default function WorkersPage() {
           paymentNote: record.paymentNote || '',
           secondSite: !!split,
           secondProjectId: split ? String(record.splitPartner.projectId) : '',
+          wantOvertime: (record.overtime || 0) > 0,
+          overtime: (record.overtime || 0) > 0 ? String(record.overtime) : '',
         }));
       } else {
         setAttForm((f) => ({
@@ -150,6 +154,7 @@ export default function WorkersPage() {
     if (status === 'Absent') {
       setAttForm((f) => ({
         ...f, status: 'Absent', salary: 0, secondSite: false, secondProjectId: '',
+        wantOvertime: false, overtime: '',
       }));
     } else {
       setAttForm((f) => ({
@@ -165,6 +170,7 @@ export default function WorkersPage() {
       type,
       salary: String(calcSalary(type, showAttendance.costPerDay, type === 'HalfDay' && f.secondSite)),
       ...(type !== 'HalfDay' ? { secondSite: false, secondProjectId: '' } : {}),
+      ...(type !== 'FullDay' ? { wantOvertime: false, overtime: '' } : {}),
     }));
   };
 
@@ -184,6 +190,10 @@ export default function WorkersPage() {
     if (attForm.paymentNote && attForm.paymentNote.trim().length > 500) {
       return setError('Payment note cannot exceed 500 characters');
     }
+    const overtimeAmount = attForm.wantOvertime && attForm.overtime ? parsePositiveAmount(attForm.overtime) : 0;
+    if (attForm.wantOvertime && attForm.overtime && overtimeAmount === null) {
+      return setError('Please enter a valid overtime amount');
+    }
     const finalType = attForm.status === 'Absent' ? 'Absent' : attForm.type;
     if (finalType === 'HalfDay' && attForm.secondSite) {
       if (!attForm.secondProjectId || String(attForm.secondProjectId) === String(attForm.projectId)) {
@@ -199,6 +209,7 @@ export default function WorkersPage() {
         type: finalType,
         salary: attForm.status === 'Absent' ? 0 : salaryAmount,
         payment: paymentAmount,
+        overtime: overtimeAmount || 0,
         paymentNote: attForm.wantToPay ? attForm.paymentNote.trim() : '',
       };
       const removeSplit =
@@ -228,7 +239,9 @@ export default function WorkersPage() {
     } finally { setSaving(false); }
   };
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '');
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL
+    ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '')
+    : 'http://localhost:5000';
 
   return (
     <AppShell>
@@ -498,6 +511,41 @@ export default function WorkersPage() {
                       onChange={(e) => setAttForm({ ...attForm, salary: e.target.value })}
                     />
                   </div>
+
+                  {/* Overtime — only for FullDay */}
+                  {attForm.type === 'FullDay' && (
+                    <div className={`rounded-xl border-2 transition-colors ${attForm.wantOvertime ? 'border-purple-300 bg-purple-50' : 'border-gray-200 bg-gray-50'}`}>
+                      <button
+                        type="button"
+                        onClick={() => setAttForm((f) => ({ ...f, wantOvertime: !f.wantOvertime, overtime: f.wantOvertime ? '' : f.overtime }))}
+                        className="w-full flex items-center justify-between px-3 py-2"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-base leading-none">⏱</span>
+                          <span className={`font-semibold text-xs ${attForm.wantOvertime ? 'text-purple-700' : 'text-gray-500'}`}>
+                            Overtime (OT)
+                          </span>
+                        </div>
+                        <div className={`w-10 h-5 rounded-full transition-colors flex items-center ${attForm.wantOvertime ? 'bg-purple-500 justify-end' : 'bg-gray-300 justify-start'}`}>
+                          <div className="w-4 h-4 bg-white rounded-full shadow mx-0.5" />
+                        </div>
+                      </button>
+                      {attForm.wantOvertime && (
+                        <div className="px-3 pb-2.5">
+                          <label className="block text-purple-600 font-medium mb-0.5 text-xs">Overtime Amount (₹)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            className="w-full border-2 border-purple-200 rounded-lg px-3 py-1.5 text-center text-base font-bold text-purple-700 focus:border-purple-400 focus:outline-none bg-white"
+                            placeholder="0"
+                            value={attForm.overtime}
+                            onChange={(e) => setAttForm({ ...attForm, overtime: e.target.value })}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
 

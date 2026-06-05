@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Plus, TrendingUp, Banknote, X } from 'lucide-react';
+import { ArrowLeft, Plus, TrendingUp, Banknote, X, Pencil } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
 import api from '@/lib/api';
@@ -19,6 +19,11 @@ export default function VendorLedgerPage() {
   const [form, setForm] = useState(defaultForm);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  // Edit state
+  const [editEntry, setEditEntry] = useState(null);
+  const [editForm, setEditForm] = useState({ amount: '', remarks: '', comment: '' });
+  const [editError, setEditError] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
 
   const load = () => {
     api.get(`/vendor-ledger/${id}`)
@@ -88,6 +93,41 @@ export default function VendorLedgerPage() {
     return { border: 'border-l-slate-400', text: 'text-slate-700', hint: 'text-gray-500' };
   };
 
+  const openEdit = (entry) => {
+    setEditEntry(entry);
+    setEditForm({
+      amount: String(entry.amount),
+      remarks: entry.remarks || '',
+      comment: entry.comment || '',
+    });
+    setEditError('');
+    setEditSaving(false);
+  };
+
+  const handleEditSave = async () => {
+    if (editSaving) return;
+    setEditError('');
+    const amount = parsePositiveAmount(editForm.amount);
+    if (!amount) return setEditError('Please enter a valid amount');
+    if (editForm.comment.trim().length > 2000) return setEditError('Comment cannot exceed 2000 characters');
+    if (editForm.remarks.trim().length > 500) return setEditError('Remarks cannot exceed 500 characters');
+    setEditSaving(true);
+    try {
+      await api.put(`/vendor-ledger/${editEntry.id}`, {
+        amount,
+        remarks: editForm.remarks.trim(),
+        comment: editForm.comment.trim(),
+      });
+      setEditEntry(null);
+      setLoading(true);
+      load();
+    } catch (err) {
+      setEditError(err.response?.data?.error || 'Failed to update entry');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   return (
     <AppShell>
       <div className="space-y-3 sm:space-y-4">
@@ -138,7 +178,7 @@ export default function VendorLedgerPage() {
                   const isBilled = entry.type === 'Credit';
                   return (
                     <div key={entry.id} className="card flex items-center justify-between gap-2">
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span className={`text-[10px] sm:text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-md ${
                             isBilled ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'
@@ -161,13 +201,25 @@ export default function VendorLedgerPage() {
                           <p>{t('ledger_recorded_on')}: {fmtDay(entry.createdAt)}</p>
                         </div>
                       </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className={`font-bold text-sm sm:text-base tabular-nums ${isBilled ? 'text-red-600' : 'text-emerald-700'}`}>
-                          {isBilled ? '+' : '−'}{fmt(entry.amount)}
-                        </p>
-                        <p className="text-[11px] text-gray-400 mt-0.5">
-                          {t('ledger_running_total')}: {fmt(entry.runningBalance)}
-                        </p>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="text-right">
+                          <p className={`font-bold text-sm sm:text-base tabular-nums ${isBilled ? 'text-red-600' : 'text-emerald-700'}`}>
+                            {isBilled ? '+' : '−'}{fmt(entry.amount)}
+                          </p>
+                          <p className="text-[11px] text-gray-400 mt-0.5">
+                            {t('ledger_running_total')}: {fmt(entry.runningBalance)}
+                          </p>
+                        </div>
+                        {!entry.expense && (
+                          <button
+                            type="button"
+                            onClick={() => openEdit(entry)}
+                            className="p-2 rounded-xl bg-gray-50 hover:bg-gray-100 active:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors shrink-0"
+                            aria-label="Edit entry"
+                          >
+                            <Pencil size={15} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -178,8 +230,7 @@ export default function VendorLedgerPage() {
         ) : null}
       </div>
 
-      {showModal && (
-        <div className="modal-overlay z-[70]" onClick={closeModal} role="presentation">
+      {showModal && (        <div className="modal-overlay z-[70]" onClick={closeModal} role="presentation">
           <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="overflow-y-auto flex-1 p-3 sm:p-5 space-y-2.5 sm:space-y-3">
               <div className="flex items-center justify-between gap-2">
@@ -221,6 +272,79 @@ export default function VendorLedgerPage() {
                   showModal === 'addBill' ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'
                 }`}>
                 <Plus size={18} /> {saving ? t('loading') : t('save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit ledger entry modal */}
+      {editEntry && (
+        <div className="modal-overlay z-[70]" onClick={() => setEditEntry(null)} role="presentation">
+          <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="overflow-y-auto flex-1 p-3 sm:p-5 space-y-2.5 sm:space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-base font-bold pr-2">Edit Entry</h3>
+                <button type="button" onClick={() => setEditEntry(null)} className="p-1 shrink-0"><X size={20} /></button>
+              </div>
+
+              {/* Entry type badge (read-only) */}
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-bold uppercase tracking-wide px-2.5 py-1 rounded-lg ${
+                  editEntry.type === 'Credit' ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'
+                }`}>
+                  {editEntry.type === 'Credit' ? t('vendor_tag_billed') : t('vendor_tag_paid')}
+                </span>
+                <span className="text-sm text-gray-500">
+                  {editEntry.category === 'Material' ? t('vendor_material') : editEntry.category === 'Payment' ? t('payment') : t('other')}
+                </span>
+                <span className="text-xs text-gray-400 ml-auto">{fmtDay(editEntry.createdAt)}</span>
+              </div>
+
+              {editError && <div className="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-xs">{editError}</div>}
+
+              <div>
+                <label className="block text-gray-600 font-medium mb-1 text-xs">{t('amount')} (₹)</label>
+                <input
+                  type="number" min="0.01" step="0.01"
+                  className="input-field !py-2 text-base font-bold text-center"
+                  placeholder="₹"
+                  value={editForm.amount}
+                  onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-600 font-medium mb-1 text-xs">{t('remarks')}</label>
+                <input
+                  type="text" maxLength={500}
+                  className="input-field !py-2 text-sm"
+                  placeholder="Optional remarks"
+                  value={editForm.remarks}
+                  onChange={(e) => setEditForm({ ...editForm, remarks: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-600 font-medium mb-1 text-xs">{t('comment')}</label>
+                <input
+                  type="text" maxLength={2000}
+                  className="input-field !py-2 text-sm"
+                  placeholder="Optional comment"
+                  value={editForm.comment}
+                  onChange={(e) => setEditForm({ ...editForm, comment: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="flex-shrink-0 px-3 pt-2 sm:px-5 border-t border-gray-100 bg-white rounded-b-3xl sm:rounded-b-2xl pb-[calc(1rem+72px+env(safe-area-inset-bottom,0px))] sm:pb-4">
+              <button
+                type="button"
+                onClick={handleEditSave}
+                disabled={editSaving}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-white text-sm bg-primary-600 hover:bg-primary-700 active:scale-[0.99] transition-all disabled:opacity-60 disabled:pointer-events-none"
+              >
+                <Pencil size={16} /> {editSaving ? t('loading') : 'Update Entry'}
               </button>
             </div>
           </div>

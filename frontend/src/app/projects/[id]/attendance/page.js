@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
   ArrowLeft, Users, CalendarCheck, X,
-  IndianRupee, Banknote, UserCheck, UserX, Search, MoreVertical, CheckCircle2, AlertTriangle,
+  IndianRupee, Banknote, UserCheck, UserX, Search, MoreVertical, CheckCircle2, AlertTriangle, ChevronDown,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
@@ -62,6 +62,9 @@ export default function ProjectAttendancePage() {
   // Success notification (bulk save or modal save)
   const [successMsg, setSuccessMsg] = useState('');
   const successTimeoutRef = useRef(null);
+  // Project switcher dropdown
+  const [showProjectMenu, setShowProjectMenu] = useState(false);
+  const projectMenuRef = useRef(null);
   const { t } = useLanguage();
   const router = useRouter();
   const dateStripRef = useRef(null);
@@ -86,6 +89,22 @@ export default function ProjectAttendancePage() {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Close project menu on outside click
+  useEffect(() => {
+    if (!showProjectMenu) return;
+    const handleClick = (e) => {
+      if (projectMenuRef.current && !projectMenuRef.current.contains(e.target)) {
+        setShowProjectMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('touchstart', handleClick);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('touchstart', handleClick);
+    };
+  }, [showProjectMenu]);
 
   const loadData = () => {
     if (!Number.isFinite(projectIdNum) || projectIdNum < 1) return;
@@ -781,7 +800,9 @@ export default function ProjectAttendancePage() {
     } finally { setSaving(false); }
   };
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '');
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL
+    ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '')
+    : 'http://localhost:5000';
   const presentCount = workers.filter((w) => {
     const t = getDraftType(w.id);
     return t !== null && t !== 'Absent';
@@ -837,11 +858,43 @@ export default function ProjectAttendancePage() {
             <div className="min-w-0 flex-1">
               <h2 className="text-lg font-bold text-gray-800 leading-tight">
                 {t('project_attendance_title')}
-                {project?.name && (
-                  <span className="ml-2 text-primary-600 font-semibold">· {project.name}</span>
-                )}
               </h2>
-              <p className="text-xs text-gray-500">{formattedDate}</p>
+              {/* Project switcher */}
+              <div className="relative mt-0.5" ref={projectMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setShowProjectMenu((v) => !v)}
+                  className="flex items-center gap-1 text-primary-600 font-semibold text-sm hover:text-primary-700 active:opacity-75 transition-opacity"
+                  aria-haspopup="listbox"
+                  aria-expanded={showProjectMenu}
+                >
+                  <span className="truncate max-w-[180px]">{project?.name || 'Loading...'}</span>
+                  <ChevronDown size={14} className={`shrink-0 transition-transform ${showProjectMenu ? 'rotate-180' : ''}`} />
+                </button>
+                {showProjectMenu && projects.length > 1 && (
+                  <div className="absolute left-0 top-full mt-1 z-50 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden min-w-[200px] max-w-[260px]">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-3 pt-2.5 pb-1">Switch Project</p>
+                    {projects
+                      .filter((p) => p.id !== projectIdNum)
+                      .map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => {
+                            setShowProjectMenu(false);
+                            router.push(`/projects/${p.id}/attendance`);
+                          }}
+                          className="w-full text-left px-3 py-2.5 hover:bg-primary-50 active:bg-primary-100 transition-colors"
+                        >
+                          <p className="font-semibold text-sm text-gray-800 truncate">{p.name}</p>
+                          <p className="text-[10px] text-gray-400 mt-0.5">
+                            {p.status === 'Running' ? '🟢 Running' : '✅ Completed'}
+                          </p>
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
