@@ -6,6 +6,7 @@ import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
 import ProfileModal from './ProfileModal';
+import WhatsNewBanner from './WhatsNewBanner';
 
 export default function AppShell({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -91,6 +92,7 @@ export default function AppShell({ children }) {
       <main className="page-content p-4 max-w-4xl mx-auto">{children}</main>
       <BottomNav sidebarOpen={sidebarOpen} />
       <ProfileModal open={profileModalOpen} onClose={closeProfileModal} />
+      <WhatsNewBanner />
     </div>
   );
 }
