@@ -1643,7 +1643,7 @@ export default function ProjectAttendancePage() {
             </div>
 
             {/* Action buttons */}
-            <div className="flex gap-2 px-4 pb-5 pt-3 border-t border-gray-100 shrink-0">
+            <div className="flex gap-2 px-4 pt-3 border-t border-gray-100 shrink-0" style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}>
               <button
                 type="button"
                 onClick={() => setShowSaveConfirm(false)}

@@ -35,7 +35,7 @@ function currentMonthStr() {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
 }
 
-function generatePDF(records, rangeLabel, projectName) {
+function buildAttendancePDFHtml(records, rangeLabel, projectName) {
   const logoUrl = window.location.origin + '/thekedaari-logo.png';
   const now = new Date().toLocaleDateString('en-IN', {
     day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
@@ -166,10 +166,13 @@ body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 <script>window.onload=function(){window.print();}<\/script>
 </body></html>`;
 
-  const w = window.open('', '_blank', 'width=1200,height=800');
-  if (w) {
-    w.document.write(html);
-    w.document.close();
+  return html;
+}
+
+function writePDFToWindow(win, html) {
+  if (win) {
+    win.document.write(html);
+    win.document.close();
   }
 }
 
@@ -257,6 +260,15 @@ export default function AttendancePage() {
     if (start > end) return setDlError('Start date must be before end date');
     const diffDays = Math.ceil((new Date(end) - new Date(start)) / 86400000);
     if (diffDays > 366) return setDlError('Date range cannot exceed 366 days');
+
+    // Open window SYNCHRONOUSLY before any await — required for iOS/Android PWA popup policy
+    const printWin = window.open('', '_blank', 'width=1200,height=800');
+    if (!printWin) {
+      setDlError('Popup blocked. Please allow popups for this site and try again.');
+      return;
+    }
+    printWin.document.write('<html><body style="font-family:sans-serif;padding:2rem;color:#555"><p>Loading report…</p></body></html>');
+
     setDownloading(true);
     setDlPreviewCount(null);
     try {
@@ -270,6 +282,7 @@ export default function AttendancePage() {
       const rows = res.data || [];
       setDlPreviewCount(rows.length);
       if (rows.length === 0) {
+        printWin.close();
         setDlError('No attendance records found for the selected range.');
         return;
       }
@@ -283,8 +296,11 @@ export default function AttendancePage() {
       const projectName = dlProject
         ? (projects.find((p) => String(p.id) === String(dlProject))?.name || 'All Projects')
         : 'All Projects';
-      generatePDF(rows, dlRangeLabel, projectName);
+      // Build HTML and write to already-opened window
+      const html = buildAttendancePDFHtml(rows, dlRangeLabel, projectName);
+      writePDFToWindow(printWin, html);
     } catch {
+      printWin.close();
       setDlError('Failed to fetch attendance data. Please try again.');
     } finally {
       setDownloading(false);
