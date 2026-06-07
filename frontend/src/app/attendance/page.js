@@ -176,6 +176,50 @@ function writePDFToWindow(win, html) {
   }
 }
 
+// Fallback for Android WebView / Flutter where window.open() is blocked.
+// Creates a full-screen iframe overlay and triggers the native print dialog.
+function printInIframe(html) {
+  const prevWrapper = document.getElementById('__att_print_wrapper__');
+  if (prevWrapper) prevWrapper.remove();
+
+  // Full-screen wrapper
+  const wrapper = document.createElement('div');
+  wrapper.id = '__att_print_wrapper__';
+  wrapper.style.cssText =
+    'position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;';
+
+  // Close bar at the top
+  const bar = document.createElement('div');
+  bar.style.cssText =
+    'background:#1d4ed8;color:#fff;padding:0.65rem 1rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;font-family:sans-serif;';
+  bar.innerHTML =
+    '<span style="font-size:14px;font-weight:600;">Attendance Report</span>' +
+    '<button style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:5px 16px;border-radius:6px;font-size:13px;cursor:pointer;">✕ Close</button>';
+  bar.querySelector('button').onclick = () => wrapper.remove();
+  wrapper.appendChild(bar);
+
+  // Iframe fills remaining space
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'flex:1;border:none;width:100%;';
+  iframe.srcdoc = html;
+  wrapper.appendChild(iframe);
+  document.body.appendChild(wrapper);
+
+  // After iframe loads, trigger print; also remove wrapper when window regains focus
+  iframe.addEventListener('load', () => {
+    try {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    } catch { /* print not supported in this WebView */ }
+    // Clean up after the print dialog is dismissed
+    const cleanup = () => {
+      wrapper.remove();
+      window.removeEventListener('focus', cleanup);
+    };
+    setTimeout(() => window.addEventListener('focus', cleanup), 1500);
+  });
+}
+
 // --- component ---
 export default function AttendancePage() {
   const { t } = useLanguage();
@@ -261,13 +305,12 @@ export default function AttendancePage() {
     const diffDays = Math.ceil((new Date(end) - new Date(start)) / 86400000);
     if (diffDays > 366) return setDlError('Date range cannot exceed 366 days');
 
-    // Open window SYNCHRONOUSLY before any await — required for iOS/Android PWA popup policy
+    // Try to open a popup synchronously — required for iOS PWA (blocked after await).
+    // On Android WebView (Flutter) this returns null; we fall back to printInIframe().
     const printWin = window.open('', '_blank', 'width=1200,height=800');
-    if (!printWin) {
-      setDlError('Popup blocked. Please allow popups for this site and try again.');
-      return;
+    if (printWin) {
+      printWin.document.write('<html><body style="font-family:sans-serif;padding:2rem;color:#555"><p>Loading report…</p></body></html>');
     }
-    printWin.document.write('<html><body style="font-family:sans-serif;padding:2rem;color:#555"><p>Loading report…</p></body></html>');
 
     setDownloading(true);
     setDlPreviewCount(null);
@@ -282,7 +325,7 @@ export default function AttendancePage() {
       const rows = res.data || [];
       setDlPreviewCount(rows.length);
       if (rows.length === 0) {
-        printWin.close();
+        if (printWin && !printWin.closed) printWin.close();
         setDlError('No attendance records found for the selected range.');
         return;
       }
@@ -296,11 +339,16 @@ export default function AttendancePage() {
       const projectName = dlProject
         ? (projects.find((p) => String(p.id) === String(dlProject))?.name || 'All Projects')
         : 'All Projects';
-      // Build HTML and write to already-opened window
       const html = buildAttendancePDFHtml(rows, dlRangeLabel, projectName);
-      writePDFToWindow(printWin, html);
+      if (printWin && !printWin.closed) {
+        // Desktop / iOS PWA — write into the already-opened popup
+        writePDFToWindow(printWin, html);
+      } else {
+        // Android WebView (Flutter) — window.open() was blocked; use in-page iframe
+        printInIframe(html);
+      }
     } catch {
-      printWin.close();
+      if (printWin && !printWin.closed) printWin.close();
       setDlError('Failed to fetch attendance data. Please try again.');
     } finally {
       setDownloading(false);
