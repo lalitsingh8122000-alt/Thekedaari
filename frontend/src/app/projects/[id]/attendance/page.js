@@ -822,9 +822,12 @@ export default function ProjectAttendancePage() {
   const today = new Date();
   today.setHours(12, 0, 0, 0);
   const todayStr = today.toISOString().split('T')[0];
-  const dateStrip = Array.from({ length: 14 }, (_, index) => {
-    const day = new Date(today);
-    day.setDate(today.getDate() - (13 - index));
+  const dateStrip = Array.from({ length: 7 }, (_, index) => {
+    // Show Mon–Sun of the week that contains today
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - ((today.getDay() + 6) % 7)); // Monday of current week
+    const day = new Date(monday);
+    day.setDate(monday.getDate() + index);
     const value = day.toISOString().split('T')[0];
     return {
       value,
@@ -842,21 +845,21 @@ export default function ProjectAttendancePage() {
 
         {/* ── STICKY HEADER (title → search) ── */}
         <div
-          className="sticky z-10 bg-gray-50 px-4 md:px-0 pt-3 pb-3 border-b border-gray-100 md:border-0"
-          style={{ top: 'calc(var(--safe-top, 0px) + 58px)' }}
+          className="sticky z-10 bg-gray-50 px-4 md:px-0 pt-1.5 pb-1.5 border-b border-gray-100 md:border-0"
+          style={{ top: 'calc(var(--safe-top, 0px) + 46px)' }}
         >
           {/* Back button + title */}
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-1.5">
             <button
               type="button"
               onClick={() => router.push('/projects')}
-              className="p-2 rounded-xl bg-gray-100 active:bg-gray-200 shrink-0"
+              className="p-1.5 rounded-xl bg-gray-100 active:bg-gray-200 shrink-0"
               aria-label={t('projects')}
             >
-              <ArrowLeft size={20} />
+              <ArrowLeft size={18} />
             </button>
             <div className="min-w-0 flex-1">
-              <h2 className="text-lg font-bold text-gray-800 leading-tight">
+              <h2 className="text-base font-bold text-gray-800 leading-tight">
                 {t('project_attendance_title')}
               </h2>
               {/* Project switcher */}
@@ -898,79 +901,71 @@ export default function ProjectAttendancePage() {
             </div>
           </div>
 
-          {/* Summary card + Date strip — unified card */}
-          <div className="rounded-3xl overflow-hidden shadow-md border border-gray-200 mb-3">
-            {/* Blue summary top */}
-            <div className="bg-gradient-to-r from-primary-600 to-blue-500 text-white px-4 pt-4 pb-5">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[10px] text-white/60 font-semibold uppercase tracking-widest mb-1">Total Cost</p>
-                  <p className="text-4xl font-black leading-none">₹{totalCost.toLocaleString('en-IN')}</p>
+          {/* Summary bar */}
+          <div className="rounded-2xl overflow-hidden shadow-md border border-blue-400/20 mb-2 bg-gradient-to-br from-primary-600 to-blue-500 text-white">
+            <div className="flex items-center justify-between px-4 py-3">
+              <div>
+                <p className="text-[9px] text-white/60 font-bold uppercase tracking-widest leading-none mb-1">Total Cost</p>
+                <p className="text-2xl font-black leading-none tracking-tight">₹{totalCost.toLocaleString('en-IN')}</p>
+              </div>
+              <div className="flex gap-5">
+                <div className="text-center">
+                  <div className="text-xl font-black text-green-300 leading-none">{presentCount - halfDayCount}</div>
+                  <div className="text-[9px] text-white/60 font-semibold mt-0.5">Present</div>
                 </div>
-                <div className="flex gap-5">
-                  <div className="text-center">
-                    <div className="text-2xl font-black text-green-200 leading-none">{presentCount - halfDayCount}</div>
-                    <div className="text-[10px] text-white/60 font-semibold mt-1">Present</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-black text-yellow-200 leading-none">{halfDayCount}</div>
-                    <div className="text-[10px] text-white/60 font-semibold mt-1">Half</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-black text-red-200 leading-none">{absentCount}</div>
-                    <div className="text-[10px] text-white/60 font-semibold mt-1">Absent</div>
-                  </div>
+                <div className="text-center">
+                  <div className="text-xl font-black text-yellow-300 leading-none">{halfDayCount}</div>
+                  <div className="text-[9px] text-white/60 font-semibold mt-0.5">Half</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-black text-red-300 leading-none">{absentCount}</div>
+                  <div className="text-[9px] text-white/60 font-semibold mt-0.5">Absent</div>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Date strip — white card bottom, scrollable */}
-            <div className="bg-white px-1 pt-3 pb-2">
-              <div className="flex items-center justify-between px-3 mb-2">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Select Date</span>
-                <span className="text-[11px] font-semibold text-primary-600">{formattedDate}</span>
-              </div>
-              <div
-                ref={dateStripRef}
-                className="flex gap-1 overflow-x-auto px-2 pb-1"
-                style={{ scrollbarWidth: 'none' }}
-              >
-                {dateStrip.map((item) => {
-                  const isSelected = item.value === selectedDate;
-                  const circleBg = item.isPast
-                    ? isSelected ? 'bg-green-600' : 'bg-green-500'
-                    : item.isToday
-                    ? isSelected ? 'bg-amber-500' : 'bg-amber-400'
-                    : 'bg-gray-100';
-                  const circleText = item.isPast || item.isToday ? 'text-white' : 'text-gray-500';
-                  const labelColor = item.isPast ? 'text-green-500' : item.isToday ? 'text-amber-500' : 'text-gray-300';
-                  return (
-                    <button
-                      key={item.value}
-                      data-selected={String(isSelected)}
-                      type="button"
-                      onClick={() => setSelectedDate(item.value)}
-                      className={`flex flex-col items-center gap-0.5 min-w-[50px] flex-shrink-0 pt-0.5 pb-1.5 rounded-2xl transition-all active:scale-95 ${labelColor} ${
-                        isSelected ? 'bg-gray-50' : ''
-                      }`}
+          {/* Date strip — 7 days, equal-width, no scroll */}
+          <div className="rounded-2xl bg-white border border-gray-200 shadow-sm mb-2 px-2 pt-2 pb-2">
+            <div className="flex items-center justify-between px-1 mb-1.5">
+              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Select Date</span>
+              <span className="text-[10px] font-semibold text-primary-600">{formattedDate}</span>
+            </div>
+            <div
+              ref={dateStripRef}
+              className="grid grid-cols-7 gap-0"
+            >
+              {dateStrip.map((item) => {
+                const isSelected = item.value === selectedDate;
+                const circleBg = item.isPast
+                  ? isSelected ? 'bg-green-600' : 'bg-green-500'
+                  : item.isToday
+                  ? isSelected ? 'bg-amber-500' : 'bg-amber-400'
+                  : isSelected ? 'bg-primary-500' : 'bg-gray-100';
+                const circleText = (item.isPast || item.isToday || isSelected) ? 'text-white' : 'text-gray-500';
+                const labelColor = item.isPast ? 'text-green-600' : item.isToday ? 'text-amber-500' : 'text-gray-400';
+                return (
+                  <button
+                    key={item.value}
+                    data-selected={String(isSelected)}
+                    type="button"
+                    onClick={() => setSelectedDate(item.value)}
+                    className={`flex flex-col items-center gap-0.5 py-0.5 rounded-xl transition-all active:scale-95 ${
+                      isSelected ? 'bg-gray-50' : ''
+                    }`}
+                  >
+                    <span className={`text-[9px] font-bold tracking-wide leading-tight ${labelColor}`}>{item.weekday}</span>
+                    <span
+                      className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black ${circleBg} ${circleText} transition-all ${
+                        isSelected ? 'shadow-md ring-2 ring-offset-1 ring-offset-white ring-green-400' : ''
+                      } ${item.isToday && isSelected ? 'ring-amber-400' : ''}`}
                     >
-                      <span className="text-[9px] font-bold tracking-wide">{item.weekday}</span>
-                      <span
-                        className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-black ${circleBg} ${circleText} transition-all ${
-                          isSelected ? 'shadow-lg scale-110 ring-2 ring-offset-2 ring-offset-white ring-green-400' : ''
-                        } ${item.isToday && isSelected ? 'ring-amber-400' : ''}`}
-                      >
-                        {item.day}
-                      </span>
-                      {item.isToday ? (
-                        <span className="text-[8px] font-bold text-amber-500 uppercase tracking-wide">Today</span>
-                      ) : (
-                        <span className="text-[8px]">&nbsp;</span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+                      {item.day}
+                    </span>
+                    {item.isToday && <span className="text-[7px] font-bold text-amber-500 leading-tight">today</span>}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -983,14 +978,14 @@ export default function ProjectAttendancePage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name or phone"
-                className="w-full bg-white border border-gray-200 rounded-2xl pl-9 pr-3 py-2.5 text-sm text-gray-700 placeholder-gray-300 focus:border-primary-400 focus:outline-none shadow-sm"
+                className="w-full bg-white border border-gray-200 rounded-2xl pl-9 pr-3 py-2 text-sm text-gray-700 placeholder-gray-300 focus:border-primary-400 focus:outline-none shadow-sm"
                 autoComplete="off"
                 aria-label={t('search')}
               />
             </div>
             <input
               type="date"
-              className="bg-white border border-gray-200 rounded-2xl px-3 py-2.5 text-sm text-gray-700 focus:border-primary-400 focus:outline-none shadow-sm shrink-0 w-[9rem]"
+              className="bg-white border border-gray-200 rounded-2xl px-3 py-2 text-sm text-gray-700 focus:border-primary-400 focus:outline-none shadow-sm shrink-0 w-[9rem]"
               value={selectedDate}
               max={todayStr}
               onChange={(e) => setSelectedDate(e.target.value)}
@@ -1019,36 +1014,49 @@ export default function ProjectAttendancePage() {
             <p className="text-gray-500 font-medium">{t('no_search_matches')}</p>
           </div>
         ) : (
-          <div className="px-4 md:px-0 pt-3 space-y-2" style={{ paddingBottom: 'calc(90px + var(--safe-bottom, 0px))' }}>
+          <div className="px-4 md:px-0 pt-2 space-y-1.5" style={{ paddingBottom: 'calc(80px + var(--safe-bottom, 0px))' }}>
             {filteredWorkers.map((w) => {
               const draftType = getDraftType(w.id);
               const splitProject = secondProjectDrafts[w.id];
               const isCrossProject = !!crossProjectAttendance[w.id];
               const crossRecord = crossProjectAttendance[w.id];
               const options = [
-                { key: 'FullDay', label: 'P', active: 'bg-green-500 text-white', idle: 'text-gray-400 bg-gray-100' },
-                { key: 'HalfDay', label: 'HD', active: 'bg-yellow-400 text-gray-900', idle: 'text-gray-400 bg-gray-100' },
-                { key: 'Absent', label: 'A', active: 'bg-red-500 text-white', idle: 'text-gray-400 bg-gray-100' },
+                { key: 'FullDay', label: 'P', active: 'bg-green-500 text-white shadow-sm', idle: 'bg-white text-gray-300 border border-gray-200' },
+                { key: 'HalfDay', label: 'HD', active: 'bg-yellow-400 text-gray-800 shadow-sm', idle: 'bg-white text-gray-300 border border-gray-200' },
+                { key: 'Absent', label: 'A', active: 'bg-red-500 text-white shadow-sm', idle: 'bg-white text-gray-300 border border-gray-200' },
               ];
+              const accentColor = isCrossProject
+                ? '#f59e0b'
+                : draftType === 'FullDay' ? '#22c55e'
+                : draftType === 'HalfDay' ? '#facc15'
+                : draftType === 'Absent' ? '#ef4444'
+                : '#e5e7eb';
+              const avatarCls = isCrossProject
+                ? 'bg-amber-100 text-amber-700'
+                : draftType === 'FullDay' ? 'bg-green-100 text-green-700'
+                : draftType === 'HalfDay' ? 'bg-yellow-100 text-yellow-700'
+                : draftType === 'Absent' ? 'bg-red-100 text-red-500'
+                : 'bg-gray-100 text-gray-500';
               return (
                 <div
                   key={w.id}
-                  className={`bg-white rounded-2xl border shadow-sm px-3 py-3 ${
-                    isCrossProject ? 'border-amber-200 bg-amber-50/30' : 'border-gray-100'
+                  className={`bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden ${
+                    isCrossProject ? 'bg-amber-50/20' : ''
                   }`}
+                  style={{ borderLeftWidth: '3px', borderLeftColor: accentColor }}
                 >
                   {/* Worker row */}
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2.5 px-3 py-2">
                     {w.photo ? (
-                      <img src={`${API_BASE}${w.photo}`} alt={w.name} className="w-11 h-11 rounded-full object-cover border-2 border-gray-100 shrink-0" />
+                      <img src={`${API_BASE}${w.photo}`} alt={w.name} className="w-9 h-9 rounded-full object-cover border-2 border-gray-100 shrink-0" />
                     ) : (
-                      <div className="w-11 h-11 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-lg shrink-0">
-                        {w.name.charAt(0)}
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${avatarCls}`}>
+                        {w.name.charAt(0).toUpperCase()}
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-sm text-gray-800 truncate">{w.name}</h3>
-                      <p className="text-[11px] text-gray-400 truncate">{w.role?.name} · ₹{w.costPerDay}/{t('full_day')}</p>
+                      <h3 className="font-semibold text-sm text-gray-900 truncate">{w.name}</h3>
+                      <p className="text-[10px] text-gray-400 truncate">{w.role?.name} · <span className="font-medium text-gray-500">₹{w.costPerDay}</span></p>
                       {/* Cross-project badge */}
                       {isCrossProject && (
                         <div className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5">
@@ -1063,14 +1071,14 @@ export default function ProjectAttendancePage() {
                       )}
                     </div>
                     {/* P / HD / A — disabled when cross-project */}
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex items-center gap-1 shrink-0">
                       {options.map((option) => (
                         <button
                           key={option.key}
                           type="button"
                           onClick={() => !isCrossProject && setDraftType(w, option.key)}
                           disabled={isCrossProject}
-                          className={`w-10 h-9 rounded-full text-xs font-black transition-colors ${
+                          className={`w-9 h-8 rounded-full text-xs font-black transition-colors ${
                             isCrossProject
                               ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
                               : draftType === option.key
@@ -1086,7 +1094,7 @@ export default function ProjectAttendancePage() {
                       <button
                         type="button"
                         onClick={() => isCrossProject ? openCrossProjectAttendance(w) : openAttendance(w)}
-                        className={`w-8 h-9 flex items-center justify-center shrink-0 ${
+                        className={`w-7 h-8 flex items-center justify-center shrink-0 ${
                           isCrossProject
                             ? 'text-amber-400 active:text-amber-600'
                             : 'text-gray-300 active:text-gray-500'
@@ -1094,7 +1102,7 @@ export default function ProjectAttendancePage() {
                         aria-label={isCrossProject ? 'Edit cross-project attendance' : 'More attendance options'}
                         title={isCrossProject ? `Edit attendance in ${crossRecord?.project?.name || 'other project'}` : 'More options'}
                       >
-                        <MoreVertical size={18} />
+                        <MoreVertical size={16} />
                       </button>
                     </div>
                   </div>
@@ -1102,11 +1110,12 @@ export default function ProjectAttendancePage() {
                   {/* Salary + Pay + OT + Second-project (only when type is set and not cross-project) */}
                   {!isCrossProject && draftType !== null && (
                     <>
+                      <div className="mx-3 border-t border-gray-100" />
                       {/* Salary + Pay row */}
-                      <div className="mt-2.5 flex gap-2">
-                        <div className="flex flex-1 items-center gap-2 rounded-xl bg-blue-50 px-3 py-2.5">
-                          <IndianRupee size={14} className="text-blue-500 shrink-0" />
-                          <span className="text-xs font-semibold text-blue-600 shrink-0">
+                      <div className="px-3 pb-2 pt-1.5 flex gap-2">
+                        <div className="flex flex-1 items-center gap-1.5 rounded-lg bg-blue-50 px-2.5 py-1.5">
+                          <IndianRupee size={12} className="text-blue-400 shrink-0" />
+                          <span className="text-[11px] font-semibold text-blue-500 shrink-0">
                             {draftType === 'HalfDay' && splitProject ? 'Total (÷2)' : 'Day Salary'}
                           </span>
                           <input
@@ -1118,7 +1127,7 @@ export default function ProjectAttendancePage() {
                             onChange={(e) => {
                               setSalaryDrafts((drafts) => ({ ...drafts, [w.id]: e.target.value }));
                             }}
-                            className="ml-auto w-24 rounded-xl border-0 bg-white px-2 py-1 text-right text-base font-bold text-blue-700 outline-none focus:ring-2 focus:ring-blue-300 disabled:bg-gray-50 disabled:text-gray-300 shadow-sm"
+                            className="ml-auto w-20 rounded-lg border-0 bg-white px-2 py-1 text-right text-sm font-bold text-blue-700 outline-none focus:ring-1 focus:ring-blue-300 disabled:bg-transparent disabled:text-gray-300 shadow-sm"
                           />
                         </div>
                         <button
@@ -1126,57 +1135,63 @@ export default function ProjectAttendancePage() {
                           onClick={() => {
                             setPaymentOpen((open) => ({ ...open, [w.id]: !open[w.id] }));
                           }}
-                          className={`flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-bold ${
-                            paymentOpen[w.id] ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-500'
+                          className={`flex shrink-0 items-center justify-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold border ${
+                            paymentOpen[w.id]
+                              ? 'bg-orange-50 text-orange-600 border-orange-200'
+                              : 'bg-white text-gray-400 border-gray-200'
                           }`}
                         >
-                          <Banknote size={14} />
+                          <Banknote size={12} />
                           Pay
                         </button>
                       </div>
 
                       {/* Second project selector (HalfDay) */}
                       {draftType === 'HalfDay' && bulkOtherProjects.length > 0 && (
-                        <div className="mt-2 rounded-xl border border-yellow-200 bg-yellow-50 px-3 py-2">
-                          <label className="mb-1.5 block text-[11px] font-semibold text-yellow-800">
-                            Second project for other half (optional — salary will be split 50/50)
-                          </label>
-                          <select
-                            className="w-full rounded-lg border border-yellow-300 bg-white px-2 py-2 text-sm font-medium text-yellow-900 outline-none focus:border-yellow-500"
-                            value={secondProjectDrafts[w.id] || ''}
-                            onChange={(e) => setSecondProjectForWorker(w, e.target.value)}
-                          >
-                            <option value="">Only this project</option>
-                            {bulkOtherProjects.map((p) => (
-                              <option key={p.id} value={p.id}>{p.name}</option>
-                            ))}
-                          </select>
-                          {splitProject && (
-                            <p className="mt-1 text-[10px] text-yellow-700">
-                              ₹{(Number(salaryDrafts[w.id] ?? w.costPerDay) / 2).toLocaleString('en-IN')} each project
-                            </p>
-                          )}
+                        <div className="px-3 pb-2">
+                          <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-2.5 py-2">
+                            <label className="mb-1 block text-[10px] font-semibold text-yellow-700 uppercase tracking-wide">
+                              2nd site (optional · salary splits 50/50)
+                            </label>
+                            <select
+                              className="w-full rounded-md border border-yellow-300 bg-white px-2 py-1.5 text-sm font-medium text-yellow-900 outline-none focus:border-yellow-400"
+                              value={secondProjectDrafts[w.id] || ''}
+                              onChange={(e) => setSecondProjectForWorker(w, e.target.value)}
+                            >
+                              <option value="">Only this project</option>
+                              {bulkOtherProjects.map((p) => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                              ))}
+                            </select>
+                            {splitProject && (
+                              <p className="mt-1 text-[10px] text-yellow-600">
+                                ₹{(Number(salaryDrafts[w.id] ?? w.costPerDay) / 2).toLocaleString('en-IN')} per project
+                              </p>
+                            )}
+                          </div>
                         </div>
                       )}
 
                       {/* OT (Over Time) – only when FullDay Present */}
                       {draftType === 'FullDay' && (
-                        <div className="mt-2">
+                        <div className="px-3 pb-2">
                           <button
                             type="button"
                             onClick={() => {
                               setOvertimeOpen((open) => ({ ...open, [w.id]: !open[w.id] }));
                             }}
-                            className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-bold ${
-                              overtimeOpen[w.id] ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'
+                            className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-semibold border ${
+                              overtimeOpen[w.id]
+                                ? 'bg-violet-50 text-violet-700 border-violet-200'
+                                : 'bg-white text-gray-400 border-gray-200'
                             }`}
                           >
-                            <span>⏱ OT (Over Time)</span>
-                            <span className="text-[11px] font-medium">
+                            <span className="flex items-center gap-1">⏱ OT</span>
+                            <span className="text-[10px] font-medium">
                               {overtimeOpen[w.id]
                                 ? overtimeDrafts[w.id]
-                                  ? `₹${Number(overtimeDrafts[w.id]).toLocaleString('en-IN')} · tap to remove`
-                                  : 'Tap to remove'
+                                  ? `₹${Number(overtimeDrafts[w.id]).toLocaleString('en-IN')} · remove`
+                                  : 'tap to remove'
                                 : '+ Add OT'}
                             </span>
                           </button>
@@ -1188,7 +1203,7 @@ export default function ProjectAttendancePage() {
                               value={overtimeDrafts[w.id] || ''}
                               onChange={(e) => setOvertimeAmount(w.id, e.target.value)}
                               placeholder="Overtime amount (₹)"
-                              className="mt-1.5 w-full rounded-lg border border-purple-200 bg-white px-3 py-2 text-sm font-bold text-purple-700 outline-none focus:border-purple-500"
+                              className="mt-1 w-full rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm font-bold text-violet-700 outline-none focus:border-violet-400"
                             />
                           )}
                         </div>
@@ -1196,24 +1211,26 @@ export default function ProjectAttendancePage() {
 
                       {/* Payment fields */}
                       {paymentOpen[w.id] && (
-                        <div className="mt-2 grid grid-cols-[7rem_1fr] gap-2 rounded-xl border border-orange-100 bg-orange-50 p-2">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={paymentDrafts[w.id]?.amount || ''}
-                            onChange={(e) => setPaymentAmount(w.id, e.target.value)}
-                            placeholder="Amount"
-                            className="rounded-lg border border-orange-200 bg-white px-2 py-2 text-sm font-bold text-orange-700 outline-none focus:border-orange-500"
-                          />
-                          <input
-                            type="text"
-                            maxLength={500}
-                            value={paymentDrafts[w.id]?.note || ''}
-                            onChange={(e) => setPaymentNote(w.id, e.target.value)}
-                            placeholder="Payment note"
-                            className="min-w-0 rounded-lg border border-orange-200 bg-white px-2 py-2 text-sm text-orange-700 outline-none focus:border-orange-500"
-                          />
+                        <div className="px-3 pb-2">
+                          <div className="grid grid-cols-[6rem_1fr] gap-1.5 rounded-lg border border-orange-100 bg-orange-50 p-1.5">
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={paymentDrafts[w.id]?.amount || ''}
+                              onChange={(e) => setPaymentAmount(w.id, e.target.value)}
+                              placeholder="₹ Amount"
+                              className="rounded-md border border-orange-200 bg-white px-2 py-1.5 text-sm font-bold text-orange-700 outline-none focus:border-orange-400"
+                            />
+                            <input
+                              type="text"
+                              maxLength={500}
+                              value={paymentDrafts[w.id]?.note || ''}
+                              onChange={(e) => setPaymentNote(w.id, e.target.value)}
+                              placeholder="Note (optional)"
+                              className="min-w-0 rounded-md border border-orange-200 bg-white px-2 py-1.5 text-sm text-orange-600 outline-none focus:border-orange-400"
+                            />
+                          </div>
                         </div>
                       )}
                     </>
@@ -1226,21 +1243,21 @@ export default function ProjectAttendancePage() {
 
         {/* ── STICKY SAVE BUTTON (above bottom nav) ── */}
         {!loading && workers.length > 0 && (
-          <div className="sticky att-save-btn-sticky z-20 px-4 md:px-0 pt-2 bg-gray-50/95 backdrop-blur-sm border-t border-gray-100 md:border-0">
+          <div className="sticky att-save-btn-sticky z-20 px-4 md:px-0 pt-1.5 pb-1 bg-gray-50/95 backdrop-blur-sm border-t border-gray-100 md:border-0">
             {isDirty && selectedDate < todayStr && (
-              <p className="text-center text-[11px] text-amber-600 font-medium mb-1 flex items-center justify-center gap-1">
-                <AlertTriangle size={12} />
-                Editing a past date — confirmation required before saving
+              <p className="text-center text-[10px] text-amber-600 font-medium mb-0.5 flex items-center justify-center gap-1">
+                <AlertTriangle size={11} />
+                Editing a past date — confirmation required
               </p>
             )}
             {!isDirty && (
-              <p className="text-center text-[11px] text-gray-400 mb-1">No unsaved changes</p>
+              <p className="text-center text-[10px] text-gray-400 mb-0.5">No unsaved changes</p>
             )}
             <button
               type="button"
               onClick={handleBulkSave}
               disabled={bulkSaving || !isDirty}
-              className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-white shadow-lg mb-2 transition-all ${
+              className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-white shadow-md mb-1 transition-all text-sm ${
                 bulkSaving
                   ? 'bg-primary-400'
                   : !isDirty
@@ -1250,7 +1267,7 @@ export default function ProjectAttendancePage() {
                   : 'bg-primary-600 active:bg-primary-700'
               }`}
             >
-              <CalendarCheck size={20} />
+              <CalendarCheck size={17} />
               {bulkSaving ? t('loading') : t('save_attendance')}
             </button>
           </div>
@@ -1264,7 +1281,7 @@ export default function ProjectAttendancePage() {
               <div className="flex items-center justify-between">
                 <h3 className="text-base font-bold">
                   {attendanceEditProjectId && attendanceEditProjectId !== projectIdNum
-                    ? 'Edit Attendance (Other Project)'
+                    ? t('edit_attendance_other_project')
                     : t('mark_attendance')}
                 </h3>
                 <button
@@ -1274,10 +1291,10 @@ export default function ProjectAttendancePage() {
                   <X size={20} />
                 </button>
               </div>
-              {checkingAttendance && <div className="bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-xs">Checking existing attendance...</div>}
+              {checkingAttendance && <div className="bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-xs">{t('checking_attendance')}</div>}
               {existingAttendance && !checkingAttendance && (
                 <div className="bg-yellow-50 text-yellow-700 px-3 py-2 rounded-lg text-xs font-medium">
-                  Attendance already marked for this date. You are editing it now.
+                  {t('attendance_already_marked')}
                 </div>
               )}
               {/* Cross-project edit banner */}
@@ -1285,9 +1302,9 @@ export default function ProjectAttendancePage() {
                 <div className="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-2 rounded-lg text-xs font-medium flex items-start gap-2">
                   <span className="text-base leading-none">ℹ️</span>
                   <span>
-                    Editing attendance from{' '}
-                    <strong>{projects.find((x) => x.id === attendanceEditProjectId)?.name || 'another project'}</strong>.
-                    Changes will update that project's record.
+                    {t('editing_attendance_from')}{' '}
+                    <strong>{projects.find((x) => x.id === attendanceEditProjectId)?.name || t('another_project')}</strong>.
+                    {' '}{t('changes_will_update_that_project')}
                   </span>
                 </div>
               )}
@@ -1459,7 +1476,7 @@ export default function ProjectAttendancePage() {
                         <div className="flex items-center gap-2">
                           <span className="text-base leading-none">⏱</span>
                           <span className={`font-semibold text-xs ${attForm.wantOvertime ? 'text-purple-700' : 'text-gray-500'}`}>
-                            Overtime (OT)
+                            {t('overtime')}
                           </span>
                         </div>
                         <div className={`w-10 h-5 rounded-full transition-colors flex items-center ${attForm.wantOvertime ? 'bg-purple-500 justify-end' : 'bg-gray-300 justify-start'}`}>
@@ -1468,7 +1485,7 @@ export default function ProjectAttendancePage() {
                       </button>
                       {attForm.wantOvertime && (
                         <div className="px-3 pb-2.5">
-                          <label className="block text-purple-600 font-medium mb-0.5 text-xs">Overtime Amount (₹)</label>
+                          <label className="block text-purple-600 font-medium mb-0.5 text-xs">{t('overtime_amount')}</label>
                           <input
                             type="number"
                             min="0"
@@ -1542,7 +1559,7 @@ export default function ProjectAttendancePage() {
                 } ${saving ? 'opacity-60' : ''}`}
               >
                 <CalendarCheck size={18} />
-                {saving ? t('loading') : existingAttendance ? 'Update Attendance' : t('save_attendance')}
+                {saving ? t('loading') : existingAttendance ? t('update_attendance') : t('save_attendance')}
               </button>
             </div>
           </div>

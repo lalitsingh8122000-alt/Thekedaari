@@ -33,24 +33,24 @@ export default function Navbar({ onMenuClick }) {
     <header
       className="bg-primary-600 text-white sticky top-0 z-50 shadow-md"
       style={{
-        paddingTop: 'calc(var(--safe-top) + 0.6rem)',
+        paddingTop: 'calc(var(--safe-top) + 0.3rem)',
         paddingLeft: 'calc(var(--safe-left) + 1rem)',
         paddingRight: 'calc(var(--safe-right) + 1rem)',
-        paddingBottom: '0.75rem',
+        paddingBottom: '0.4rem',
       }}
     >
       <div className="flex items-center justify-between">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <button onClick={onMenuClick} className="p-1 rounded-lg active:bg-primary-700">
-          <Menu size={26} />
+          <Menu size={22} />
         </button>
-        <h1 className="text-2xl font-extrabold tracking-tight text-white">Thekedaari</h1>
+        <h1 className="text-xl font-extrabold tracking-tight text-white">Thekedaari</h1>
       </div>
 
       <div className="flex items-center gap-2">
         <button
           onClick={() => switchLang(lang === 'en' ? 'hi' : 'en')}
-          className="bg-white/20 text-white font-semibold px-3 py-1.5 rounded-full text-sm active:bg-white/30 transition-colors"
+          className="bg-white/20 text-white font-semibold px-2.5 py-1 rounded-full text-xs active:bg-white/30 transition-colors"
         >
           {lang === 'en' ? 'हिंदी' : 'English'}
         </button>
@@ -59,7 +59,7 @@ export default function Navbar({ onMenuClick }) {
           <div className="relative" ref={profileRef}>
             <button
               onClick={() => setProfileOpen((prev) => !prev)}
-              className="w-9 h-9 rounded-full bg-white text-primary-700 font-bold text-lg flex items-center justify-center ring-2 ring-white/40 hover:ring-white/70 transition-all"
+              className="w-8 h-8 rounded-full bg-white text-primary-700 font-bold text-base flex items-center justify-center ring-2 ring-white/40 hover:ring-white/70 transition-all"
             >
               {initial}
             </button>

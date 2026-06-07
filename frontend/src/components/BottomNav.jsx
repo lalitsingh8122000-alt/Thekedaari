@@ -39,7 +39,7 @@ export default function BottomNav({ sidebarOpen = false }) {
         paddingRight: 'var(--safe-right)',
       }}
     >
-      <div className="flex justify-around items-center py-1">
+      <div className="flex justify-around items-center py-0.5">
         {navItems.map(({ key, path, icon: Icon }) => {
           const routeActive = pathname === path || pathname.startsWith(`${path}/`);
           const active = routeActive || pendingPath === path;
@@ -51,13 +51,13 @@ export default function BottomNav({ sidebarOpen = false }) {
               scroll
               aria-current={routeActive ? 'page' : undefined}
               onClick={() => setPendingPath(path)}
-              className={`flex flex-col items-center py-2 px-3 min-w-[70px] rounded-xl select-none touch-manipulation
+              className={`flex flex-col items-center py-1.5 px-3 min-w-[60px] rounded-xl select-none touch-manipulation
                 transition-[transform,color,font-weight] duration-150 ease-out
                 active:scale-95 active:opacity-90
                 ${active ? 'text-primary-600' : 'text-gray-400'}`}
             >
-              <Icon size={24} strokeWidth={active ? 2.5 : 1.5} className="shrink-0" />
-              <span className={`text-xs mt-1 ${active ? 'font-bold' : 'font-medium'}`}>{t(key)}</span>
+              <Icon size={20} strokeWidth={active ? 2.5 : 1.5} className="shrink-0" />
+              <span className={`text-[10px] mt-0.5 ${active ? 'font-bold' : 'font-medium'}`}>{t(key)}</span>
             </Link>
           );
         })}

@@ -221,6 +221,7 @@ export default function AttendancePage() {
 
   const totalSalary = records.reduce((s, r) => s + (r.salary || 0), 0);
   const totalPaid = records.reduce((s, r) => s + (r.payment || 0), 0);
+  const totalOT = records.reduce((s, r) => s + (r.overtime || 0), 0);
   const absentCount = records.filter((r) => r.type === 'Absent').length;
   const presentCount = records.filter((r) => r.type !== 'Absent').length;
 
@@ -374,7 +375,7 @@ export default function AttendancePage() {
             </div>
 
             {!loadingProjects && (
-              <div className="grid grid-cols-4 gap-1.5">
+              <div className="grid grid-cols-5 gap-1.5">
                 <div className="bg-white rounded-xl p-2 text-center shadow-sm border">
                   <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-1">
                     <span className="text-green-600 font-black text-xs">P</span>
@@ -402,6 +403,13 @@ export default function AttendancePage() {
                   </div>
                   <p className="text-sm font-black text-orange-600">{fmtNum(totalPaid)}</p>
                   <p className="text-[9px] text-gray-400 uppercase tracking-wide">{t('paid')}</p>
+                </div>
+                <div className="bg-white rounded-xl p-2 text-center shadow-sm border">
+                  <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-1">
+                    <span className="text-purple-600 font-black text-[10px]">OT</span>
+                  </div>
+                  <p className="text-sm font-black text-purple-600">{fmtNum(totalOT)}</p>
+                  <p className="text-[9px] text-gray-400 uppercase tracking-wide">OT</p>
                 </div>
               </div>
             )}

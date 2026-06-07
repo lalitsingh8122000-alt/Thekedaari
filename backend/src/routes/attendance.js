@@ -78,7 +78,7 @@ async function syncOvertimeLedger(tx, userId, attendanceId, workerId, overtimeAm
   const existing = await tx.ledgerEntry.findFirst({
     where: {
       userId,
-      category: 'Bonus',
+      category: { in: ['Overtime', 'Bonus'] }, // 'Bonus' for backward-compat with old records
       remarks: { startsWith: overtimeRemarksBase(attendanceId) },
     },
   });
@@ -86,7 +86,7 @@ async function syncOvertimeLedger(tx, userId, attendanceId, workerId, overtimeAm
     if (overtimeAmount > 0) {
       await tx.ledgerEntry.update({
         where: { id: existing.id },
-        data: { amount: overtimeAmount, remarks },
+        data: { amount: overtimeAmount, remarks, category: 'Overtime' },
       });
     } else {
       await tx.ledgerEntry.delete({ where: { id: existing.id } });
@@ -97,7 +97,7 @@ async function syncOvertimeLedger(tx, userId, attendanceId, workerId, overtimeAm
         workerId,
         amount: overtimeAmount,
         type: 'Credit',
-        category: 'Bonus',
+        category: 'Overtime',
         remarks,
         userId,
       },

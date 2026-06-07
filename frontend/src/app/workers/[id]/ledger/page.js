@@ -199,7 +199,9 @@ export default function WorkerLedgerPage() {
                           <span className="font-semibold text-xs sm:text-sm text-gray-800">
                             {entry.category === 'Salary'
                               ? t('salary')
-                              : entry.category === 'Bonus'
+                              : entry.category === 'Overtime'
+                                ? t('overtime')
+                                : entry.category === 'Bonus'
                                 ? t('bonus')
                                 : entry.category === 'Payment'
                                   ? t('payment')
