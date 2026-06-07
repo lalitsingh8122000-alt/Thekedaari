@@ -1014,7 +1014,7 @@ export default function ProjectAttendancePage() {
             <p className="text-gray-500 font-medium">{t('no_search_matches')}</p>
           </div>
         ) : (
-          <div className="px-4 md:px-0 pt-2 space-y-1.5" style={{ paddingBottom: 'calc(80px + var(--safe-bottom, 0px))' }}>
+          <div className="px-4 md:px-0 pt-2 space-y-1.5" style={{ paddingBottom: 'calc(64px + var(--safe-bottom, 0px))' }}>
             {filteredWorkers.map((w) => {
               const draftType = getDraftType(w.id);
               const splitProject = secondProjectDrafts[w.id];
@@ -1059,13 +1059,12 @@ export default function ProjectAttendancePage() {
                       <p className="text-[10px] text-gray-400 truncate">{w.role?.name} · <span className="font-medium text-gray-500">₹{w.costPerDay}</span></p>
                       {/* Cross-project badge */}
                       {isCrossProject && (
-                        <div className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5">
-                          <span className="text-[9px] font-bold text-amber-700 uppercase tracking-wide">
-                            {crossRecord.type === 'Absent' ? '✗ Absent' : '✓ Present'}
+                        <div className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 max-w-full overflow-hidden">
+                          <span className="text-[9px] font-bold text-amber-700 uppercase tracking-wide shrink-0">
+                            {crossRecord.type === 'Absent' ? '✗' : '✓'}
                           </span>
-                          <span className="text-[9px] text-amber-600">·</span>
-                          <span className="text-[9px] font-semibold text-amber-700 truncate max-w-[100px]">
-                            {crossRecord.project?.name || 'Other project'}
+                          <span className="text-[9px] font-semibold text-amber-700 truncate">
+                            {crossRecord.type === 'Absent' ? 'Absent' : 'Present'} · {crossRecord.project?.name || 'Other project'}
                           </span>
                         </div>
                       )}
@@ -1243,7 +1242,10 @@ export default function ProjectAttendancePage() {
 
         {/* ── STICKY SAVE BUTTON (above bottom nav) ── */}
         {!loading && workers.length > 0 && (
-          <div className="sticky att-save-btn-sticky z-20 px-4 md:px-0 pt-1.5 pb-1 bg-gray-50/95 backdrop-blur-sm border-t border-gray-100 md:border-0">
+          <div
+            className="sticky att-save-btn-sticky z-20 px-4 md:px-0 pt-1.5 bg-gray-50/95 backdrop-blur-sm border-t border-gray-100 md:border-0"
+            style={{ paddingBottom: 'calc(56px + var(--safe-bottom, 0px))' }}
+          >
             {isDirty && selectedDate < todayStr && (
               <p className="text-center text-[10px] text-amber-600 font-medium mb-0.5 flex items-center justify-center gap-1">
                 <AlertTriangle size={11} />
@@ -1257,7 +1259,7 @@ export default function ProjectAttendancePage() {
               type="button"
               onClick={handleBulkSave}
               disabled={bulkSaving || !isDirty}
-              className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-white shadow-md mb-1 transition-all text-sm ${
+              className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-white shadow-md transition-all text-sm ${
                 bulkSaving
                   ? 'bg-primary-400'
                   : !isDirty

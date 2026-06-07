@@ -347,8 +347,8 @@ export default function AttendancePage() {
           <>
             <div className="card space-y-2.5">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{t('attendance_filter_section')}</p>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex-1">
                   <label className="label text-xs">{t('select_project')}</label>
                   <select
                     className="input-field text-sm"
@@ -362,11 +362,11 @@ export default function AttendancePage() {
                     ))}
                   </select>
                 </div>
-                <div>
+                <div className="sm:w-44">
                   <label className="label text-xs">{t('attendance_date')}</label>
                   <input
                     type="date"
-                    className="input-field text-sm"
+                    className="input-field text-sm w-full"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
                   />
