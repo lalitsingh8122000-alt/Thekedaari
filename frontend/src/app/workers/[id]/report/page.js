@@ -241,7 +241,7 @@ export default function WorkerReportPage() {
           </button>
           <div className="flex-1 min-w-0">
             <h2 className="page-title truncate">{worker?.name}</h2>
-            <p className="text-xs text-gray-500 mt-0.5">{worker?.role?.name} \u00B7 Salary Report</p>
+            <p className="text-xs text-gray-500 mt-0.5">{worker?.role?.name} · Salary Report</p>
           </div>
         </div>
 
@@ -261,7 +261,7 @@ export default function WorkerReportPage() {
             )}
             <div className="flex-1 min-w-0">
               <p className="font-black text-gray-900 truncate">{worker.name}</p>
-              <p className="text-xs text-gray-500">{worker.role?.name} \u00B7 \u20B9{(worker.costPerDay || 0).toLocaleString('en-IN')}/day</p>
+              <p className="text-xs text-gray-500">{worker.role?.name} · ₹{(worker.costPerDay || 0).toLocaleString('en-IN')}/day</p>
               <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
                 worker.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
               }`}>{worker.status}</span>
@@ -298,7 +298,7 @@ export default function WorkerReportPage() {
               />
               {month && (
                 <p className="text-xs text-gray-500 mt-1">
-                  {fmtDate(getMonthRange(month).start)} \u2013 {fmtDate(getMonthRange(month).end)}
+                  {fmtDate(getMonthRange(month).start)} – {fmtDate(getMonthRange(month).end)}
                 </p>
               )}
             </div>
@@ -338,7 +338,7 @@ export default function WorkerReportPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <div className="rounded-2xl bg-purple-50 border border-purple-100 p-2.5 text-center">
                 <p className="text-sm font-black text-purple-600">{fmtNum(totalSalary)}</p>
                 <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Salary</p>
@@ -347,18 +347,15 @@ export default function WorkerReportPage() {
                 <p className="text-sm font-black text-orange-600">{fmtNum(totalPaid)}</p>
                 <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Paid</p>
               </div>
+              <div className={`rounded-2xl border p-2.5 text-center ${totalOT > 0 ? 'bg-violet-50 border-violet-100' : 'bg-gray-50 border-gray-100'}`}>
+                <p className={`text-sm font-black ${totalOT > 0 ? 'text-violet-600' : 'text-gray-400'}`}>{fmtNum(totalOT)}</p>
+                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">OT Earned</p>
+              </div>
               <div className={`rounded-2xl border p-2.5 text-center ${balance > 0 ? 'bg-blue-50 border-blue-100' : 'bg-green-50 border-green-100'}`}>
                 <p className={`text-sm font-black ${balance > 0 ? 'text-blue-700' : 'text-green-700'}`}>{fmtNum(balance)}</p>
                 <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Balance</p>
               </div>
             </div>
-
-            {totalOT > 0 && (
-              <div className="rounded-xl bg-purple-50 border border-purple-100 px-3 py-2 flex items-center gap-2">
-                <span className="text-purple-500 font-black text-sm">\u23F1</span>
-                <span className="text-sm font-bold text-purple-700">Overtime Earned: {fmtNum(totalOT)}</span>
-              </div>
-            )}
 
             {/* Action buttons — shown only when there are records */}
             {sorted.length > 0 && (
@@ -418,7 +415,7 @@ export default function WorkerReportPage() {
                             <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700">Absent</span>
                           )}
                           {(r.overtime || 0) > 0 && (
-                            <p className="text-[10px] font-semibold text-purple-600">\u23F1 {fmtNum(r.overtime)}</p>
+                            <p className="text-[10px] font-semibold text-purple-600">⏱ {fmtNum(r.overtime)}</p>
                           )}
                           {r.payment > 0 && (
                             <p className="text-[10px] font-semibold text-orange-600">Paid: {fmtNum(r.payment)}</p>

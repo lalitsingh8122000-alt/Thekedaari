@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Plus, Users, CalendarCheck, BookOpen, Pencil, X,
-  IndianRupee, Banknote, UserCheck, UserX, Search,
+  IndianRupee, Banknote, UserCheck, UserX, Search, Clock,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
@@ -351,10 +351,10 @@ export default function WorkersPage() {
                 <h3 className="text-base font-bold">{t('mark_attendance')}</h3>
                 <button onClick={() => setShowAttendance(null)} className="p-1"><X size={20} /></button>
               </div>
-              {checkingAttendance && <div className="bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-xs">Checking existing attendance...</div>}
+              {checkingAttendance && <div className="bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-xs">{t('checking_attendance')}</div>}
               {existingAttendance && !checkingAttendance && (
                 <div className="bg-yellow-50 text-yellow-700 px-3 py-2 rounded-lg text-xs font-medium">
-                  Attendance already marked for this date. You are editing it now.
+                  {t('attendance_already_marked')}
                 </div>
               )}
               {error && <div className="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-xs">{error}</div>}
@@ -521,9 +521,9 @@ export default function WorkersPage() {
                         className="w-full flex items-center justify-between px-3 py-2"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="text-base leading-none">⏱</span>
+                          <Clock size={17} className={attForm.wantOvertime ? 'text-purple-500' : 'text-gray-400'} />
                           <span className={`font-semibold text-xs ${attForm.wantOvertime ? 'text-purple-700' : 'text-gray-500'}`}>
-                            Overtime (OT)
+                            {t('overtime')}
                           </span>
                         </div>
                         <div className={`w-10 h-5 rounded-full transition-colors flex items-center ${attForm.wantOvertime ? 'bg-purple-500 justify-end' : 'bg-gray-300 justify-start'}`}>
@@ -532,7 +532,7 @@ export default function WorkersPage() {
                       </button>
                       {attForm.wantOvertime && (
                         <div className="px-3 pb-2.5">
-                          <label className="block text-purple-600 font-medium mb-0.5 text-xs">Overtime Amount (₹)</label>
+                          <label className="block text-purple-600 font-medium mb-0.5 text-xs">{t('overtime_amount')}</label>
                           <input
                             type="number"
                             min="0"
@@ -606,7 +606,7 @@ export default function WorkersPage() {
                 } ${saving ? 'opacity-60' : ''}`}
               >
                 <CalendarCheck size={18} />
-                {saving ? t('loading') : existingAttendance ? 'Update Attendance' : t('save_attendance')}
+                {saving ? t('loading') : existingAttendance ? t('update_attendance') : t('save_attendance')}
               </button>
             </div>
           </div>
