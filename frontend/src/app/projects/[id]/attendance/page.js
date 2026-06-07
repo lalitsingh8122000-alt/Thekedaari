@@ -845,11 +845,11 @@ export default function ProjectAttendancePage() {
 
         {/* ── STICKY HEADER (title → search) ── */}
         <div
-          className="sticky z-10 bg-gray-50 px-4 md:px-0 pt-1.5 pb-1.5 border-b border-gray-100 md:border-0"
+          className="sticky z-10 bg-gray-50 px-4 md:px-0 pt-1al pb-1 border-b border-gray-100 md:border-0"
           style={{ top: 'calc(var(--safe-top, 0px) + 46px)' }}
         >
-          {/* Back button + title */}
-          <div className="flex items-center gap-2 mb-1.5">
+          {/* Back button + title + project switcher — single row */}
+          <div className="flex items-center gap-2 mb-1">
             <button
               type="button"
               onClick={() => router.push('/projects')}
@@ -858,21 +858,22 @@ export default function ProjectAttendancePage() {
             >
               <ArrowLeft size={18} />
             </button>
-            <div className="min-w-0 flex-1">
-              <h2 className="text-base font-bold text-gray-800 leading-tight">
+            <div className="min-w-0 flex-1 flex items-center gap-1.5">
+              <h2 className="text-sm font-bold text-gray-600 shrink-0 leading-none">
                 {t('project_attendance_title')}
               </h2>
+              <span className="text-gray-300 text-sm leading-none">/</span>
               {/* Project switcher */}
-              <div className="relative mt-0.5" ref={projectMenuRef}>
+              <div className="relative min-w-0" ref={projectMenuRef}>
                 <button
                   type="button"
                   onClick={() => setShowProjectMenu((v) => !v)}
-                  className="flex items-center gap-1 text-primary-600 font-semibold text-sm hover:text-primary-700 active:opacity-75 transition-opacity"
+                  className="flex items-center gap-1 text-primary-600 font-bold text-sm hover:text-primary-700 active:opacity-75 transition-opacity"
                   aria-haspopup="listbox"
                   aria-expanded={showProjectMenu}
                 >
-                  <span className="truncate max-w-[180px]">{project?.name || 'Loading...'}</span>
-                  <ChevronDown size={14} className={`shrink-0 transition-transform ${showProjectMenu ? 'rotate-180' : ''}`} />
+                  <span className="truncate max-w-[150px]">{project?.name || 'Loading...'}</span>
+                  <ChevronDown size={13} className={`shrink-0 transition-transform ${showProjectMenu ? 'rotate-180' : ''}`} />
                 </button>
                 {showProjectMenu && projects.length > 1 && (
                   <div className="absolute left-0 top-full mt-1 z-50 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden min-w-[200px] max-w-[260px]">
@@ -902,10 +903,10 @@ export default function ProjectAttendancePage() {
           </div>
 
           {/* Summary bar */}
-          <div className="rounded-2xl overflow-hidden shadow-md border border-blue-400/20 mb-2 bg-gradient-to-br from-primary-600 to-blue-500 text-white">
-            <div className="flex items-center justify-between px-4 py-3">
+          <div className="rounded-2xl overflow-hidden shadow-md border border-blue-400/20 mb-1 bg-gradient-to-br from-primary-600 to-blue-500 text-white">
+            <div className="flex items-center justify-between px-4 py-2.5">
               <div>
-                <p className="text-[9px] text-white/60 font-bold uppercase tracking-widest leading-none mb-1">Total Cost</p>
+                <p className="text-[9px] text-white/60 font-bold uppercase tracking-widest leading-none mb-0.5">Total Cost</p>
                 <p className="text-2xl font-black leading-none tracking-tight">₹{totalCost.toLocaleString('en-IN')}</p>
               </div>
               <div className="flex gap-5">
@@ -926,8 +927,8 @@ export default function ProjectAttendancePage() {
           </div>
 
           {/* Date strip — 7 days, equal-width, no scroll */}
-          <div className="rounded-2xl bg-white border border-gray-200 shadow-sm mb-2 px-2 pt-2 pb-2">
-            <div className="flex items-center justify-between px-1 mb-1.5">
+          <div className="rounded-xl bg-white border border-gray-200 shadow-sm mb-1.5 px-2 pt-1.5 pb-1">
+            <div className="flex items-center justify-between px-1 mb-1">
               <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Select Date</span>
               <span className="text-[10px] font-semibold text-primary-600">{formattedDate}</span>
             </div>
@@ -950,19 +951,19 @@ export default function ProjectAttendancePage() {
                     data-selected={String(isSelected)}
                     type="button"
                     onClick={() => setSelectedDate(item.value)}
-                    className={`flex flex-col items-center gap-0.5 py-0.5 rounded-xl transition-all active:scale-95 ${
+                    className={`flex flex-col items-center gap-0 py-0.5 rounded-xl transition-all active:scale-95 ${
                       isSelected ? 'bg-gray-50' : ''
                     }`}
                   >
-                    <span className={`text-[9px] font-bold tracking-wide leading-tight ${labelColor}`}>{item.weekday}</span>
+                    <span className={`text-[8px] font-bold tracking-wide leading-tight ${labelColor}`}>{item.weekday}</span>
                     <span
-                      className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black ${circleBg} ${circleText} transition-all ${
+                      className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black ${circleBg} ${circleText} transition-all ${
                         isSelected ? 'shadow-md ring-2 ring-offset-1 ring-offset-white ring-green-400' : ''
                       } ${item.isToday && isSelected ? 'ring-amber-400' : ''}`}
                     >
                       {item.day}
                     </span>
-                    {item.isToday && <span className="text-[7px] font-bold text-amber-500 leading-tight">today</span>}
+                    {item.isToday && <span className="text-[6px] font-bold text-amber-500 leading-none">today</span>}
                   </button>
                 );
               })}

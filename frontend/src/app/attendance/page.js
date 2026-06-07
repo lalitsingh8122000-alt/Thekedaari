@@ -111,14 +111,18 @@ tbody td{padding:7px 7px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
 .badge-halfday{background:#fef9c3;color:#a16207}
 .badge-absent{background:#fee2e2;color:#dc2626}
 .footer{margin-top:18px;border-top:1px solid #e2e8f0;padding-top:10px;display:flex;justify-content:space-between;color:#94a3b8;font-size:9px}
+.back-btn{display:inline-flex;align-items:center;gap:6px;background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:12px;text-decoration:none}
+.back-btn:hover{background:#2563eb}
 @media print{
 body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 @page{margin:8mm;size:A4 landscape}
+.back-btn{display:none!important}
 }
 </style>
 </head>
 <body>
 <div class="page">
+  <button class="back-btn no-print" onclick="window.close()">← Back to App</button>
   <div class="header">
     <div style="display:flex;align-items:center;gap:11px">
       <img src="${logoUrl}" alt="Thekedaari" style="width:46px;height:46px;border-radius:10px;object-fit:cover;flex-shrink:0">
