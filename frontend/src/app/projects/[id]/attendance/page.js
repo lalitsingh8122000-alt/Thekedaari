@@ -822,18 +822,16 @@ export default function ProjectAttendancePage() {
   const today = new Date();
   today.setHours(12, 0, 0, 0);
   const todayStr = today.toISOString().split('T')[0];
-  const dateStrip = Array.from({ length: 7 }, (_, index) => {
-    // Show Mon–Sun of the week that contains today
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - ((today.getDay() + 6) % 7)); // Monday of current week
-    const day = new Date(monday);
-    day.setDate(monday.getDate() + index);
+  // Show last 30 days ending at today — no future dates, oldest first so today is rightmost
+  const STRIP_DAYS = 30;
+  const dateStrip = Array.from({ length: STRIP_DAYS }, (_, index) => {
+    const day = new Date(today);
+    day.setDate(today.getDate() - (STRIP_DAYS - 1 - index));
     const value = day.toISOString().split('T')[0];
     return {
       value,
       weekday: day.toLocaleDateString('en-IN', { weekday: 'short' }).toUpperCase(),
       day: String(day.getDate()).padStart(2, '0'),
-      isPast: value < todayStr,
       isToday: value === todayStr,
     };
   });
@@ -926,7 +924,7 @@ export default function ProjectAttendancePage() {
             </div>
           </div>
 
-          {/* Date strip — 7 days, equal-width, no scroll */}
+          {/* Date strip — last 30 days, scrollable, today is rightmost */}
           <div className="rounded-xl bg-white border border-gray-200 shadow-sm mb-1.5 px-2 pt-1.5 pb-1">
             <div className="flex items-center justify-between px-1 mb-1">
               <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Select Date</span>
@@ -934,32 +932,31 @@ export default function ProjectAttendancePage() {
             </div>
             <div
               ref={dateStripRef}
-              className="grid grid-cols-7 gap-0"
+              className="flex overflow-x-auto"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               {dateStrip.map((item) => {
                 const isSelected = item.value === selectedDate;
-                const circleBg = item.isPast
-                  ? isSelected ? 'bg-green-600' : 'bg-green-500'
-                  : item.isToday
+                const circleBg = item.isToday
                   ? isSelected ? 'bg-amber-500' : 'bg-amber-400'
-                  : isSelected ? 'bg-primary-500' : 'bg-gray-100';
-                const circleText = (item.isPast || item.isToday || isSelected) ? 'text-white' : 'text-gray-500';
-                const labelColor = item.isPast ? 'text-green-600' : item.isToday ? 'text-amber-500' : 'text-gray-400';
+                  : isSelected ? 'bg-green-600' : 'bg-green-500';
+                const labelColor = item.isToday ? 'text-amber-500' : 'text-green-600';
                 return (
                   <button
                     key={item.value}
                     data-selected={String(isSelected)}
                     type="button"
                     onClick={() => setSelectedDate(item.value)}
-                    className={`flex flex-col items-center gap-0 py-0.5 rounded-xl transition-all active:scale-95 ${
+                    style={{ minWidth: 'calc(100% / 7)' }}
+                    className={`flex flex-col items-center shrink-0 py-0.5 rounded-xl transition-all active:scale-95 ${
                       isSelected ? 'bg-gray-50' : ''
                     }`}
                   >
                     <span className={`text-[8px] font-bold tracking-wide leading-tight ${labelColor}`}>{item.weekday}</span>
                     <span
-                      className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black ${circleBg} ${circleText} transition-all ${
-                        isSelected ? 'shadow-md ring-2 ring-offset-1 ring-offset-white ring-green-400' : ''
-                      } ${item.isToday && isSelected ? 'ring-amber-400' : ''}`}
+                      className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black text-white ${circleBg} transition-all ${
+                        isSelected ? `shadow-md ring-2 ring-offset-1 ring-offset-white ${item.isToday ? 'ring-amber-400' : 'ring-green-400'}` : ''
+                      }`}
                     >
                       {item.day}
                     </span>
