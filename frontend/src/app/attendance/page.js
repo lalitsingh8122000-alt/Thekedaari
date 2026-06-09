@@ -116,13 +116,16 @@ tbody td{padding:7px 7px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
 @media print{
 body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 @page{margin:8mm;size:A4 landscape}
-.back-btn{display:none!important}
+.no-print{display:none!important}
 }
 </style>
 </head>
 <body>
 <div class="page">
-  <button class="back-btn no-print" onclick="window.close()">← Back to App</button>
+  <div class="no-print" style="display:flex;gap:10px;margin-bottom:12px;">
+    <button class="back-btn" style="margin-bottom:0" onclick="window.close()">← Back to Thekedaari</button>
+    <button class="back-btn" style="margin-bottom:0;background:#16a34a;" onclick="window.print()">⬇ Download PDF</button>
+  </div>
   <div class="header">
     <div style="display:flex;align-items:center;gap:11px">
       <img src="${logoUrl}" alt="Thekedaari" style="width:46px;height:46px;border-radius:10px;object-fit:cover;flex-shrink:0">
@@ -168,60 +171,29 @@ body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   return html;
 }
 
-async function downloadPDF(fullHtml, filename) {
-  const { default: html2pdf } = await import('html2pdf.js');
-  const cssMatches = fullHtml.match(/<style>([\s\S]*?)<\/style>/g) || [];
-  const css = cssMatches.map((s) => s.replace(/<\/?style>/g, '')).join('\n');
-  const bodyMatch = fullHtml.match(/<body>([\s\S]*?)<\/body>/);
-  let body = bodyMatch ? bodyMatch[1] : fullHtml;
-  body = body.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<button class="back-btn[^"]*"[\s\S]*?<\/button>/gi, '');
-  const wrapper = document.createElement('div');
-  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:1100px;background:#fff;z-index:-1;';
-  wrapper.innerHTML = `<style>${css}</style>${body}`;
-  document.body.appendChild(wrapper);
-  try {
-    await html2pdf().set({
-      margin: [8, 8, 8, 8], filename,
-      image: { type: 'jpeg', quality: 0.96 },
-      html2canvas: { scale: 1.5, useCORS: true, logging: false, width: 1100 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-    }).from(wrapper.querySelector('.page') || wrapper).save();
-  } finally {
-    document.body.removeChild(wrapper);
-  }
-}
-
-// WebView fallback: blob URL clicks are silently ignored in Android WebView.
-// Shows the report in a fullscreen overlay; user taps "Save as PDF" to trigger
-// the native print-to-PDF dialog (no auto-trigger).
-function showReportOverlay(html, title) {
-  const prev = document.getElementById('__att_report_overlay__');
-  if (prev) prev.remove();
-
-  const overlay = document.createElement('div');
-  overlay.id = '__att_report_overlay__';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;font-family:sans-serif;';
-
-  const bar = document.createElement('div');
-  bar.style.cssText = 'background:#1d4ed8;color:#fff;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;';
-  bar.innerHTML =
-    '<span style="flex:1;font-size:14px;font-weight:700;">' + title + '</span>' +
-    '<button id="__att_save_btn__" style="background:#fff;color:#1d4ed8;border:none;border-radius:6px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;">Save as PDF</button>' +
-    '<button id="__att_close_btn__" style="background:rgba(255,255,255,.18);border:none;color:#fff;border-radius:6px;padding:6px 12px;font-size:13px;cursor:pointer;">✕ Close</button>';
-  overlay.appendChild(bar);
-
-  const iframe = document.createElement('iframe');
-  iframe.style.cssText = 'flex:1;border:none;width:100%;';
-  iframe.srcdoc = html;
-  overlay.appendChild(iframe);
-  document.body.appendChild(overlay);
-
-  document.getElementById('__att_close_btn__').onclick = () => overlay.remove();
-  iframe.addEventListener('load', () => {
-    document.getElementById('__att_save_btn__').onclick = () => {
+function writePDFToWindow(html) {
+  const w = window.open('', '_blank', 'width=1200,height=800');
+  if (w && !w.closed) {
+    w.document.write(html);
+    w.document.close();
+  } else {
+    // WebView fallback: window.open is blocked, show in iframe overlay
+    const prev = document.getElementById('__att_print_wrapper__');
+    if (prev) prev.remove();
+    const wrapper = document.createElement('div');
+    wrapper.id = '__att_print_wrapper__';
+    wrapper.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;';
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'flex:1;border:none;width:100%;';
+    iframe.srcdoc = html;
+    wrapper.appendChild(iframe);
+    document.body.appendChild(wrapper);
+    iframe.addEventListener('load', () => {
       try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch { /* unsupported */ }
-    };
-  });
+      const cleanup = () => { wrapper.remove(); window.removeEventListener('focus', cleanup); };
+      setTimeout(() => window.addEventListener('focus', cleanup), 1500);
+    });
+  }
 }
 
 // --- component ---
@@ -302,11 +274,6 @@ export default function AttendancePage() {
   }, [dlRange]);
 
   const handleDownload = async () => {
-    // Detect WebView synchronously BEFORE any await — gesture context required
-    const probe = window.open('about:blank', '_blank', 'noopener');
-    const isWebView = !probe;
-    if (probe) probe.close();
-
     setDlError('');
     const { start, end } = dlRange;
     if (!start || !end) return setDlError('Please select a valid date range');
@@ -341,12 +308,7 @@ export default function AttendancePage() {
         ? (projects.find((p) => String(p.id) === String(dlProject))?.name || 'All Projects')
         : 'All Projects';
       const html = buildAttendancePDFHtml(rows, dlRangeLabel, projectName);
-      const filename = `attendance-${projectName.replace(/[^a-z0-9]/gi, '-')}-${start}-to-${end}.pdf`;
-      if (isWebView) {
-        showReportOverlay(html, 'Attendance Report');
-      } else {
-        await downloadPDF(html, filename);
-      }
+      writePDFToWindow(html);
     } catch {
       setDlError('Failed to fetch attendance data. Please try again.');
     } finally {
