@@ -617,17 +617,15 @@
       justify-content: center;
     }
     .hero-visual {
-      min-height: 360px;
+      min-height: unset;
+      justify-content: center;
     }
     .phone {
-      height: 460px;
-      width: min(300px, 88%);
+      height: 420px;
+      width: min(260px, 80%);
     }
     .float-card {
-      position: static;
-      min-width: unset;
-      margin: 10px 0;
-      padding: 12px 14px;
+      display: none;
     }
     .cta-box {
       padding: 26px 20px;

@@ -1099,6 +1099,34 @@
   }
 }
 
+@media (max-width: 600px) {
+  .landing-how-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .landing-hero-title {
+    font-size: 1.6rem;
+  }
+
+  .landing-section-title {
+    font-size: 1.35rem;
+  }
+
+  .landing-cta-inner h2 {
+    font-size: 1.3rem;
+  }
+
+  .landing-footer-top {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+
+  .landing-footer-brand {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 380px) {
   .landing-nav-logo span {
     display: none;
