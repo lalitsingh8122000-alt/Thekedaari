@@ -142,7 +142,17 @@ tbody td{padding:6px 7px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
 </body></html>`;
 
   const filename = `${worker.name.replace(/[^a-z0-9]/gi, '-')}-report-${rangeLabel.replace(/[^a-z0-9]/gi, '-')}.pdf`;
-  downloadPDF(html, filename);
+
+  // Synchronous WebView probe — must be before any async call
+  const probe = window.open('about:blank', '_blank', 'noopener');
+  const isWebView = !probe;
+  if (probe) probe.close();
+
+  if (isWebView) {
+    showReportOverlay(html, worker.name + ' — Report');
+  } else {
+    downloadPDF(html, filename);
+  }
 }
 
 async function downloadPDF(fullHtml, filename) {
@@ -166,6 +176,39 @@ async function downloadPDF(fullHtml, filename) {
   } finally {
     document.body.removeChild(wrapper);
   }
+}
+
+// Android WebView: blob URL clicks are silently ignored, so we can't use html2pdf's
+// .save() directly. Show the report in a fullscreen overlay — user taps "Save as PDF"
+// to trigger the native print-to-PDF dialog on demand (no auto-trigger).
+function showReportOverlay(html, title) {
+  const prev = document.getElementById('__pdf_report_overlay__');
+  if (prev) prev.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = '__pdf_report_overlay__';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;font-family:sans-serif;';
+
+  const bar = document.createElement('div');
+  bar.style.cssText = 'background:#1d4ed8;color:#fff;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;';
+  bar.innerHTML =
+    '<span style="flex:1;font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + title + '</span>' +
+    '<button id="__pdf_save_btn__" style="background:#fff;color:#1d4ed8;border:none;border-radius:6px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">Save as PDF</button>' +
+    '<button id="__pdf_close_btn__" style="background:rgba(255,255,255,.18);border:none;color:#fff;border-radius:6px;padding:6px 12px;font-size:13px;cursor:pointer;">✕</button>';
+  overlay.appendChild(bar);
+
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'flex:1;border:none;width:100%;';
+  iframe.srcdoc = html;
+  overlay.appendChild(iframe);
+  document.body.appendChild(overlay);
+
+  document.getElementById('__pdf_close_btn__').onclick = () => overlay.remove();
+  iframe.addEventListener('load', () => {
+    document.getElementById('__pdf_save_btn__').onclick = () => {
+      try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch { /* unsupported */ }
+    };
+  });
 }
 
 // ── Component ───────────────────────────────────────────────────────────────

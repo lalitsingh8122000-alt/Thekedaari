@@ -191,6 +191,39 @@ async function downloadPDF(fullHtml, filename) {
   }
 }
 
+// WebView fallback: blob URL clicks are silently ignored in Android WebView.
+// Shows the report in a fullscreen overlay; user taps "Save as PDF" to trigger
+// the native print-to-PDF dialog (no auto-trigger).
+function showReportOverlay(html, title) {
+  const prev = document.getElementById('__att_report_overlay__');
+  if (prev) prev.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = '__att_report_overlay__';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;font-family:sans-serif;';
+
+  const bar = document.createElement('div');
+  bar.style.cssText = 'background:#1d4ed8;color:#fff;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;';
+  bar.innerHTML =
+    '<span style="flex:1;font-size:14px;font-weight:700;">' + title + '</span>' +
+    '<button id="__att_save_btn__" style="background:#fff;color:#1d4ed8;border:none;border-radius:6px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;">Save as PDF</button>' +
+    '<button id="__att_close_btn__" style="background:rgba(255,255,255,.18);border:none;color:#fff;border-radius:6px;padding:6px 12px;font-size:13px;cursor:pointer;">✕ Close</button>';
+  overlay.appendChild(bar);
+
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'flex:1;border:none;width:100%;';
+  iframe.srcdoc = html;
+  overlay.appendChild(iframe);
+  document.body.appendChild(overlay);
+
+  document.getElementById('__att_close_btn__').onclick = () => overlay.remove();
+  iframe.addEventListener('load', () => {
+    document.getElementById('__att_save_btn__').onclick = () => {
+      try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch { /* unsupported */ }
+    };
+  });
+}
+
 // --- component ---
 export default function AttendancePage() {
   const { t } = useLanguage();
@@ -269,6 +302,11 @@ export default function AttendancePage() {
   }, [dlRange]);
 
   const handleDownload = async () => {
+    // Detect WebView synchronously BEFORE any await — gesture context required
+    const probe = window.open('about:blank', '_blank', 'noopener');
+    const isWebView = !probe;
+    if (probe) probe.close();
+
     setDlError('');
     const { start, end } = dlRange;
     if (!start || !end) return setDlError('Please select a valid date range');
@@ -304,7 +342,11 @@ export default function AttendancePage() {
         : 'All Projects';
       const html = buildAttendancePDFHtml(rows, dlRangeLabel, projectName);
       const filename = `attendance-${projectName.replace(/[^a-z0-9]/gi, '-')}-${start}-to-${end}.pdf`;
-      await downloadPDF(html, filename);
+      if (isWebView) {
+        showReportOverlay(html, 'Attendance Report');
+      } else {
+        await downloadPDF(html, filename);
+      }
     } catch {
       setDlError('Failed to fetch attendance data. Please try again.');
     } finally {
