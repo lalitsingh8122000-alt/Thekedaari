@@ -163,83 +163,32 @@ body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
     <span>${projectName} \u00B7 ${rangeLabel}</span>
   </div>
 </div>
-<script>window.onload=function(){window.print();}<\/script>
 </body></html>`;
 
   return html;
 }
 
 async function downloadPDF(fullHtml, filename) {
-  try {
-    const { default: html2pdf } = await import('html2pdf.js');
-    const cssMatches = fullHtml.match(/<style>([\s\S]*?)<\/style>/g) || [];
-    const css = cssMatches.map((s) => s.replace(/<\/?style>/g, '')).join('\n');
-    const bodyMatch = fullHtml.match(/<body>([\s\S]*?)<\/body>/);
-    let body = bodyMatch ? bodyMatch[1] : fullHtml;
-    body = body.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<button class="back-btn[^"]*"[\s\S]*?<\/button>/gi, '');
-    const wrapper = document.createElement('div');
-    wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:1100px;background:#fff;z-index:-1;';
-    wrapper.innerHTML = `<style>${css}</style>${body}`;
-    document.body.appendChild(wrapper);
-    try {
-      await html2pdf().set({
-        margin: [8, 8, 8, 8], filename,
-        image: { type: 'jpeg', quality: 0.96 },
-        html2canvas: { scale: 1.5, useCORS: true, logging: false, width: 1100 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-      }).from(wrapper.querySelector('.page') || wrapper).save();
-    } finally {
-      document.body.removeChild(wrapper);
-    }
-  } catch (err) {
-    console.error('PDF download failed, falling back to print:', err);
-    const w = window.open('', '_blank', 'width=1200,height=800');
-    if (w && !w.closed) { w.document.write(fullHtml); w.document.close(); } else printInIframe(fullHtml);
-  }
-}
-
-// Fallback for Android WebView / Flutter where window.open() is blocked.
-// Creates a full-screen iframe overlay and triggers the native print dialog.
-function printInIframe(html) {
-  const prevWrapper = document.getElementById('__att_print_wrapper__');
-  if (prevWrapper) prevWrapper.remove();
-
-  // Full-screen wrapper
+  const { default: html2pdf } = await import('html2pdf.js');
+  const cssMatches = fullHtml.match(/<style>([\s\S]*?)<\/style>/g) || [];
+  const css = cssMatches.map((s) => s.replace(/<\/?style>/g, '')).join('\n');
+  const bodyMatch = fullHtml.match(/<body>([\s\S]*?)<\/body>/);
+  let body = bodyMatch ? bodyMatch[1] : fullHtml;
+  body = body.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<button class="back-btn[^"]*"[\s\S]*?<\/button>/gi, '');
   const wrapper = document.createElement('div');
-  wrapper.id = '__att_print_wrapper__';
-  wrapper.style.cssText =
-    'position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;';
-
-  // Close bar at the top
-  const bar = document.createElement('div');
-  bar.style.cssText =
-    'background:#1d4ed8;color:#fff;padding:0.65rem 1rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;font-family:sans-serif;';
-  bar.innerHTML =
-    '<span style="font-size:14px;font-weight:600;">Attendance Report</span>' +
-    '<button style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:5px 16px;border-radius:6px;font-size:13px;cursor:pointer;">✕ Close</button>';
-  bar.querySelector('button').onclick = () => wrapper.remove();
-  wrapper.appendChild(bar);
-
-  // Iframe fills remaining space
-  const iframe = document.createElement('iframe');
-  iframe.style.cssText = 'flex:1;border:none;width:100%;';
-  iframe.srcdoc = html;
-  wrapper.appendChild(iframe);
+  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:1100px;background:#fff;z-index:-1;';
+  wrapper.innerHTML = `<style>${css}</style>${body}`;
   document.body.appendChild(wrapper);
-
-  // After iframe loads, trigger print; also remove wrapper when window regains focus
-  iframe.addEventListener('load', () => {
-    try {
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-    } catch { /* print not supported in this WebView */ }
-    // Clean up after the print dialog is dismissed
-    const cleanup = () => {
-      wrapper.remove();
-      window.removeEventListener('focus', cleanup);
-    };
-    setTimeout(() => window.addEventListener('focus', cleanup), 1500);
-  });
+  try {
+    await html2pdf().set({
+      margin: [8, 8, 8, 8], filename,
+      image: { type: 'jpeg', quality: 0.96 },
+      html2canvas: { scale: 1.5, useCORS: true, logging: false, width: 1100 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+    }).from(wrapper.querySelector('.page') || wrapper).save();
+  } finally {
+    document.body.removeChild(wrapper);
+  }
 }
 
 // --- component ---
@@ -571,7 +520,7 @@ export default function AttendancePage() {
               <div>
                 <p className="font-bold text-sm text-blue-800">Download Attendance Report</p>
                 <p className="text-xs text-blue-600 mt-0.5 leading-snug">
-                  Export as a professional PDF report with summary cards, attendance table, and salary totals. Opens print dialog to save as PDF.
+                  Export as a professional PDF report with summary cards, attendance table, and salary totals. Downloads directly to your device.
                 </p>
               </div>
             </div>
@@ -702,7 +651,7 @@ export default function AttendancePage() {
               {downloading ? 'Generating PDF…' : 'Download PDF Report'}
             </button>
 
-            <p className="text-center text-xs text-gray-400">Opens print dialog — choose &ldquo;Save as PDF&rdquo; in your browser</p>
+            <p className="text-center text-xs text-gray-400">PDF downloads directly to your device</p>
           </div>
         )}
       </div>
