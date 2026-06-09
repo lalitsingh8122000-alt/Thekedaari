@@ -169,10 +169,32 @@ body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   return html;
 }
 
-function writePDFToWindow(win, html) {
-  if (win) {
-    win.document.write(html);
-    win.document.close();
+async function downloadPDF(fullHtml, filename) {
+  try {
+    const { default: html2pdf } = await import('html2pdf.js');
+    const cssMatches = fullHtml.match(/<style>([\s\S]*?)<\/style>/g) || [];
+    const css = cssMatches.map((s) => s.replace(/<\/?style>/g, '')).join('\n');
+    const bodyMatch = fullHtml.match(/<body>([\s\S]*?)<\/body>/);
+    let body = bodyMatch ? bodyMatch[1] : fullHtml;
+    body = body.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<button class="back-btn[^"]*"[\s\S]*?<\/button>/gi, '');
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:1100px;background:#fff;z-index:-1;';
+    wrapper.innerHTML = `<style>${css}</style>${body}`;
+    document.body.appendChild(wrapper);
+    try {
+      await html2pdf().set({
+        margin: [8, 8, 8, 8], filename,
+        image: { type: 'jpeg', quality: 0.96 },
+        html2canvas: { scale: 1.5, useCORS: true, logging: false, width: 1100 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+      }).from(wrapper.querySelector('.page') || wrapper).save();
+    } finally {
+      document.body.removeChild(wrapper);
+    }
+  } catch (err) {
+    console.error('PDF download failed, falling back to print:', err);
+    const w = window.open('', '_blank', 'width=1200,height=800');
+    if (w && !w.closed) { w.document.write(fullHtml); w.document.close(); } else printInIframe(fullHtml);
   }
 }
 
@@ -305,13 +327,6 @@ export default function AttendancePage() {
     const diffDays = Math.ceil((new Date(end) - new Date(start)) / 86400000);
     if (diffDays > 366) return setDlError('Date range cannot exceed 366 days');
 
-    // Try to open a popup synchronously — required for iOS PWA (blocked after await).
-    // On Android WebView (Flutter) this returns null; we fall back to printInIframe().
-    const printWin = window.open('', '_blank', 'width=1200,height=800');
-    if (printWin) {
-      printWin.document.write('<html><body style="font-family:sans-serif;padding:2rem;color:#555"><p>Loading report…</p></body></html>');
-    }
-
     setDownloading(true);
     setDlPreviewCount(null);
     try {
@@ -325,7 +340,6 @@ export default function AttendancePage() {
       const rows = res.data || [];
       setDlPreviewCount(rows.length);
       if (rows.length === 0) {
-        if (printWin && !printWin.closed) printWin.close();
         setDlError('No attendance records found for the selected range.');
         return;
       }
@@ -340,15 +354,9 @@ export default function AttendancePage() {
         ? (projects.find((p) => String(p.id) === String(dlProject))?.name || 'All Projects')
         : 'All Projects';
       const html = buildAttendancePDFHtml(rows, dlRangeLabel, projectName);
-      if (printWin && !printWin.closed) {
-        // Desktop / iOS PWA — write into the already-opened popup
-        writePDFToWindow(printWin, html);
-      } else {
-        // Android WebView (Flutter) — window.open() was blocked; use in-page iframe
-        printInIframe(html);
-      }
+      const filename = `attendance-${projectName.replace(/[^a-z0-9]/gi, '-')}-${start}-to-${end}.pdf`;
+      await downloadPDF(html, filename);
     } catch {
-      if (printWin && !printWin.closed) printWin.close();
       setDlError('Failed to fetch attendance data. Please try again.');
     } finally {
       setDownloading(false);

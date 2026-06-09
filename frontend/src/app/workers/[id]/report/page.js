@@ -142,13 +142,37 @@ tbody td{padding:6px 7px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
 <script>window.onload=function(){window.print();}<\/script>
 </body></html>`;
 
-  // Try popup (Desktop / iOS PWA). Falls back to iframe overlay for Android WebView (Flutter).
-  const w = window.open('', '_blank', 'width=1200,height=800');
-  if (w && !w.closed) {
-    w.document.write(html);
-    w.document.close();
-  } else {
-    printInIframe(html, worker.name + ' — Report');
+  const filename = `${worker.name.replace(/[^a-z0-9]/gi, '-')}-report-${rangeLabel.replace(/[^a-z0-9]/gi, '-')}.pdf`;
+  downloadPDF(html, filename);
+}
+
+async function downloadPDF(fullHtml, filename) {
+  try {
+    const { default: html2pdf } = await import('html2pdf.js');
+    const cssMatches = fullHtml.match(/<style>([\s\S]*?)<\/style>/g) || [];
+    const css = cssMatches.map((s) => s.replace(/<\/?style>/g, '')).join('\n');
+    const bodyMatch = fullHtml.match(/<body>([\s\S]*?)<\/body>/);
+    let body = bodyMatch ? bodyMatch[1] : fullHtml;
+    body = body.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<button class="back-btn[^"]*"[\s\S]*?<\/button>/gi, '');
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:1100px;background:#fff;z-index:-1;';
+    wrapper.innerHTML = `<style>${css}</style>${body}`;
+    document.body.appendChild(wrapper);
+    try {
+      await html2pdf().set({
+        margin: [8, 8, 8, 8], filename,
+        image: { type: 'jpeg', quality: 0.96 },
+        html2canvas: { scale: 1.5, useCORS: true, logging: false, width: 1100 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+      }).from(wrapper.querySelector('.page') || wrapper).save();
+    } finally {
+      document.body.removeChild(wrapper);
+    }
+  } catch (err) {
+    console.error('PDF download failed, falling back to print:', err);
+    const w = window.open('', '_blank', 'width=1200,height=800');
+    if (w && !w.closed) { w.document.write(fullHtml); w.document.close(); }
+    else printInIframe(fullHtml, filename.replace('.pdf', ''));
   }
 }
 

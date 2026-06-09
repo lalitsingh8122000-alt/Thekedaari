@@ -80,12 +80,20 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   padding-bottom: calc(90px + var(--safe-bottom));
 }
 
-/* Save button: sits flush on top of bottom nav on mobile */
+/* Save button: fixed above bottom nav on mobile, sticky on desktop */
 .att-save-btn-sticky {
-  bottom: 0;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  z-index: 50;
 }
 @media (min-width: 768px) {
   .att-save-btn-sticky {
+    position: sticky;
     bottom: 1.25rem;
+    left: auto;
+    right: auto;
+    z-index: 20;
   }
 }

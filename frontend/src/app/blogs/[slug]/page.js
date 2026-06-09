@@ -286,8 +286,13 @@ export default async function BlogDetailPage({ params }) {
         }
         @media (max-width: 600px) {
           .blog-article-header,
-          .blog-article-content { padding: 24px 20px; }
-          .blog-detail-wrap { padding-top: 20px; }
+          .blog-article-content { padding: 20px 16px; }
+          .blog-article-title { font-size: clamp(1.35rem, 5.5vw, 1.7rem); }
+          .blog-detail-wrap { padding-top: 16px; padding-bottom: 32px; }
+          .blog-back-link { margin-bottom: 16px; }
+          .blog-cta-box { padding: 22px 18px; margin-top: 24px; }
+          .blog-cta-box .cta-wrap { flex-direction: column; gap: 16px; }
+          .blog-cta-box .cta-wrap .nav-actions { flex-wrap: wrap; }
         }
       `}</style>
     </div>
