@@ -1012,7 +1012,7 @@ export default function ProjectAttendancePage() {
             <p className="text-gray-500 font-medium">{t('no_search_matches')}</p>
           </div>
         ) : (
-          <div className="px-4 md:px-0 pt-2 space-y-1.5" style={{ paddingBottom: 'calc(130px + var(--safe-bottom, 0px))' }}>
+          <div className="px-4 md:px-0 pt-2 space-y-1.5" style={{ paddingBottom: '1rem' }}>
             {filteredWorkers.map((w) => {
               const draftType = getDraftType(w.id);
               const splitProject = secondProjectDrafts[w.id];
@@ -1241,7 +1241,7 @@ export default function ProjectAttendancePage() {
         {/* ── SAVE BUTTON (fixed above bottom nav on mobile, sticky on desktop) ── */}
         {!loading && workers.length > 0 && (
           <div
-            className="att-save-btn-sticky px-4 md:px-0 pt-1.5 pb-2.5 bg-gray-50/95 backdrop-blur-sm border-t border-gray-100 md:border-0"
+            className="sticky att-save-btn-sticky px-4 md:px-0 pt-1.5 pb-2.5 bg-gray-50/95 backdrop-blur-sm border-t border-gray-100 md:border-0"
           >
             {isDirty && selectedDate < todayStr && (
               <p className="text-center text-[10px] text-amber-600 font-medium mb-0.5 flex items-center justify-center gap-1">
