@@ -657,11 +657,7 @@ export default function AttendancePage() {
               <span className="text-xs bg-amber-100 text-amber-600 border border-amber-200 px-3 py-0.5 rounded-full font-bold">Coming Soon</span>
             </button>
 
-<<<<<<< HEAD
             <p className="text-center text-xs text-gray-400">PDF download is coming soon — check back later</p>
-=======
-            <p className="text-center text-xs text-gray-400">PDF downloads directly to your device</p>
->>>>>>> 59b1af84189943273259c7f3514560c4081930c5
           </div>
         )}
       </div>
