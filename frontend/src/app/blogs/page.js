@@ -90,7 +90,7 @@ export default async function BlogsListPage() {
             <span className="eyebrow-dot" />
             Construction Knowledge Base
           </div>
-          <h1 style={{ fontSize: 'clamp(2rem,5vw,3.4rem)', fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 1.05, margin: '0 0 16px' }}>
+          <h1 className="blogs-hero-h1">
             Thekedaari <span className="accent">Blog</span>
           </h1>
           <p style={{ color: 'var(--seo-lp-muted)', maxWidth: 600, margin: '0 auto', fontSize: '1.05rem', lineHeight: 1.8 }}>
@@ -131,6 +131,13 @@ export default async function BlogsListPage() {
       <style>{`
         .blogs-hero { position: relative; overflow: hidden; background: linear-gradient(180deg, #fff 0%, #f0f4f8 100%); }
         .blogs-grid-section { padding: 48px 0 32px; }
+        .blogs-hero-h1 {
+          font-size: clamp(1.6rem, 5vw, 3.4rem);
+          font-weight: 900;
+          letter-spacing: -0.04em;
+          line-height: 1.05;
+          margin: 0 0 16px;
+        }
         .blogs-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
@@ -196,9 +203,13 @@ export default async function BlogsListPage() {
         @media (max-width: 900px) {
           .blogs-grid { grid-template-columns: repeat(2, 1fr); }
         }
+        @media (max-width: 600px) {
+          .blogs-hero-h1 { font-size: clamp(1.4rem, 6vw, 1.8rem); }
+          .blog-card-title { font-size: 1rem; }
+        }
         @media (max-width: 560px) {
-          .blogs-grid { grid-template-columns: 1fr; }
-          .blogs-grid-section { padding: 32px 0; }
+          .blogs-grid { grid-template-columns: 1fr; gap: 16px; }
+          .blogs-grid-section { padding: 24px 0; }
         }
       `}</style>
     </div>

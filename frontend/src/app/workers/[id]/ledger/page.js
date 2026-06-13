@@ -5,7 +5,6 @@ import { ArrowLeft, Plus, TrendingUp, Banknote, X, FileText } from 'lucide-react
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
 import api from '@/lib/api';
-import Link from 'next/link';
 import { parsePositiveAmount } from '@/lib/validation';
 
 const defaultForm = () => ({
@@ -133,13 +132,16 @@ export default function WorkerLedgerPage() {
             <h2 className="page-title">{t('ledger')}</h2>
             {data?.worker && <p className="text-xs sm:text-sm text-gray-500">{data.worker.name}</p>}
           </div>
-          <Link
-            href={`/workers/${id}/report`}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-50 text-primary-700 border border-primary-200 text-xs font-bold hover:bg-primary-100 transition-colors shrink-0"
+          <button
+            type="button"
+            disabled
+            title="Coming Soon"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 text-gray-400 border border-gray-200 text-xs font-bold shrink-0 cursor-not-allowed"
           >
             <FileText size={15} />
             Report
-          </Link>
+            <span className="text-[8px] bg-amber-100 text-amber-600 border border-amber-200 px-1.5 py-0.5 rounded-full font-bold leading-none">Soon</span>
+          </button>
         </div>
 
         {loading ? (

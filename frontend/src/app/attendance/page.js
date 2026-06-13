@@ -116,13 +116,16 @@ tbody td{padding:7px 7px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
 @media print{
 body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 @page{margin:8mm;size:A4 landscape}
-.back-btn{display:none!important}
+.no-print{display:none!important}
 }
 </style>
 </head>
 <body>
 <div class="page">
-  <button class="back-btn no-print" onclick="window.close()">← Back to App</button>
+  <div class="no-print" style="display:flex;gap:10px;margin-bottom:12px;">
+    <button class="back-btn" style="margin-bottom:0" onclick="window.close()">← Back to Thekedaari</button>
+    <button class="back-btn" style="margin-bottom:0;background:#16a34a;" onclick="window.print()">⬇ Download PDF</button>
+  </div>
   <div class="header">
     <div style="display:flex;align-items:center;gap:11px">
       <img src="${logoUrl}" alt="Thekedaari" style="width:46px;height:46px;border-radius:10px;object-fit:cover;flex-shrink:0">
@@ -163,61 +166,34 @@ body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
     <span>${projectName} \u00B7 ${rangeLabel}</span>
   </div>
 </div>
-<script>window.onload=function(){window.print();}<\/script>
 </body></html>`;
 
   return html;
 }
 
-function writePDFToWindow(win, html) {
-  if (win) {
-    win.document.write(html);
-    win.document.close();
+function writePDFToWindow(html) {
+  const w = window.open('', '_blank', 'width=1200,height=800');
+  if (w && !w.closed) {
+    w.document.write(html);
+    w.document.close();
+  } else {
+    // WebView fallback: window.open is blocked, show in iframe overlay
+    const prev = document.getElementById('__att_print_wrapper__');
+    if (prev) prev.remove();
+    const wrapper = document.createElement('div');
+    wrapper.id = '__att_print_wrapper__';
+    wrapper.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;';
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'flex:1;border:none;width:100%;';
+    iframe.srcdoc = html;
+    wrapper.appendChild(iframe);
+    document.body.appendChild(wrapper);
+    iframe.addEventListener('load', () => {
+      try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch { /* unsupported */ }
+      const cleanup = () => { wrapper.remove(); window.removeEventListener('focus', cleanup); };
+      setTimeout(() => window.addEventListener('focus', cleanup), 1500);
+    });
   }
-}
-
-// Fallback for Android WebView / Flutter where window.open() is blocked.
-// Creates a full-screen iframe overlay and triggers the native print dialog.
-function printInIframe(html) {
-  const prevWrapper = document.getElementById('__att_print_wrapper__');
-  if (prevWrapper) prevWrapper.remove();
-
-  // Full-screen wrapper
-  const wrapper = document.createElement('div');
-  wrapper.id = '__att_print_wrapper__';
-  wrapper.style.cssText =
-    'position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;';
-
-  // Close bar at the top
-  const bar = document.createElement('div');
-  bar.style.cssText =
-    'background:#1d4ed8;color:#fff;padding:0.65rem 1rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;font-family:sans-serif;';
-  bar.innerHTML =
-    '<span style="font-size:14px;font-weight:600;">Attendance Report</span>' +
-    '<button style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:5px 16px;border-radius:6px;font-size:13px;cursor:pointer;">✕ Close</button>';
-  bar.querySelector('button').onclick = () => wrapper.remove();
-  wrapper.appendChild(bar);
-
-  // Iframe fills remaining space
-  const iframe = document.createElement('iframe');
-  iframe.style.cssText = 'flex:1;border:none;width:100%;';
-  iframe.srcdoc = html;
-  wrapper.appendChild(iframe);
-  document.body.appendChild(wrapper);
-
-  // After iframe loads, trigger print; also remove wrapper when window regains focus
-  iframe.addEventListener('load', () => {
-    try {
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-    } catch { /* print not supported in this WebView */ }
-    // Clean up after the print dialog is dismissed
-    const cleanup = () => {
-      wrapper.remove();
-      window.removeEventListener('focus', cleanup);
-    };
-    setTimeout(() => window.addEventListener('focus', cleanup), 1500);
-  });
 }
 
 // --- component ---
@@ -305,13 +281,6 @@ export default function AttendancePage() {
     const diffDays = Math.ceil((new Date(end) - new Date(start)) / 86400000);
     if (diffDays > 366) return setDlError('Date range cannot exceed 366 days');
 
-    // Try to open a popup synchronously — required for iOS PWA (blocked after await).
-    // On Android WebView (Flutter) this returns null; we fall back to printInIframe().
-    const printWin = window.open('', '_blank', 'width=1200,height=800');
-    if (printWin) {
-      printWin.document.write('<html><body style="font-family:sans-serif;padding:2rem;color:#555"><p>Loading report…</p></body></html>');
-    }
-
     setDownloading(true);
     setDlPreviewCount(null);
     try {
@@ -325,7 +294,6 @@ export default function AttendancePage() {
       const rows = res.data || [];
       setDlPreviewCount(rows.length);
       if (rows.length === 0) {
-        if (printWin && !printWin.closed) printWin.close();
         setDlError('No attendance records found for the selected range.');
         return;
       }
@@ -340,15 +308,8 @@ export default function AttendancePage() {
         ? (projects.find((p) => String(p.id) === String(dlProject))?.name || 'All Projects')
         : 'All Projects';
       const html = buildAttendancePDFHtml(rows, dlRangeLabel, projectName);
-      if (printWin && !printWin.closed) {
-        // Desktop / iOS PWA — write into the already-opened popup
-        writePDFToWindow(printWin, html);
-      } else {
-        // Android WebView (Flutter) — window.open() was blocked; use in-page iframe
-        printInIframe(html);
-      }
+      writePDFToWindow(html);
     } catch {
-      if (printWin && !printWin.closed) printWin.close();
       setDlError('Failed to fetch attendance data. Please try again.');
     } finally {
       setDownloading(false);
@@ -563,7 +524,7 @@ export default function AttendancePage() {
               <div>
                 <p className="font-bold text-sm text-blue-800">Download Attendance Report</p>
                 <p className="text-xs text-blue-600 mt-0.5 leading-snug">
-                  Export as a professional PDF report with summary cards, attendance table, and salary totals. Opens print dialog to save as PDF.
+                  Export as a professional PDF report with summary cards, attendance table, and salary totals. Downloads directly to your device.
                 </p>
               </div>
             </div>
@@ -686,15 +647,21 @@ export default function AttendancePage() {
 
             <button
               type="button"
-              onClick={handleDownload}
-              disabled={downloading || (!dlRange.start || !dlRange.end)}
-              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-white text-sm bg-primary-600 hover:bg-primary-700 active:bg-primary-800 shadow-lg shadow-primary-200 transition-all disabled:opacity-50 disabled:pointer-events-none"
+              disabled
+              className="w-full flex flex-col items-center justify-center gap-1.5 py-4 rounded-2xl text-gray-400 text-sm bg-gray-50 border-2 border-dashed border-gray-200 cursor-not-allowed"
             >
-              <Download size={20} />
-              {downloading ? 'Generating PDF…' : 'Download PDF Report'}
+              <div className="flex items-center gap-2 font-bold">
+                <Download size={20} className="text-gray-300" />
+                Download PDF Report
+              </div>
+              <span className="text-xs bg-amber-100 text-amber-600 border border-amber-200 px-3 py-0.5 rounded-full font-bold">Coming Soon</span>
             </button>
 
-            <p className="text-center text-xs text-gray-400">Opens print dialog — choose &ldquo;Save as PDF&rdquo; in your browser</p>
+<<<<<<< HEAD
+            <p className="text-center text-xs text-gray-400">PDF download is coming soon — check back later</p>
+=======
+            <p className="text-center text-xs text-gray-400">PDF downloads directly to your device</p>
+>>>>>>> 59b1af84189943273259c7f3514560c4081930c5
           </div>
         )}
       </div>

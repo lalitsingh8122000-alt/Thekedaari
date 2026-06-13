@@ -100,10 +100,13 @@ tbody td{padding:6px 7px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
 .footer{margin-top:16px;border-top:1px solid #e2e8f0;padding-top:8px;display:flex;justify-content:space-between;color:#94a3b8;font-size:8.5px}
 .back-btn{display:inline-flex;align-items:center;gap:6px;background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:12px;text-decoration:none}
 .back-btn:hover{background:#2563eb}
-@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{margin:8mm;size:A4 landscape}.back-btn{display:none!important}}
+@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{margin:8mm;size:A4 landscape}.no-print{display:none!important}}
 </style></head><body>
 <div class="page">
-  <button class="back-btn" onclick="window.close()">← Back to App</button>
+  <div class="no-print" style="display:flex;gap:10px;margin-bottom:12px;">
+    <button class="back-btn" style="margin-bottom:0" onclick="window.close()">← Back to Thekedaari</button>
+    <button class="back-btn" style="margin-bottom:0;background:#16a34a;" onclick="window.print()">⬇ Download PDF</button>
+  </div>
   <div class="header">
     <div class="brand">
       <img src="${logoUrl}" alt="Thekedaari" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0">
@@ -139,49 +142,33 @@ tbody td{padding:6px 7px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
     <span>${worker.name} \u00B7 ${rangeLabel}</span>
   </div>
 </div>
-<script>window.onload=function(){window.print();}<\/script>
 </body></html>`;
 
-  // Try popup (Desktop / iOS PWA). Falls back to iframe overlay for Android WebView (Flutter).
+  writePDFToWindow(html);
+}
+
+function writePDFToWindow(html) {
   const w = window.open('', '_blank', 'width=1200,height=800');
   if (w && !w.closed) {
     w.document.write(html);
     w.document.close();
   } else {
-    printInIframe(html, worker.name + ' — Report');
+    const prev = document.getElementById('__att_print_wrapper__');
+    if (prev) prev.remove();
+    const wrapper = document.createElement('div');
+    wrapper.id = '__att_print_wrapper__';
+    wrapper.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;';
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'flex:1;border:none;width:100%;';
+    iframe.srcdoc = html;
+    wrapper.appendChild(iframe);
+    document.body.appendChild(wrapper);
+    iframe.addEventListener('load', () => {
+      try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch { /* unsupported */ }
+      const cleanup = () => { wrapper.remove(); window.removeEventListener('focus', cleanup); };
+      setTimeout(() => window.addEventListener('focus', cleanup), 1500);
+    });
   }
-}
-
-// Fallback for Android WebView / Flutter where window.open() returns null.
-function printInIframe(html, title = 'Report') {
-  const prev = document.getElementById('__pdf_print_wrapper__');
-  if (prev) prev.remove();
-
-  const wrapper = document.createElement('div');
-  wrapper.id = '__pdf_print_wrapper__';
-  wrapper.style.cssText =
-    'position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;';
-
-  const bar = document.createElement('div');
-  bar.style.cssText =
-    'background:#1d4ed8;color:#fff;padding:0.65rem 1rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;font-family:sans-serif;';
-  bar.innerHTML =
-    '<span style="font-size:14px;font-weight:600;">' + title + '</span>' +
-    '<button style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:5px 16px;border-radius:6px;font-size:13px;cursor:pointer;">\u2715 Close</button>';
-  bar.querySelector('button').onclick = () => wrapper.remove();
-  wrapper.appendChild(bar);
-
-  const iframe = document.createElement('iframe');
-  iframe.style.cssText = 'flex:1;border:none;width:100%;';
-  iframe.srcdoc = html;
-  wrapper.appendChild(iframe);
-  document.body.appendChild(wrapper);
-
-  iframe.addEventListener('load', () => {
-    try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch { /* unsupported */ }
-    const cleanup = () => { wrapper.remove(); window.removeEventListener('focus', cleanup); };
-    setTimeout(() => window.addEventListener('focus', cleanup), 1500);
-  });
 }
 
 // ── Component ───────────────────────────────────────────────────────────────
