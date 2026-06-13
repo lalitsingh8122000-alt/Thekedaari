@@ -97,6 +97,30 @@ router.post('/login', async (req, res) => {
   }
 });
 
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const phone = normalizePhone(req.body.phone);
+    if (!isValidPhone(phone)) {
+      return res.status(400).json({ error: 'Phone number must be exactly 10 digits' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { phone }, select: { id: true, name: true, phone: true } });
+
+    // Always log so support team can check server logs and act
+    const ts = new Date().toISOString();
+    if (user) {
+      console.log(`[FORGOT-PASSWORD] ${ts} | Phone: ${phone} | Name: ${user.name} | userId: ${user.id}`);
+    } else {
+      console.log(`[FORGOT-PASSWORD] ${ts} | Phone: ${phone} | Not registered`);
+    }
+
+    // Return the same response whether or not the phone is registered (security best practice)
+    res.json({ success: true });
+  } catch (err) {
+    sendRouteError(res, err, 'auth forgot-password');
+  }
+});
+
 router.get('/me', auth, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({

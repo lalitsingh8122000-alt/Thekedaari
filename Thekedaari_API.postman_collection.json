@@ -1,0 +1,913 @@
+{
+  "info": {
+    "name": "Thekedaari API",
+    "_postman_id": "thekedaari-api-v1",
+    "description": "Complete backend API collection for Thekedaari construction management app.\n\n**Setup:**\n1. Set the `baseUrl` variable to your server URL (default: http://localhost:5000)\n2. Run **Auth → Login** (or Register) to get a JWT token\n3. Copy the token value from the response\n4. Set the `{{token}}` collection variable — all protected endpoints will use it automatically via Bearer auth\n\n**Key variables:** baseUrl, token, workerId, projectId, attendanceId, vendorId, incomeId, expenseId, tradeId, vendorLedgerEntryId",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "workerId", "value": "1", "type": "string" },
+    { "key": "projectId", "value": "1", "type": "string" },
+    { "key": "attendanceId", "value": "1", "type": "string" },
+    { "key": "vendorId", "value": "1", "type": "string" },
+    { "key": "incomeId", "value": "1", "type": "string" },
+    { "key": "expenseId", "value": "1", "type": "string" },
+    { "key": "tradeId", "value": "1", "type": "string" },
+    { "key": "vendorLedgerEntryId", "value": "1", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Lalit Singh\",\n  \"phone\": \"9876543210\",\n  \"password\": \"password123\",\n  \"confirmPassword\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Register a new user account. Returns a JWT token and user info on success.\n\nAfter registering, copy the `token` field from the response and set it as the `{{token}}` collection variable."
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"9876543210\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Login with phone number and password. Returns a JWT token.\n\nCopy the `token` from the response body and paste it into the `{{token}}` collection variable."
+          }
+        },
+        {
+          "name": "Get Me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me"]
+            },
+            "description": "Get the currently authenticated user's profile. Requires Bearer token."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dashboard"]
+            },
+            "description": "Get overall business dashboard summary.\n\nReturns:\n- totalIncome, totalExpense, totalMaterialExpense, totalLabourCost, totalContractExpense\n- profitLoss\n- labourPlusAmount (total salary owed to workers)\n- labourAmountToPay (unpaid salary)\n- todayAttendance, todayPresent, todayAbsent, todayExpense\n- activeProjects, activeWorkers\n- topProjects[]\n- recentTransactions[]"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Workers",
+      "item": [
+        {
+          "name": "List Workers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/workers?name=&status=Active&roleId=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workers"],
+              "query": [
+                { "key": "name", "value": "", "description": "Filter by name (partial match)" },
+                { "key": "status", "value": "Active", "description": "Active | Inactive" },
+                { "key": "roleId", "value": "", "description": "Filter by role ID (number)" }
+              ]
+            },
+            "description": "List all workers with optional filters. All query params are optional."
+          }
+        },
+        {
+          "name": "Get Worker",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/workers/{{workerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workers", "{{workerId}}"]
+            },
+            "description": "Get a single worker by ID."
+          }
+        },
+        {
+          "name": "Create Worker",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/workers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workers"]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "name", "value": "Ramesh Kumar", "type": "text", "description": "Required. Min 2 chars." },
+                { "key": "phone", "value": "9876543210", "type": "text", "description": "Optional. Mobile number." },
+                { "key": "costPerDay", "value": "500", "type": "text", "description": "Required. Daily wage in rupees." },
+                { "key": "roleId", "value": "1", "type": "text", "description": "Required. ID from /api/roles." },
+                { "key": "status", "value": "Active", "type": "text", "description": "Optional. Active | Inactive (default: Active)" },
+                { "key": "contractTradeId", "value": "", "type": "text", "description": "Optional. ID from /api/contract-trades. For contract workers.", "disabled": true },
+                { "key": "photo", "type": "file", "src": "", "description": "Optional. Worker photo (JPEG/PNG, max 5MB).", "disabled": true }
+              ]
+            },
+            "description": "Create a new worker. Must use multipart/form-data (not JSON) because of photo upload support."
+          }
+        },
+        {
+          "name": "Update Worker",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/workers/{{workerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workers", "{{workerId}}"]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "name", "value": "Ramesh Kumar Updated", "type": "text" },
+                { "key": "phone", "value": "9999999999", "type": "text" },
+                { "key": "costPerDay", "value": "600", "type": "text" },
+                { "key": "roleId", "value": "1", "type": "text" },
+                { "key": "status", "value": "Active", "type": "text", "description": "Active | Inactive" },
+                { "key": "contractTradeId", "value": "", "type": "text", "disabled": true },
+                { "key": "photo", "type": "file", "src": "", "disabled": true }
+              ]
+            },
+            "description": "Update an existing worker. All fields are optional. Use multipart/form-data."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "item": [
+        {
+          "name": "List Projects",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects?name=&type=&status=Active",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects"],
+              "query": [
+                { "key": "name", "value": "", "description": "Filter by name (partial match)" },
+                { "key": "type", "value": "", "description": "Filter by project type" },
+                { "key": "status", "value": "Active", "description": "Active | Completed | OnHold" }
+              ]
+            },
+            "description": "List all projects. All query params are optional."
+          }
+        },
+        {
+          "name": "Get Project",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/{{projectId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "{{projectId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Project",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Construction Project\",\n  \"startDate\": \"2025-01-01\",\n  \"expectedEndDate\": \"2025-12-31\",\n  \"type\": \"Residential\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Create a new project.\n\nCommon type values: Residential | Commercial | Industrial | Renovation | Infrastructure\n\nexpectedEndDate is optional."
+          }
+        },
+        {
+          "name": "Update Project",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/{{projectId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "{{projectId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Project Name\",\n  \"startDate\": \"2025-01-01\",\n  \"expectedEndDate\": \"2025-12-31\",\n  \"type\": \"Residential\",\n  \"status\": \"Active\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Update a project. All fields are optional.\n\nstatus values: Active | Completed | OnHold"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Roles",
+      "item": [
+        {
+          "name": "List Roles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "roles"]
+            },
+            "description": "List all roles for the current user. Default roles (e.g., Labour, Supervisor, Mason) are auto-created on first call."
+          }
+        },
+        {
+          "name": "Create Role",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "roles"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Welder\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Create a new worker role. Name must be unique (case-insensitive), 2–100 characters."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contract Trades",
+      "item": [
+        {
+          "name": "List Contract Trades",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/contract-trades",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "contract-trades"]
+            },
+            "description": "List all contract trade/work types. Default trades are auto-created on first call."
+          }
+        },
+        {
+          "name": "Create Contract Trade",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/contract-trades",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "contract-trades"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Plumbing\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Create a new contract trade type. Name must be unique (case-insensitive), 2–100 characters."
+          }
+        },
+        {
+          "name": "Delete Contract Trade",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/contract-trades/{{tradeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "contract-trades", "{{tradeId}}"]
+            },
+            "description": "Delete a contract trade type.\n\nWill return 409 if any workers or expenses are linked to it. Reassign or remove them first."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Attendance",
+      "item": [
+        {
+          "name": "List Attendance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance?workerId=&projectId=&startDate=2025-01-01&endDate=2025-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance"],
+              "query": [
+                { "key": "workerId", "value": "", "description": "Filter by worker ID" },
+                { "key": "projectId", "value": "", "description": "Filter by project ID" },
+                { "key": "startDate", "value": "2025-01-01", "description": "YYYY-MM-DD" },
+                { "key": "endDate", "value": "2025-12-31", "description": "YYYY-MM-DD" }
+              ]
+            },
+            "description": "List attendance records. All filters are optional and combinable."
+          }
+        },
+        {
+          "name": "Mark Full Day Attendance",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workerId\": 1,\n  \"projectId\": 1,\n  \"date\": \"2025-06-13\",\n  \"type\": \"FullDay\",\n  \"salary\": 500,\n  \"payment\": 0,\n  \"overtime\": 0,\n  \"paymentNote\": \"\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Mark worker attendance for a day.\n\n**type values:** FullDay | HalfDay | Absent | Other\n\n**Fields:**\n- salary: wage earned (credited to worker's ledger balance)\n- payment: cash paid on the spot (debited, reduces balance)\n- overtime: extra pay in rupees\n- paymentNote: note for the cash payment (e.g., 'Advance')\n\nFor Absent: salary/payment/overtime are typically 0 or omitted."
+          }
+        },
+        {
+          "name": "Mark Half Day (Split Across 2 Projects)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workerId\": 1,\n  \"projectId\": 1,\n  \"date\": \"2025-06-13\",\n  \"type\": \"HalfDay\",\n  \"salary\": 250,\n  \"payment\": 0,\n  \"overtime\": 0,\n  \"secondProjectId\": 2\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Mark a half-day split across two projects. Creates two linked attendance records (one per project).\n\nThe records are linked via `primarySplitId`. The salary (250) is recorded for the primary project; a matching half-day record is auto-created for the secondProjectId."
+          }
+        },
+        {
+          "name": "Mark Absent",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workerId\": 1,\n  \"projectId\": 1,\n  \"date\": \"2025-06-13\",\n  \"type\": \"Absent\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Mark Other (Non-standard Day)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workerId\": 1,\n  \"projectId\": 1,\n  \"date\": \"2025-06-13\",\n  \"type\": \"Other\",\n  \"salary\": 300,\n  \"payment\": 0,\n  \"overtime\": 0,\n  \"paymentNote\": \"Custom work\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "For custom/non-standard attendance entries (e.g., partial day, travel, etc.)."
+          }
+        },
+        {
+          "name": "Update Attendance",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/{{attendanceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "{{attendanceId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"FullDay\",\n  \"salary\": 550,\n  \"payment\": 200,\n  \"overtime\": 50,\n  \"paymentNote\": \"Advance\",\n  \"removeSplit\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Update an existing attendance record. All fields are optional.\n\n`removeSplit: true` — breaks a split half-day pair, converting it to a single-project half-day record.\n\nCan also change `projectId`, `date`, `secondProjectId` to re-assign the record."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ledger",
+      "item": [
+        {
+          "name": "Get Worker Ledger",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ledger/{{workerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ledger", "{{workerId}}"]
+            },
+            "description": "Get the full ledger for a worker.\n\nReturns: `{ worker, ledger[], currentBalance }`\n\nEach ledger entry includes `runningBalance`.\n\n**Balance interpretation:**\n- `currentBalance > 0` → Worker is owed money (you owe the worker)\n- `currentBalance < 0` → Advance paid (worker owes you, or you paid ahead)\n- `currentBalance = 0` → Settled"
+          }
+        },
+        {
+          "name": "Add Ledger Entry — Credit (Earning)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/ledger",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ledger"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workerId\": 1,\n  \"amount\": 1000,\n  \"type\": \"Credit\",\n  \"category\": \"Bonus\",\n  \"remarks\": \"Festival bonus\",\n  \"comment\": \"Diwali 2025\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Manually add a credit entry (worker earned something).\n\n**type:** Credit | Debit\n\n**Credit categories:** Salary | Bonus | Contract | Overtime | Other\n**Debit categories:** Payment | Other\n\n**Credit** = worker is owed more (increases balance)\n**Debit** = payment made to worker (decreases balance)\n\nNOTE: Salary/Overtime credits are usually auto-created from attendance. Use manual entries for bonuses, adjustments, or direct payments."
+          }
+        },
+        {
+          "name": "Add Ledger Entry — Debit (Payment)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/ledger",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ledger"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workerId\": 1,\n  \"amount\": 5000,\n  \"type\": \"Debit\",\n  \"category\": \"Payment\",\n  \"remarks\": \"Weekly payment\",\n  \"comment\": \"\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Record a cash payment made to the worker. Reduces their ledger balance."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Finance",
+      "item": [
+        {
+          "name": "Income",
+          "item": [
+            {
+              "name": "List Project Income",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/finance/projects/{{projectId}}/income",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "finance", "projects", "{{projectId}}", "income"]
+                },
+                "description": "Get all income entries for a project."
+              }
+            },
+            {
+              "name": "Add Project Income",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/finance/projects/{{projectId}}/income",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "finance", "projects", "{{projectId}}", "income"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 50000,\n  \"date\": \"2025-06-13\",\n  \"paymentMode\": \"Cash\",\n  \"remarks\": \"1st installment from client\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "description": "Record income received for a project.\n\n**paymentMode:** Cash | UPI | Bank Transfer | Cheque\n\n`remarks` is optional notes about this payment."
+              }
+            },
+            {
+              "name": "Update Income",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/finance/income/{{incomeId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "finance", "income", "{{incomeId}}"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 55000,\n  \"date\": \"2025-06-14\",\n  \"paymentMode\": \"UPI\",\n  \"remarks\": \"Updated 1st installment\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            },
+            {
+              "name": "Delete Income",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/finance/income/{{incomeId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "finance", "income", "{{incomeId}}"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Expenses",
+          "item": [
+            {
+              "name": "List Project Expenses",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/finance/projects/{{projectId}}/expenses",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "finance", "projects", "{{projectId}}", "expenses"]
+                },
+                "description": "Get all expense entries for a project (includes Labour auto-entries from attendance)."
+              }
+            },
+            {
+              "name": "Add Contract Expense",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/finance/projects/{{projectId}}/expenses",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "finance", "projects", "{{projectId}}", "expenses"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 20000,\n  \"remarks\": \"Contract\",\n  \"notes\": \"Tile laying contract\",\n  \"contractTradeId\": 1,\n  \"date\": \"2025-06-13\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "description": "Record a contract work expense.\n\n**remarks (expense category):**\nContract | Cement | Sand | Brick | Steel | Paint | Electrical | Plumbing | Tile | Wood | Glass | Fitting | Other\n\n⚠️ 'Labour' is blocked — labour costs are auto-generated from attendance records.\n\n**Optional fields by category:**\n- Contract: include `contractTradeId`\n- Material (Cement, Sand, etc.): include `vendorId`\n- Worker-linked: include `workerId`"
+              }
+            },
+            {
+              "name": "Add Material Expense",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/finance/projects/{{projectId}}/expenses",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "finance", "projects", "{{projectId}}", "expenses"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 8000,\n  \"remarks\": \"Cement\",\n  \"notes\": \"50 bags OPC 53 grade\",\n  \"vendorId\": 1,\n  \"date\": \"2025-06-13\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "description": "Record a material purchase expense. Link to a vendor optionally."
+              }
+            },
+            {
+              "name": "Add Other Expense",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/finance/projects/{{projectId}}/expenses",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "finance", "projects", "{{projectId}}", "expenses"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 2500,\n  \"remarks\": \"Other\",\n  \"notes\": \"Site transportation charges\",\n  \"date\": \"2025-06-13\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            },
+            {
+              "name": "Update Expense",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": {
+                  "raw": "{{baseUrl}}/api/finance/expenses/{{expenseId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "finance", "expenses", "{{expenseId}}"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 9000,\n  \"remarks\": \"Cement\",\n  \"notes\": \"55 bags OPC\",\n  \"vendorId\": 1,\n  \"date\": \"2025-06-14\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              }
+            },
+            {
+              "name": "Delete Expense",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/finance/expenses/{{expenseId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "finance", "expenses", "{{expenseId}}"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Project Finance Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/finance/projects/{{projectId}}/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "finance", "projects", "{{projectId}}", "summary"]
+            },
+            "description": "Get profit/loss summary for a specific project.\n\nReturns total income, total expenses broken down by category (Labour, Contract, Material, etc.), and net profit/loss."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vendors",
+      "item": [
+        {
+          "name": "List Vendors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/vendors?status=Active",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vendors"],
+              "query": [
+                { "key": "status", "value": "Active", "description": "Active | Inactive (optional)" }
+              ]
+            },
+            "description": "List all vendors. Each vendor includes expense and ledger entry counts."
+          }
+        },
+        {
+          "name": "Get Vendor",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/vendors/{{vendorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vendors", "{{vendorId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Vendor",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/vendors",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vendors"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ramesh Building Materials\",\n  \"phone\": \"9876543210\",\n  \"address\": \"Main Bazar, Indore\",\n  \"notes\": \"Trusted cement and sand supplier\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Create a new vendor (supplier).\n\nOnly `name` is required. phone, address, notes are optional."
+          }
+        },
+        {
+          "name": "Update Vendor",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/vendors/{{vendorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vendors", "{{vendorId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ramesh Building Materials\",\n  \"phone\": \"9876543210\",\n  \"address\": \"Main Bazar, Indore\",\n  \"notes\": \"Updated notes\",\n  \"status\": \"Active\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Update a vendor. All fields are required (PUT replaces the record).\n\n**status:** Active | Inactive"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vendor Ledger",
+      "item": [
+        {
+          "name": "Get Vendor Ledger",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/vendor-ledger/{{vendorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vendor-ledger", "{{vendorId}}"]
+            },
+            "description": "Get the full ledger for a vendor.\n\nReturns: `{ vendor, ledger[], currentBalance }`\n\n**Balance interpretation:**\n- `currentBalance > 0` → You owe the vendor (bills recorded but not fully paid)\n- `currentBalance < 0` → Vendor owes you (advance paid)\n- `currentBalance = 0` → Settled"
+          }
+        },
+        {
+          "name": "Add Vendor Ledger Entry — Credit (Bill Received)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/vendor-ledger",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vendor-ledger"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendorId\": 1,\n  \"amount\": 10000,\n  \"type\": \"Credit\",\n  \"category\": \"Material\",\n  \"remarks\": \"Cement invoice #101\",\n  \"comment\": \"100 bags OPC 53 grade\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Record a vendor bill/invoice (material received, you now owe the vendor).\n\n**type:** Credit | Debit\n**category:** Material | Payment | Other\n\n**Credit** = vendor sent goods/issued bill → your liability increases\n**Debit** = you paid the vendor → liability decreases"
+          }
+        },
+        {
+          "name": "Add Vendor Ledger Entry — Debit (Payment Made)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/vendor-ledger",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vendor-ledger"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendorId\": 1,\n  \"amount\": 5000,\n  \"type\": \"Debit\",\n  \"category\": \"Payment\",\n  \"remarks\": \"Partial payment against invoice #101\",\n  \"comment\": \"\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Record a cash payment made to the vendor."
+          }
+        },
+        {
+          "name": "Update Vendor Ledger Entry",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/vendor-ledger/{{vendorLedgerEntryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vendor-ledger", "{{vendorLedgerEntryId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 11000,\n  \"remarks\": \"Corrected bill amount\",\n  \"comment\": \"110 bags (was 100)\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Update a vendor ledger entry. Only `amount`, `remarks`, and `comment` can be changed. Type and category are locked after creation."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transactions",
+      "item": [
+        {
+          "name": "List All Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions?startDate=2025-01-01&endDate=2025-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions"],
+              "query": [
+                { "key": "startDate", "value": "2025-01-01", "description": "YYYY-MM-DD (optional)" },
+                { "key": "endDate", "value": "2025-12-31", "description": "YYYY-MM-DD (optional)" }
+              ]
+            },
+            "description": "Unified real cash flow view across all money movements.\n\nAggregates from 5 sources:\n1. Worker payments made during attendance\n2. Manual ledger debits (cash paid to workers)\n3. Project expenses (excluding auto Labour entries)\n4. Project income\n5. Vendor ledger entries\n\nReturns: `{ entries[], totalOut, totalIn, count }`\n\n**Entry fields:**\n- `type`: worker_payment | manual_ledger | expense | income | vendor\n- `direction`: 'in' | 'out'\n- `label`, `sublabel`, `note`, `category`, `amount`, `date`, `icon`\n\nAll query params are optional. Without dates, returns all transactions."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Blogs",
+      "item": [
+        {
+          "name": "List Blogs",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/blogs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "blogs"]
+            },
+            "description": "List all published blog posts. No authentication required.\n\nReturns: id, title, slug, metaTitle, metaDescription, image, createdAt"
+          }
+        },
+        {
+          "name": "Get Blog by Slug",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/blogs/how-to-manage-construction-workers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "blogs", "how-to-manage-construction-workers"]
+            },
+            "description": "Get a single published blog post by its URL slug. No authentication required.\n\nReplace the slug in the URL with the actual blog slug from the list endpoint."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            },
+            "description": "Simple server health check. No authentication required. Use this to verify the backend is running."
+          }
+        }
+      ]
+    }
+  ]
+}
