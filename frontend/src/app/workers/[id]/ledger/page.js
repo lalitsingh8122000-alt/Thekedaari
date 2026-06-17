@@ -71,41 +71,45 @@ function generateLedgerPDF(worker, ledger, currentBalance) {
 
   const html = `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Ledger — ${worker.name}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',Arial,sans-serif;color:#1e293b;background:#fff;font-size:11px}
-.page{padding:20px 24px;max-width:297mm;margin:0 auto}
-.header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #2563eb;padding-bottom:14px;margin-bottom:14px}
+body{font-family:'Segoe UI',Arial,sans-serif;color:#1e293b;background:#fff;font-size:13px}
+.page{padding:14px;max-width:100%;margin:0 auto}
+.header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #2563eb;padding-bottom:12px;margin-bottom:12px;flex-wrap:wrap;gap:8px}
 .brand{display:flex;align-items:center;gap:10px}
-.brand-name{font-size:20px;font-weight:900;color:#2563eb;letter-spacing:-.5px}
-.brand-tag{font-size:9px;color:#64748b;margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.6px}
-.rr{text-align:right}.rt{font-size:15px;font-weight:800;color:#1e293b}.rg{font-size:9px;color:#94a3b8;margin-top:3px}
-.wcard{display:flex;align-items:center;gap:14px;background:#f8fafc;border-radius:12px;padding:12px 16px;margin-bottom:12px;border:1px solid #e2e8f0}
-.wphoto{width:50px;height:50px;border-radius:50%;object-fit:cover;flex-shrink:0}
-.wphoto-ph{width:50px;height:50px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:19px;font-weight:900;color:#fff}
-.wname{font-size:16px;font-weight:900;color:#1e293b}.wmeta{font-size:10px;color:#64748b;margin-top:2px}
-.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.sc{border-radius:8px;padding:9px 8px;text-align:center}
+.brand-name{font-size:18px;font-weight:900;color:#2563eb;letter-spacing:-.5px}
+.brand-tag{font-size:10px;color:#64748b;margin-top:2px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.rr{text-align:right}.rt{font-size:14px;font-weight:800;color:#1e293b}.rg{font-size:10px;color:#94a3b8;margin-top:3px}
+.wcard{display:flex;align-items:center;gap:12px;background:#f8fafc;border-radius:12px;padding:10px 12px;margin-bottom:10px;border:1px solid #e2e8f0;flex-wrap:wrap}
+.wphoto{width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.wphoto-ph{width:48px;height:48px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;font-weight:900;color:#fff}
+.wname{font-size:15px;font-weight:900;color:#1e293b}.wmeta{font-size:11px;color:#64748b;margin-top:2px}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.sc{border-radius:8px;padding:9px 6px;text-align:center}
 .sc-earn{background:#dcfce7}.sc-paid{background:#fee2e2}.sc-bal{background:#dbeafe}
 .sc-num{font-weight:900;font-size:12px;line-height:1}
 .sc-earn .sc-num{color:#15803d}.sc-paid .sc-num{color:#dc2626}.sc-bal .sc-num{color:#2563eb}
-.sc-label{font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:#64748b;font-weight:700;margin-top:3px}
-table{width:100%;border-collapse:collapse;font-size:10px}
+.sc-label{font-size:9px;text-transform:uppercase;letter-spacing:.3px;color:#64748b;font-weight:700;margin-top:3px}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;border:1px solid #e2e8f0}
+table{width:100%;border-collapse:collapse;font-size:11px;min-width:520px}
 thead{background:#1e293b;color:#fff}
-thead th{padding:7px 7px;text-align:left;font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+thead th{padding:8px 7px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
 tbody tr:nth-child(even){background:#f8fafc}tbody tr:nth-child(odd){background:#fff}
-tbody td{padding:6px 7px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
-.badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:8.5px;font-weight:700;white-space:nowrap}
+tbody td{padding:7px 7px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+.badge{display:inline-block;padding:3px 7px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap}
 .badge-credit{background:#dcfce7;color:#15803d}.badge-debit{background:#fee2e2;color:#dc2626}
-.footer{margin-top:16px;border-top:1px solid #e2e8f0;padding-top:8px;display:flex;justify-content:space-between;color:#94a3b8;font-size:8.5px}
-.back-btn{display:inline-flex;align-items:center;gap:6px;background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:12px;text-decoration:none}
+.footer{margin-top:14px;border-top:1px solid #e2e8f0;padding-top:8px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;color:#94a3b8;font-size:10px}
+.no-print{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.back-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;flex:1;text-decoration:none}
 .back-btn:hover{background:#2563eb}
-@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{margin:8mm;size:A4 landscape}.no-print{display:none!important}}
+@media(min-width:640px){.page{padding:20px 24px;max-width:297mm}.back-btn{flex:none}}
+@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{margin:8mm;size:A4 landscape}.no-print{display:none!important}.table-wrap{overflow:visible;border:none}table{min-width:unset}}
 </style></head><body>
 <div class="page">
-  <div class="no-print" style="display:flex;gap:10px;margin-bottom:12px;">
-    <button class="back-btn" onclick="window.close()">← Back to Thekedaari</button>
+  <div class="no-print">
+    <button class="back-btn" onclick="window.close()">← Back</button>
     <button class="back-btn" style="background:#16a34a" onclick="window.print()">⬇ Download PDF</button>
   </div>
   <div class="header">
@@ -129,10 +133,12 @@ tbody td{padding:6px 7px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
     <div class="sc sc-paid"><div class="sc-num">₹${totalDebit.toLocaleString('en-IN')}</div><div class="sc-label">Total Paid</div></div>
     <div class="sc sc-bal"><div class="sc-num">₹${Math.abs(currentBalance).toLocaleString('en-IN')}${currentBalance < 0 ? ' (Advance)' : ''}</div><div class="sc-label">Balance</div></div>
   </div>
+  <div class="table-wrap">
   <table>
     <thead><tr><th>Recorded On</th><th>Type</th><th>Category</th><th>Amount</th><th>Work Date</th><th>Note</th><th>Running Balance</th></tr></thead>
     <tbody>${rowsHtml}</tbody>
   </table>
+  </div>
   <div class="footer">
     <span>Thekedaari — Construction Management App</span>
     <span>${worker.name} · Ledger Report</span>
