@@ -647,17 +647,13 @@ export default function AttendancePage() {
 
             <button
               type="button"
-              disabled
-              className="w-full flex flex-col items-center justify-center gap-1.5 py-4 rounded-2xl text-gray-400 text-sm bg-gray-50 border-2 border-dashed border-gray-200 cursor-not-allowed"
+              onClick={handleDownload}
+              disabled={downloading}
+              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-white text-sm bg-primary-600 active:bg-primary-700 disabled:opacity-60 disabled:pointer-events-none transition-colors"
             >
-              <div className="flex items-center gap-2 font-bold">
-                <Download size={20} className="text-gray-300" />
-                Download PDF Report
-              </div>
-              <span className="text-xs bg-amber-100 text-amber-600 border border-amber-200 px-3 py-0.5 rounded-full font-bold">Coming Soon</span>
+              <Download size={20} />
+              {downloading ? 'Generating Report…' : 'Download PDF Report'}
             </button>
-
-            <p className="text-center text-xs text-gray-400">PDF download is coming soon — check back later</p>
           </div>
         )}
       </div>

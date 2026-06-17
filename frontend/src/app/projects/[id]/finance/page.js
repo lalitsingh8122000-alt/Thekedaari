@@ -50,6 +50,7 @@ export default function ProjectFinancePage() {
   const [pendingDelete, setPendingDelete] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deleteSaving, setDeleteSaving] = useState(false);
+  const [expenseFilter, setExpenseFilter] = useState('All');
 
   const load = async () => {
     try {
@@ -201,6 +202,10 @@ export default function ProjectFinancePage() {
   };
 
   const expenseRemarks = ['Cement', 'Sand', 'Brick', 'Steel', 'Aggregate', 'Others'];
+  const expenseFilterOptions = ['All', ...expenseRemarks, 'Contract'];
+  const filteredExpenses = expenseFilter === 'All'
+    ? expenses
+    : expenses.filter((e) => e.remarks === expenseFilter);
 
   const expenseLabel = (remarks) => {
     const map = {
@@ -349,9 +354,29 @@ export default function ProjectFinancePage() {
                     <Plus size={16} /> {t('add_contract_expense')}
                   </button>
                 </div>
-                {expenses.length === 0 ? (
+                <div className="relative">
+                  <div className="pointer-events-none absolute right-0 top-0 bottom-1 w-8 bg-gradient-to-l from-[#f0f4f8] to-transparent z-10" />
+                <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                  {expenseFilterOptions.map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setExpenseFilter(opt)}
+                      className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                        expenseFilter === opt
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      {opt === 'All' ? t('all') : expenseLabel(opt)}
+                    </button>
+                  ))}
+                </div>
+                </div>
+
+                {filteredExpenses.length === 0 ? (
                   <div className="card text-center py-8 text-gray-400">{t('no_data')}</div>
-                ) : expenses.map((e) => (
+                ) : filteredExpenses.map((e) => (
                   <div key={e.id} className="card">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">

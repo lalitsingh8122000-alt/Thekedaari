@@ -1,11 +1,147 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Plus, TrendingUp, Banknote, X, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, TrendingUp, Banknote, X, Download } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
 import api from '@/lib/api';
 import { parsePositiveAmount } from '@/lib/validation';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL
+  ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '')
+  : 'http://localhost:5000';
+
+const fmtDay = (iso) => (iso ? new Date(iso).toLocaleDateString('en-IN') : '');
+const fmtAmt = (n) => '₹' + Math.abs(n || 0).toLocaleString('en-IN');
+
+function categoryLabel(cat) {
+  const map = { Salary: 'Salary', Overtime: 'Overtime', Bonus: 'Bonus', Payment: 'Payment', Contract: 'Contract (Theka)', Other: 'Other' };
+  return map[cat] || cat;
+}
+
+function writePDFToWindow(html) {
+  const w = window.open('', '_blank', 'width=1200,height=800');
+  if (w && !w.closed) {
+    w.document.write(html);
+    w.document.close();
+  } else {
+    const prev = document.getElementById('__ledger_print_wrapper__');
+    if (prev) prev.remove();
+    const wrapper = document.createElement('div');
+    wrapper.id = '__ledger_print_wrapper__';
+    wrapper.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;';
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'flex:1;border:none;width:100%;';
+    iframe.srcdoc = html;
+    wrapper.appendChild(iframe);
+    document.body.appendChild(wrapper);
+    iframe.addEventListener('load', () => {
+      try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch { /* unsupported */ }
+      const cleanup = () => { wrapper.remove(); window.removeEventListener('focus', cleanup); };
+      setTimeout(() => window.addEventListener('focus', cleanup), 1500);
+    });
+  }
+}
+
+function generateLedgerPDF(worker, ledger, currentBalance) {
+  const logoUrl = window.location.origin + '/thekedaari-logo.png';
+  const now = new Date().toLocaleDateString('en-IN', {
+    day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
+  const photoSrc = worker.photo ? `${API_BASE}/uploads/${worker.photo}` : null;
+  const initial = (worker.name || 'W').charAt(0).toUpperCase();
+  const totalCredit = ledger.filter((e) => e.type === 'Credit').reduce((s, e) => s + (e.amount || 0), 0);
+  const totalDebit  = ledger.filter((e) => e.type === 'Debit').reduce((s, e) => s + (e.amount || 0), 0);
+
+  const rowsHtml = ledger.map((e) => {
+    const isCredit = e.type === 'Credit';
+    const workDate = e.attendance?.date ? fmtDay(e.attendance.date) : (e.expense?.date ? fmtDay(e.expense.date) : '—');
+    const note = [e.remarks, e.comment].filter(Boolean).join(' · ') || '—';
+    return `
+    <tr>
+      <td>${fmtDay(e.createdAt)}</td>
+      <td><span class="badge ${isCredit ? 'badge-credit' : 'badge-debit'}">${isCredit ? 'Earned' : 'Paid'}</span></td>
+      <td>${categoryLabel(e.category)}</td>
+      <td style="color:${isCredit ? '#15803d' : '#dc2626'};font-weight:700">${isCredit ? '+' : '−'}${fmtAmt(e.amount)}</td>
+      <td>${workDate}</td>
+      <td style="color:#64748b;font-size:9px;max-width:160px">${note}</td>
+      <td style="font-weight:600">${fmtAmt(e.runningBalance)}</td>
+    </tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/>
+<title>Ledger — ${worker.name}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Arial,sans-serif;color:#1e293b;background:#fff;font-size:11px}
+.page{padding:20px 24px;max-width:297mm;margin:0 auto}
+.header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #2563eb;padding-bottom:14px;margin-bottom:14px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-name{font-size:20px;font-weight:900;color:#2563eb;letter-spacing:-.5px}
+.brand-tag{font-size:9px;color:#64748b;margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.6px}
+.rr{text-align:right}.rt{font-size:15px;font-weight:800;color:#1e293b}.rg{font-size:9px;color:#94a3b8;margin-top:3px}
+.wcard{display:flex;align-items:center;gap:14px;background:#f8fafc;border-radius:12px;padding:12px 16px;margin-bottom:12px;border:1px solid #e2e8f0}
+.wphoto{width:50px;height:50px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.wphoto-ph{width:50px;height:50px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:19px;font-weight:900;color:#fff}
+.wname{font-size:16px;font-weight:900;color:#1e293b}.wmeta{font-size:10px;color:#64748b;margin-top:2px}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.sc{border-radius:8px;padding:9px 8px;text-align:center}
+.sc-earn{background:#dcfce7}.sc-paid{background:#fee2e2}.sc-bal{background:#dbeafe}
+.sc-num{font-weight:900;font-size:12px;line-height:1}
+.sc-earn .sc-num{color:#15803d}.sc-paid .sc-num{color:#dc2626}.sc-bal .sc-num{color:#2563eb}
+.sc-label{font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:#64748b;font-weight:700;margin-top:3px}
+table{width:100%;border-collapse:collapse;font-size:10px}
+thead{background:#1e293b;color:#fff}
+thead th{padding:7px 7px;text-align:left;font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+tbody tr:nth-child(even){background:#f8fafc}tbody tr:nth-child(odd){background:#fff}
+tbody td{padding:6px 7px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+.badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:8.5px;font-weight:700;white-space:nowrap}
+.badge-credit{background:#dcfce7;color:#15803d}.badge-debit{background:#fee2e2;color:#dc2626}
+.footer{margin-top:16px;border-top:1px solid #e2e8f0;padding-top:8px;display:flex;justify-content:space-between;color:#94a3b8;font-size:8.5px}
+.back-btn{display:inline-flex;align-items:center;gap:6px;background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:12px;text-decoration:none}
+.back-btn:hover{background:#2563eb}
+@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{margin:8mm;size:A4 landscape}.no-print{display:none!important}}
+</style></head><body>
+<div class="page">
+  <div class="no-print" style="display:flex;gap:10px;margin-bottom:12px;">
+    <button class="back-btn" onclick="window.close()">← Back to Thekedaari</button>
+    <button class="back-btn" style="background:#16a34a" onclick="window.print()">⬇ Download PDF</button>
+  </div>
+  <div class="header">
+    <div class="brand">
+      <img src="${logoUrl}" alt="Thekedaari" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0">
+      <div><div class="brand-name">Thekedaari</div><div class="brand-tag">Construction Management</div></div>
+    </div>
+    <div class="rr"><div class="rt">Worker Ledger Report</div><div class="rg">Generated: ${now}</div></div>
+  </div>
+  <div class="wcard">
+    ${photoSrc
+      ? `<img src="${photoSrc}" class="wphoto" alt="${worker.name}">`
+      : `<div class="wphoto-ph">${initial}</div>`}
+    <div>
+      <div class="wname">${worker.name}</div>
+      <div class="wmeta">${worker.role?.name || '—'} · ₹${(worker.costPerDay || 0).toLocaleString('en-IN')}/day · ${worker.status || 'Active'}</div>
+    </div>
+  </div>
+  <div class="summary">
+    <div class="sc sc-earn"><div class="sc-num">₹${totalCredit.toLocaleString('en-IN')}</div><div class="sc-label">Total Earned</div></div>
+    <div class="sc sc-paid"><div class="sc-num">₹${totalDebit.toLocaleString('en-IN')}</div><div class="sc-label">Total Paid</div></div>
+    <div class="sc sc-bal"><div class="sc-num">₹${Math.abs(currentBalance).toLocaleString('en-IN')}${currentBalance < 0 ? ' (Advance)' : ''}</div><div class="sc-label">Balance</div></div>
+  </div>
+  <table>
+    <thead><tr><th>Recorded On</th><th>Type</th><th>Category</th><th>Amount</th><th>Work Date</th><th>Note</th><th>Running Balance</th></tr></thead>
+    <tbody>${rowsHtml}</tbody>
+  </table>
+  <div class="footer">
+    <span>Thekedaari — Construction Management App</span>
+    <span>${worker.name} · Ledger Report</span>
+  </div>
+</div>
+</body></html>`;
+
+  writePDFToWindow(html);
+}
 
 const defaultForm = () => ({
   amount: '',
@@ -40,7 +176,6 @@ export default function WorkerLedgerPage() {
   }, [id]);
 
   const fmt = (n) => '₹' + Math.abs(n || 0).toLocaleString('en-IN');
-  const fmtDay = (iso) => (iso ? new Date(iso).toLocaleDateString('en-IN') : '');
 
   const closeModal = () => {
     setShowModal(null);
@@ -134,13 +269,12 @@ export default function WorkerLedgerPage() {
           </div>
           <button
             type="button"
-            disabled
-            title="Coming Soon"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 text-gray-400 border border-gray-200 text-xs font-bold shrink-0 cursor-not-allowed"
+            onClick={() => data && generateLedgerPDF(data.worker, data.ledger || [], data.currentBalance)}
+            disabled={!data || (data.ledger?.length === 0)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-600 text-white text-xs font-bold shrink-0 active:bg-primary-700 disabled:opacity-40 disabled:pointer-events-none"
           >
-            <FileText size={15} />
+            <Download size={15} />
             Report
-            <span className="text-[8px] bg-amber-100 text-amber-600 border border-amber-200 px-1.5 py-0.5 rounded-full font-bold leading-none">Soon</span>
           </button>
         </div>
 
