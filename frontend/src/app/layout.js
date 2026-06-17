@@ -4,14 +4,14 @@ import { getSiteUrl } from '@/lib/siteUrl';
 
 export const metadata = {
   metadataBase: new URL(getSiteUrl()),
-  title: 'ठेकेदार - Thekedaar',
+  title: 'Thekedaari',
   description: 'Construction Workforce & Project Management System',
   manifest: '/manifest.json',
-  applicationName: 'Thekedaar',
+  applicationName: 'Thekedaari',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Thekedaar',
+    title: 'Thekedaari',
   },
   icons: {
     icon: [

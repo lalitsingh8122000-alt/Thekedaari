@@ -243,7 +243,7 @@ export default function WorkerLedgerPage() {
     return t('ledger_settled');
   };
 
-  /** Signed balance: >0 = worker is owed (burden on thekedaar) → red; <0 = advance / thekedaar paid ahead → green */
+  /** Signed balance: >0 = worker is owed (burden on thekedaari) → red; <0 = advance / thekedaari paid ahead → green */
   const balanceTone = (balance) => {
     if (balance > 0) {
       return {
