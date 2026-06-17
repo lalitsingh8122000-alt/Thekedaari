@@ -133,7 +133,7 @@ table{min-width:unset}
 <body>
 <div class="page">
   <div class="no-print">
-    <button class="back-btn" onclick="window.close()">← Back</button>
+    <button class="back-btn" onclick="window.parent!==window?window.parent.document.getElementById('__att_print_wrapper__').remove():window.close()">← Back</button>
     <button class="back-btn" style="background:#16a34a;" onclick="window.print()">⬇ Download PDF</button>
   </div>
   <div class="header">

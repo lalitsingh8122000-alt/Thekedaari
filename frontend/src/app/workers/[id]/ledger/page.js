@@ -109,7 +109,7 @@ tbody td{padding:7px 7px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
 </style></head><body>
 <div class="page">
   <div class="no-print">
-    <button class="back-btn" onclick="window.close()">← Back</button>
+    <button class="back-btn" onclick="window.parent!==window?window.parent.document.getElementById('__ledger_print_wrapper__').remove():window.close()">← Back</button>
     <button class="back-btn" style="background:#16a34a" onclick="window.print()">⬇ Download PDF</button>
   </div>
   <div class="header">
