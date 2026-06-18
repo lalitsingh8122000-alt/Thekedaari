@@ -4,7 +4,6 @@ const auth = require('../middleware/auth');
 const { sendServerError } = require('../utils/serverError');
 const {
   VALID_PAYMENT_MODES,
-  VALID_EXPENSE_REMARKS,
   normalizeString,
   parseAmount,
   parseId,
@@ -108,7 +107,7 @@ router.post('/projects/:id/expenses', auth, async (req, res) => {
     if (amount <= 0 || amount > 100000000) {
       return res.status(400).json({ error: 'Amount must be between 1 and 10,00,00,000' });
     }
-    if (!VALID_EXPENSE_REMARKS.has(remarks)) return res.status(400).json({ error: 'Invalid expense category' });
+    if (remarks.length > 100) return res.status(400).json({ error: 'Category name cannot exceed 100 characters' });
     if (remarks === 'Labour') {
       return res.status(400).json({
         error: 'Labour cost is recorded from attendance. Add cement, sand, or other expenses here.',
@@ -345,7 +344,7 @@ router.patch('/expenses/:expenseId', auth, async (req, res) => {
     if (amount <= 0 || amount > 100000000) {
       return res.status(400).json({ error: 'Amount must be between 1 and 10,00,00,000' });
     }
-    if (!VALID_EXPENSE_REMARKS.has(remarks)) return res.status(400).json({ error: 'Invalid expense category' });
+    if (remarks.length > 100) return res.status(400).json({ error: 'Category name cannot exceed 100 characters' });
     if (remarks === 'Labour') {
       return res.status(400).json({
         error: 'Labour cost is recorded from attendance. Add cement, sand, or other expenses here.',

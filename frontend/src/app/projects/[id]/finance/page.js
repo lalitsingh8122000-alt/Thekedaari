@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
   ArrowLeft, Plus, TrendingUp, TrendingDown, Save,
-  ArrowUpCircle, ArrowDownCircle, X, Pencil, Trash2, Store,
+  ArrowUpCircle, ArrowDownCircle, X, Pencil, Trash2, Store, Download,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppShell from '@/components/AppShell';
@@ -35,6 +35,7 @@ export default function ProjectFinancePage() {
     date: new Date().toISOString().split('T')[0],
     paymentMode: 'Cash',
     remarks: '',
+    customRemarks: '',
     notes: '',
     vendorId: '',
   });
@@ -76,7 +77,7 @@ export default function ProjectFinancePage() {
   const fmt = (n) => '₹' + (n || 0).toLocaleString('en-IN');
 
   const resetForm = () => {
-    setForm({ amount: '', date: new Date().toISOString().split('T')[0], paymentMode: 'Cash', remarks: '', notes: '', vendorId: '' });
+    setForm({ amount: '', date: new Date().toISOString().split('T')[0], paymentMode: 'Cash', remarks: '', customRemarks: '', notes: '', vendorId: '' });
     setContractForm({
       contractorId: '',
       contractTradeId: '',
@@ -144,6 +145,7 @@ export default function ProjectFinancePage() {
     if (!amount) return setError('Please enter a valid amount');
     if (!isValidDateInput(form.date)) return setError('Please select a valid date');
     if (showModal === 'expense' && !form.remarks) return setError('Please select an expense category');
+    if (showModal === 'expense' && form.remarks === 'Others' && !form.customRemarks.trim()) return setError('Please specify the item name (e.g. Color, Paint, Tiles)');
     if (showModal === 'income' && form.remarks.trim().length > 500) return setError('Remarks cannot exceed 500 characters');
     if (showModal === 'expense' && form.notes.trim().length > 2000) return setError('Notes cannot exceed 2000 characters');
     setSaving(true);
@@ -156,10 +158,11 @@ export default function ProjectFinancePage() {
           await api.post(`/finance/projects/${id}/income`, payload);
         }
       } else {
+        const finalRemarks = form.remarks === 'Others' ? form.customRemarks.trim() : form.remarks;
         const body = {
           amount,
           date: form.date,
-          remarks: form.remarks,
+          remarks: finalRemarks,
           notes: form.notes.trim(),
         };
         if (form.vendorId) body.vendorId = parseInt(form.vendorId, 10);
@@ -202,10 +205,13 @@ export default function ProjectFinancePage() {
   };
 
   const expenseRemarks = ['Cement', 'Sand', 'Brick', 'Steel', 'Aggregate', 'Others'];
+  const fixedExpenseRemarks = new Set(['Cement', 'Sand', 'Brick', 'Steel', 'Aggregate']);
   const expenseFilterOptions = ['All', ...expenseRemarks, 'Contract'];
   const filteredExpenses = expenseFilter === 'All'
     ? expenses
-    : expenses.filter((e) => e.remarks === expenseFilter);
+    : expenseFilter === 'Others'
+      ? expenses.filter((e) => !fixedExpenseRemarks.has(e.remarks) && e.remarks !== 'Contract')
+      : expenses.filter((e) => e.remarks === expenseFilter);
 
   const expenseLabel = (remarks) => {
     const map = {
@@ -218,6 +224,145 @@ export default function ProjectFinancePage() {
       Contract: t('contract_theka'),
     };
     return map[remarks] || remarks;
+  };
+
+  function writePDFToWindow(html) {
+    const w = window.open('', '_blank', 'width=1200,height=800');
+    if (w && !w.closed) {
+      w.document.write(html);
+      w.document.close();
+    } else {
+      const prev = document.getElementById('__finance_print_wrapper__');
+      if (prev) prev.remove();
+      const wrapper = document.createElement('div');
+      wrapper.id = '__finance_print_wrapper__';
+      wrapper.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;';
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = 'flex:1;border:none;width:100%;';
+      iframe.srcdoc = html;
+      wrapper.appendChild(iframe);
+      document.body.appendChild(wrapper);
+      iframe.addEventListener('load', () => {
+        try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch { /* unsupported */ }
+        const cleanup = () => { wrapper.remove(); window.removeEventListener('focus', cleanup); };
+        setTimeout(() => window.addEventListener('focus', cleanup), 1500);
+      });
+    }
+  }
+
+  const handleDownloadReport = () => {
+    if (!summary) return;
+    const logoUrl = window.location.origin + '/thekedaari-logo.png';
+    const now = new Date().toLocaleDateString('en-IN', {
+      day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    });
+    const fmtDate = (d) => new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    const fmtRs = (n) => '₹' + (n || 0).toLocaleString('en-IN');
+    const profitColor = summary.profitLoss >= 0 ? '#16a34a' : '#dc2626';
+    const profitLabel = summary.profitLoss >= 0 ? t('profit') : t('loss');
+    const hasContract = summary.totalContractExpense > 0;
+
+    const incomeRowsHtml = incomes.map((i) => `
+      <tr>
+        <td>${fmtDate(i.date)}</td>
+        <td style="color:#16a34a;font-weight:700">${fmtRs(i.amount)}</td>
+        <td>${i.paymentMode === 'Cash' ? t('cash') : t('online')}</td>
+        <td style="color:#64748b;font-size:9px">${i.remarks || '—'}</td>
+      </tr>`).join('');
+
+    const expenseRowsHtml = expenses.map((e) => `
+      <tr>
+        <td>${fmtDate(e.date)}</td>
+        <td>${expenseLabel(e.remarks)}</td>
+        <td style="color:#dc2626;font-weight:700">${fmtRs(e.amount)}</td>
+        <td style="color:#64748b">${e.vendor?.name || e.worker?.name || '—'}</td>
+        <td style="color:#64748b;font-size:9px">${e.notes || '—'}</td>
+      </tr>`).join('');
+
+    const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Expense Report — ${summary.project.name}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Arial,sans-serif;color:#1e293b;background:#fff;font-size:13px}
+.page{padding:14px;max-width:100%;margin:0 auto}
+.header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #2563eb;padding-bottom:12px;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-name{font-size:18px;font-weight:900;color:#2563eb;letter-spacing:-.5px}
+.brand-tag{font-size:10px;color:#64748b;margin-top:2px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.rr{text-align:right}.rt{font-size:14px;font-weight:800;color:#1e293b}.rg{font-size:10px;color:#94a3b8;margin-top:3px}
+.proj-row{background:#f1f5f9;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px}
+.proj-name{font-weight:900;font-size:15px;color:#1e293b}.proj-meta{font-size:10px;color:#64748b;margin-top:2px}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
+.sc{border-radius:8px;padding:8px 4px;text-align:center}
+.sc-income{background:#dcfce7}.sc-material{background:#fee2e2}.sc-labour{background:#ffedd5}
+.sc-contract{background:#fef9c3}.sc-total{background:#fecaca}.sc-pl{background:#dbeafe}
+.sc-loss{background:#fecaca}
+.sc-num{font-weight:900;font-size:12px;line-height:1}
+.sc-income .sc-num{color:#16a34a}.sc-material .sc-num{color:#dc2626}.sc-labour .sc-num{color:#ea580c}
+.sc-contract .sc-num{color:#a16207}.sc-total .sc-num{color:#b91c1c}
+.sc-pl .sc-num{color:#2563eb}.sc-loss .sc-num{color:#dc2626}
+.sc-label{font-size:9px;text-transform:uppercase;letter-spacing:.3px;color:#64748b;font-weight:700;margin-top:3px}
+.section-title{font-size:11px;font-weight:800;color:#1e293b;margin:12px 0 5px;padding-left:8px;border-left:3px solid #2563eb;text-transform:uppercase;letter-spacing:.4px}
+.section-title.green{border-color:#16a34a}.section-title.red{border-color:#ef4444}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:11px;min-width:480px}
+thead{background:#1e293b;color:#fff}
+thead th{padding:8px 7px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+tbody tr:nth-child(even){background:#f8fafc}tbody tr:nth-child(odd){background:#fff}
+tbody td{padding:7px 7px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+.footer{margin-top:14px;border-top:1px solid #e2e8f0;padding-top:8px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;color:#94a3b8;font-size:10px}
+.no-print{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.back-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;flex:1;text-decoration:none}
+.back-btn:hover{background:#2563eb}
+@media(min-width:640px){.page{padding:20px 24px;max-width:297mm}.summary{grid-template-columns:repeat(${hasContract ? 6 : 5},1fr)}.back-btn{flex:none}}
+@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{margin:8mm;size:A4 landscape}.no-print{display:none!important}.table-wrap{overflow:visible;border:none}table{min-width:unset}}
+</style></head><body>
+<div class="page">
+  <div class="no-print">
+    <button class="back-btn" onclick="window.parent!==window?window.parent.document.getElementById('__finance_print_wrapper__').remove():window.close()">← Back</button>
+    <button class="back-btn" style="background:#16a34a" onclick="window.print()">⬇ Download PDF</button>
+  </div>
+  <div class="header">
+    <div class="brand">
+      <img src="${logoUrl}" alt="Thekedaari" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0">
+      <div><div class="brand-name">Thekedaari</div><div class="brand-tag">Construction Management</div></div>
+    </div>
+    <div class="rr"><div class="rt">Expense Report</div><div class="rg">Generated: ${now}</div></div>
+  </div>
+  <div class="proj-row">
+    <div class="proj-name">${summary.project.name}</div>
+    <div class="proj-meta">${t('total_income')}: ${fmtRs(summary.totalIncome)} &nbsp;&middot;&nbsp; ${t('total_expense')}: ${fmtRs(summary.totalExpense)} &nbsp;&middot;&nbsp; ${profitLabel}: ${fmtRs(Math.abs(summary.profitLoss))}</div>
+  </div>
+  <div class="summary">
+    <div class="sc sc-income"><div class="sc-num">${fmtRs(summary.totalIncome)}</div><div class="sc-label">${t('total_income')}</div></div>
+    <div class="sc sc-material"><div class="sc-num">${fmtRs(summary.totalMaterialExpense)}</div><div class="sc-label">${t('material_expense')}</div></div>
+    <div class="sc sc-labour"><div class="sc-num">${fmtRs(summary.totalLabourCost)}</div><div class="sc-label">${t('labour_cost')}</div></div>
+    ${hasContract ? `<div class="sc sc-contract"><div class="sc-num">${fmtRs(summary.totalContractExpense)}</div><div class="sc-label">${t('contract_theka')}</div></div>` : ''}
+    <div class="sc sc-total"><div class="sc-num">${fmtRs(summary.totalExpense)}</div><div class="sc-label">${t('total_expense')}</div></div>
+    <div class="sc ${summary.profitLoss >= 0 ? 'sc-pl' : 'sc-loss'}"><div class="sc-num" style="color:${profitColor}">${fmtRs(Math.abs(summary.profitLoss))}</div><div class="sc-label">${profitLabel}</div></div>
+  </div>
+  ${incomes.length > 0 ? `
+  <div class="section-title green">${t('income')} (${incomes.length})</div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>${t('date')}</th><th>${t('amount')}</th><th>${t('payment_mode')}</th><th>${t('remarks')}</th></tr></thead>
+    <tbody>${incomeRowsHtml}</tbody>
+  </table></div>` : ''}
+  ${expenses.length > 0 ? `
+  <div class="section-title red">${t('expense')} (${expenses.length})</div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>${t('date')}</th><th>${t('remarks')}</th><th>${t('amount')}</th><th>${t('vendor')} / ${t('contractor')}</th><th>${t('notes')}</th></tr></thead>
+    <tbody>${expenseRowsHtml}</tbody>
+  </table></div>` : ''}
+  <div class="footer">
+    <span>Thekedaari — Construction Management App</span>
+    <span>${summary.project.name} · Expense Report</span>
+  </div>
+</div>
+</body></html>`;
+
+    writePDFToWindow(html);
   };
 
   return (
@@ -287,6 +432,7 @@ export default function ProjectFinancePage() {
                     {fmt(Math.abs(summary.profitLoss))} <span className="text-sm sm:text-base">{summary.profitLoss >= 0 ? t('profit') : t('loss')}</span>
                   </p>
                 </div>
+
               </div>
             )}
 
@@ -354,6 +500,14 @@ export default function ProjectFinancePage() {
                     <Plus size={16} /> {t('add_contract_expense')}
                   </button>
                 </div>
+                <button
+                  type="button"
+                  onClick={handleDownloadReport}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm bg-primary-600 text-white active:bg-primary-700 transition-colors"
+                >
+                  <Download size={18} />
+                  {t('download_report')}
+                </button>
                 <div className="relative">
                   <div className="pointer-events-none absolute right-0 top-0 bottom-1 w-8 bg-gradient-to-l from-[#f0f4f8] to-transparent z-10" />
                 <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
@@ -403,11 +557,13 @@ export default function ProjectFinancePage() {
                               });
                               setShowModal('expenseContract');
                             } else {
+                              const isCustom = !fixedExpenseRemarks.has(e.remarks) && e.remarks !== 'Contract' && e.remarks !== 'Others';
                               setForm({
                                 amount: String(e.amount),
                                 date: toDateInput(e.date),
                                 paymentMode: 'Cash',
-                                remarks: e.remarks,
+                                remarks: isCustom ? 'Others' : e.remarks,
+                                customRemarks: isCustom ? e.remarks : '',
                                 notes: e.notes || '',
                                 vendorId: e.vendorId != null ? String(e.vendorId) : '',
                               });
@@ -466,13 +622,13 @@ export default function ProjectFinancePage() {
               {error && <div className="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-xs">{error}</div>}
 
               {showModal === 'expense' && (
-                <div>
+                <div className="space-y-2">
                   <label className="block text-gray-600 font-medium mb-1 text-xs">{t('remarks')}</label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                     {expenseRemarks.map((r) => (
                       <button
                         key={r} type="button"
-                        onClick={() => setForm({ ...form, remarks: r })}
+                        onClick={() => setForm({ ...form, remarks: r, customRemarks: r !== 'Others' ? '' : form.customRemarks })}
                         className={`py-2 rounded-xl font-semibold text-xs transition-colors ${
                           form.remarks === r ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600'
                         }`}
@@ -481,6 +637,20 @@ export default function ProjectFinancePage() {
                       </button>
                     ))}
                   </div>
+                  {form.remarks === 'Others' && (
+                    <div>
+                      <label className="block text-gray-600 font-medium mb-1 text-xs">{t('expense_other_label')}</label>
+                      <input
+                        type="text"
+                        maxLength={100}
+                        autoFocus
+                        className="input-field !py-2 text-sm"
+                        placeholder={t('expense_other_placeholder')}
+                        value={form.customRemarks}
+                        onChange={(e) => setForm({ ...form, customRemarks: e.target.value })}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
