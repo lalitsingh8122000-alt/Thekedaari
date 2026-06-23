@@ -225,6 +225,18 @@ model VendorLedgerEntry {
   @@index([userId])
 }
 
+model ForgotPasswordRequest {
+  id           Int      @id @default(autoincrement())
+  phone        String   @db.VarChar(20)
+  userId       Int?
+  userName     String?  @db.VarChar(100)
+  isRegistered Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@index([phone])
+  @@index([createdAt])
+}
+
 /// SEO blog posts — managed by Prisma migrations so deploys never drop this table
 model Blog {
   id              Int      @id @default(autoincrement())
