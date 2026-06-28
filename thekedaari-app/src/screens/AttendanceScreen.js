@@ -201,6 +201,7 @@ export default function AttendanceScreen({ navigation }) {
   const absent = records.filter((r) => r.type === 'Absent');
   const totalSalary = records.reduce((s, r) => s + (r.salary || 0), 0);
   const totalPaid = records.reduce((s, r) => s + (r.payment || 0), 0);
+  const totalOT = records.reduce((s, r) => s + (r.overtime || 0), 0);
 
   const dlRange = useMemo(() => {
     if (dlMode === 'month') return getMonthRange(dlMonth || currentMonthStr());
@@ -373,6 +374,11 @@ export default function AttendanceScreen({ navigation }) {
                       <Text style={{ fontSize: 11, color: '#ea580c', marginTop: 2 }}>
                         💸 {t('paid')}: ₹{(r.payment || 0).toLocaleString('en-IN')}
                         {r.paymentNote ? ` · ${r.paymentNote}` : ''}
+                      </Text>
+                    )}
+                    {(r.overtime || 0) > 0 && (
+                      <Text style={{ fontSize: 11, color: '#7c3aed', marginTop: 2 }}>
+                        ⏱️ OT: ₹{(r.overtime || 0).toLocaleString('en-IN')}
                       </Text>
                     )}
                   </View>

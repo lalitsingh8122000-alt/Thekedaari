@@ -124,6 +124,8 @@ export default function ProjectAttendanceScreen({ route, navigation }) {
 
   const present = records.filter((r) => r.type !== 'Absent');
   const absent = records.filter((r) => r.type === 'Absent');
+  const totalPaid = records.reduce((s, r) => s + (r.payment || 0), 0);
+  const totalOT = records.reduce((s, r) => s + (r.overtime || 0), 0);
 
   return (
     <SafeAreaView style={styles.safe} edges={[]}>
@@ -275,6 +277,14 @@ export default function ProjectAttendanceScreen({ route, navigation }) {
                     </Text>
                     <Text style={styles.statLbl}>{t('totalSalary')}</Text>
                   </View>
+                  <View style={styles.statPill}>
+                    <Text style={[styles.statNum, { color: '#ea580c' }]}>₹{totalPaid.toLocaleString('en-IN')}</Text>
+                    <Text style={styles.statLbl}>{t('totalPaid')}</Text>
+                  </View>
+                  <View style={styles.statPill}>
+                    <Text style={[styles.statNum, { color: '#a21caf' }]}>₹{totalOT.toLocaleString('en-IN')}</Text>
+                    <Text style={styles.statLbl}>{t('overtime')}</Text>
+                  </View>
                 </View>
               ) : null}
               ListEmptyComponent={
@@ -300,6 +310,11 @@ export default function ProjectAttendanceScreen({ route, navigation }) {
                       <Text style={{ fontSize: 11, color: '#ea580c', marginTop: 2 }}>
                         💸 {t('paid')}: ₹{(r.payment || 0).toLocaleString('en-IN')}
                         {r.paymentNote ? ` · ${r.paymentNote}` : ''}
+                      </Text>
+                    )}
+                    {(r.overtime || 0) > 0 && (
+                      <Text style={{ fontSize: 11, color: '#7c3aed', marginTop: 2 }}>
+                        ⏱️ OT: ₹{(r.overtime || 0).toLocaleString('en-IN')}
                       </Text>
                     )}
                   </View>

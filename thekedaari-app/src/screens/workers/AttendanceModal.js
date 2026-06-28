@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
-  ScrollView, Modal, Pressable, Platform,
+  ScrollView, Modal, Pressable, Platform, KeyboardAvoidingView,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,6 +21,7 @@ export default function AttendanceModal({ worker, onClose, onSaved, preselectedP
     status: 'Present',
     type: 'FullDay',
     salary: String(worker?.costPerDay || ''),
+    overtime: '',
     wantToPay: false,
     payment: '',
     paymentNote: '',
@@ -68,6 +69,7 @@ export default function AttendanceModal({ worker, onClose, onSaved, preselectedP
             status: isAbsent ? 'Absent' : 'Present',
             type: isAbsent ? f.type : (record.type || 'FullDay'),
             salary: split ? String(totalSplitSalary) : String(record.salary ?? f.salary),
+            overtime: record.overtime != null ? String(record.overtime) : f.overtime,
             wantToPay: totalPaid > 0,
             payment: totalPaid > 0 ? String(totalPaid) : '',
             paymentNote: record.paymentNote || '',
@@ -88,7 +90,7 @@ export default function AttendanceModal({ worker, onClose, onSaved, preselectedP
 
   const handleStatus = (s) => {
     if (s === 'Absent') {
-      setForm((f) => ({ ...f, status: 'Absent', salary: '0', secondSite: false, secondProjectId: '' }));
+      setForm((f) => ({ ...f, status: 'Absent', salary: '0', overtime: '', secondSite: false, secondProjectId: '' }));
     } else {
       setForm((f) => ({
         ...f, status: 'Present',
@@ -122,12 +124,14 @@ export default function AttendanceModal({ worker, onClose, onSaved, preselectedP
     }
     setSaving(true);
     try {
+      const overtimeAmt = form.status === 'Absent' ? 0 : parseFloat(form.overtime) || 0;
       const payload = {
         workerId: worker.id,
         projectId: parseInt(form.projectId, 10),
         date: form.date,
         type: finalType,
         salary: salaryAmt,
+        overtime: overtimeAmt,
         payment: payAmt,
         paymentNote: form.wantToPay ? (form.paymentNote || '') : '',
       };
@@ -164,8 +168,11 @@ export default function AttendanceModal({ worker, onClose, onSaved, preselectedP
           <View style={styles.handle} />
 
           <ScrollView
+            style={{ maxHeight: '100%' }}
             contentContainerStyle={[styles.body, { paddingBottom: 24 }]}
-            keyboardShouldPersistTaps="handled"
+            keyboardShouldPersistTaps="always"
+            keyboardDismissMode="on-drag"
+            nestedScrollEnabled
             showsVerticalScrollIndicator={false}
           >
             {/* Header */}
@@ -364,6 +371,17 @@ export default function AttendanceModal({ worker, onClose, onSaved, preselectedP
                     keyboardType="numeric"
                   />
                 </View>
+                <View style={styles.salaryRow}>
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: '#7c3aed' }}>{t('overtime')}</Text>
+                  <TextInput
+                    style={styles.salaryInput}
+                    value={String(form.overtime)}
+                    onChangeText={(v) => setForm((f) => ({ ...f, overtime: v }))}
+                    keyboardType="numeric"
+                    placeholder="0"
+                    placeholderTextColor={Colors.gray400}
+                  />
+                </View>
               </>
             )}
 
@@ -400,7 +418,7 @@ export default function AttendanceModal({ worker, onClose, onSaved, preselectedP
                 </View>
               )}
             </View>
-          </ScrollView>
+            </ScrollView>
 
           {/* Save Button */}
           <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}> 
@@ -435,7 +453,7 @@ const styles = StyleSheet.create({
     maxHeight: '92%',
   },
   handle: { width: 40, height: 4, backgroundColor: Colors.gray200, borderRadius: 2, alignSelf: 'center', marginTop: 10 },
-  body: { padding: 16, paddingBottom: 8, gap: 12 },
+  body: { padding: 16, gap: 12 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontSize: 16, fontWeight: '700', color: Colors.gray800 },
   infoText: { fontSize: 12, color: Colors.gray500, backgroundColor: Colors.gray100, padding: 8, borderRadius: 8 },
