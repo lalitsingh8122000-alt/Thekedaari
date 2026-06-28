@@ -23,6 +23,8 @@ model User {
   ledgers        LedgerEntry[]
   incomes        Income[]
   expenses       Expense[]
+  vendors        Vendor[]
+  vendorLedgers  VendorLedgerEntry[]
 }
 
 model Project {
@@ -160,26 +162,79 @@ model Income {
 }
 
 model Expense {
-  id              Int            @id @default(autoincrement())
-  projectId       Int
-  project         Project        @relation(fields: [projectId], references: [id])
-  amount          Float
-  remarks         String         @db.VarChar(500)
-  notes           String?        @db.Text
-  workerId        Int?
-  worker          Worker?        @relation(fields: [workerId], references: [id])
-  contractTradeId Int?
-  contractTrade   ContractTrade? @relation(fields: [contractTradeId], references: [id])
-  date            DateTime       @default(now())
-  userId          Int
-  user            User           @relation(fields: [userId], references: [id])
-  createdAt       DateTime       @default(now())
-  ledgerEntry     LedgerEntry?
+  id                Int                @id @default(autoincrement())
+  projectId         Int
+  project           Project            @relation(fields: [projectId], references: [id])
+  amount            Float
+  remarks           String             @db.VarChar(500)
+  notes             String?            @db.Text
+  workerId          Int?
+  worker            Worker?            @relation(fields: [workerId], references: [id])
+  contractTradeId   Int?
+  contractTrade     ContractTrade?     @relation(fields: [contractTradeId], references: [id])
+  vendorId          Int?
+  vendor            Vendor?            @relation(fields: [vendorId], references: [id])
+  date              DateTime           @default(now())
+  userId            Int
+  user              User               @relation(fields: [userId], references: [id])
+  createdAt         DateTime           @default(now())
+  ledgerEntry       LedgerEntry?
+  vendorLedgerEntry VendorLedgerEntry?
 
   @@index([projectId])
   @@index([userId])
   @@index([workerId])
   @@index([contractTradeId])
+  @@index([vendorId])
+}
+
+model Vendor {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(200)
+  phone     String?  @db.VarChar(20)
+  address   String?  @db.VarChar(500)
+  notes     String?  @db.Text
+  status    String   @default("Active") @db.VarChar(20)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  expenses      Expense[]
+  ledgerEntries VendorLedgerEntry[]
+
+  @@index([userId])
+}
+
+model VendorLedgerEntry {
+  id        Int      @id @default(autoincrement())
+  vendorId  Int
+  vendor    Vendor   @relation(fields: [vendorId], references: [id])
+  amount    Float
+  type      String   @db.VarChar(20)
+  category  String   @db.VarChar(50)
+  remarks   String?  @db.VarChar(500)
+  comment   String?  @db.Text
+  expenseId Int?     @unique
+  expense   Expense? @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([vendorId])
+  @@index([userId])
+}
+
+model ForgotPasswordRequest {
+  id           Int      @id @default(autoincrement())
+  phone        String   @db.VarChar(20)
+  userId       Int?
+  userName     String?  @db.VarChar(100)
+  isRegistered Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@index([phone])
+  @@index([createdAt])
 }
 
 /// SEO blog posts — managed by Prisma migrations so deploys never drop this table

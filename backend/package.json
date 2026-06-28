@@ -4,6 +4,7 @@
   "description": "Construction Thekedaar Management System - Backend API",
   "main": "src/index.js",
   "scripts": {
+    "predev": "bash scripts/ensure-db.sh",
     "dev": "node src/index.js",
     "start": "node src/index.js",
     "db:push": "node scripts/prisma-with-env.js db push",

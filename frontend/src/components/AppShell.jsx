@@ -6,6 +6,7 @@ import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
 import ProfileModal from './ProfileModal';
+import WhatsNewBanner from './WhatsNewBanner';
 
 export default function AppShell({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -28,6 +29,38 @@ export default function AppShell({ children }) {
       setProfileModalOpen(true);
     }
   }, [pathname]);
+
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const html = document.documentElement;
+    const scrollY = window.scrollY || html.scrollTop;
+    const prev = {
+      bodyPosition: document.body.style.position,
+      bodyTop: document.body.style.top,
+      bodyLeft: document.body.style.left,
+      bodyRight: document.body.style.right,
+      bodyWidth: document.body.style.width,
+      bodyOverflow: document.body.style.overflow,
+      htmlOverflow: html.style.overflow,
+    };
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+    html.style.overflow = 'hidden';
+    return () => {
+      document.body.style.position = prev.bodyPosition;
+      document.body.style.top = prev.bodyTop;
+      document.body.style.left = prev.bodyLeft;
+      document.body.style.right = prev.bodyRight;
+      document.body.style.width = prev.bodyWidth;
+      document.body.style.overflow = prev.bodyOverflow;
+      html.style.overflow = prev.htmlOverflow;
+      window.scrollTo(0, scrollY);
+    };
+  }, [sidebarOpen]);
 
   const closeProfileModal = () => {
     setProfileModalOpen(false);
@@ -57,8 +90,9 @@ export default function AppShell({ children }) {
         onProfileOpen={() => setProfileModalOpen(true)}
       />
       <main className="page-content p-4 max-w-4xl mx-auto">{children}</main>
-      <BottomNav />
+      <BottomNav sidebarOpen={sidebarOpen} />
       <ProfileModal open={profileModalOpen} onClose={closeProfileModal} />
+      <WhatsNewBanner />
     </div>
   );
 }

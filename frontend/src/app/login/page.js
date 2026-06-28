@@ -115,6 +115,16 @@ export default function LoginPage() {
           {loading ? t('loading') : t('login')}
         </button>
 
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={() => router.push('/forgot-password')}
+            className="text-primary-600 hover:text-primary-700 text-sm font-medium hover:underline transition-colors"
+          >
+            {t('forgot_password')}
+          </button>
+        </div>
+
         <p className="text-center text-gray-600 text-[0.9375rem] sm:text-base pt-4 mt-1 border-t border-gray-100">
           {t('no_account')}{' '}
           <button

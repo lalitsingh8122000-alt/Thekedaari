@@ -22,9 +22,14 @@ module.exports = {
           '0%': { opacity: '0', transform: 'translateY(16px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        'fade-in-up': {
+          '0%': { opacity: '0', transform: 'translateY(12px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
       animation: {
         'auth-enter': 'auth-enter 0.55s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'fade-in-up': 'fade-in-up 0.25s ease-out both',
       },
     },
   },

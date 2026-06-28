@@ -1,6 +1,9 @@
 const jwt = require('jsonwebtoken');
+const { PrismaClient } = require('@prisma/client');
 
-function auth(req, res, next) {
+const prisma = new PrismaClient();
+
+async function auth(req, res, next) {
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Access denied. No token provided.' });
@@ -9,6 +12,15 @@ function auth(req, res, next) {
   try {
     const token = header.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true },
+    });
+    if (!user) {
+      return res.status(401).json({ error: 'Session expired. Please log in again.' });
+    }
+
     req.userId = decoded.userId;
     next();
   } catch (err) {

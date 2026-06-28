@@ -6,6 +6,7 @@ const auth = require('../middleware/auth');
 const { normalizeString, normalizePhone, isValidPhone } = require('../utils/validation');
 const { ensureDefaultContractTrades } = require('../utils/defaultContractTrades');
 const { ensureDefaultRoles } = require('../utils/defaultRoles');
+const { sendRouteError } = require('../utils/serverError');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -55,8 +56,7 @@ router.post('/register', async (req, res) => {
       user: { id: user.id, name: user.name, phone: user.phone, createdAt: user.createdAt },
     });
   } catch (err) {
-    console.error('Auth register error:', err);
-    res.status(500).json({ error: 'Server error' });
+    sendRouteError(res, err, 'auth register');
   }
 });
 
@@ -93,8 +93,32 @@ router.post('/login', async (req, res) => {
       user: { id: user.id, name: user.name, phone: user.phone, createdAt: user.createdAt },
     });
   } catch (err) {
-    console.error('Auth login error:', err);
-    res.status(500).json({ error: 'Server error' });
+    sendRouteError(res, err, 'auth login');
+  }
+});
+
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const phone = normalizePhone(req.body.phone);
+    if (!isValidPhone(phone)) {
+      return res.status(400).json({ error: 'Phone number must be exactly 10 digits' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { phone }, select: { id: true, name: true, phone: true } });
+
+    await prisma.forgotPasswordRequest.create({
+      data: {
+        phone,
+        userId:       user ? user.id   : null,
+        userName:     user ? user.name : null,
+        isRegistered: !!user,
+      },
+    });
+
+    // Return the same response whether or not the phone is registered (security best practice)
+    res.json({ success: true });
+  } catch (err) {
+    sendRouteError(res, err, 'auth forgot-password');
   }
 });
 
@@ -107,7 +131,7 @@ router.get('/me', auth, async (req, res) => {
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(user);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    sendRouteError(res, err, 'auth me');
   }
 });
 

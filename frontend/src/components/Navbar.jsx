@@ -1,20 +1,14 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { Menu, LogOut, Phone, Calendar, Download, CheckCircle } from 'lucide-react';
+import { Menu, LogOut, Phone, Calendar, Download } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePwaInstall } from '@/hooks/usePwaInstall';
-import { isLikelyIOS, isLikelyAndroid } from '@/lib/pwaPlatform';
-import { getDeferredPrompt, checkStandalone } from '@/lib/pwaInstallStore';
 
 export default function Navbar({ onMenuClick }) {
   const { lang, switchLang, t } = useLanguage();
   const { user, logout } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
-  const [installHintOpen, setInstallHintOpen] = useState(false);
-  const { isInstalled, installing, promptInstall } = usePwaInstall();
   const profileRef = useRef(null);
-  const installHintTimerRef = useRef(null);
   const hi = lang === 'hi';
 
   useEffect(() => {
@@ -33,58 +27,30 @@ export default function Navbar({ onMenuClick }) {
     };
   }, [profileOpen]);
 
-  useEffect(() => {
-    if (!profileOpen) {
-      setInstallHintOpen(false);
-      if (installHintTimerRef.current) {
-        clearTimeout(installHintTimerRef.current);
-        installHintTimerRef.current = null;
-      }
-    }
-  }, [profileOpen]);
-
-  const handleProfileInstall = async () => {
-    if (installHintTimerRef.current) {
-      clearTimeout(installHintTimerRef.current);
-      installHintTimerRef.current = null;
-    }
-    setInstallHintOpen(false);
-
-    const shown = await promptInstall();
-    if (shown) return;
-
-    installHintTimerRef.current = setTimeout(() => {
-      installHintTimerRef.current = null;
-      if (checkStandalone()) return;
-      if (getDeferredPrompt()) return;
-      setInstallHintOpen(true);
-    }, 500);
-  };
-
   const initial = user?.name?.charAt(0)?.toUpperCase() || '?';
 
   return (
     <header
       className="bg-primary-600 text-white sticky top-0 z-50 shadow-md"
       style={{
-        paddingTop: 'calc(var(--safe-top) + 0.6rem)',
+        paddingTop: 'calc(var(--safe-top) + 0.3rem)',
         paddingLeft: 'calc(var(--safe-left) + 1rem)',
         paddingRight: 'calc(var(--safe-right) + 1rem)',
-        paddingBottom: '0.75rem',
+        paddingBottom: '0.4rem',
       }}
     >
       <div className="flex items-center justify-between">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <button onClick={onMenuClick} className="p-1 rounded-lg active:bg-primary-700">
-          <Menu size={26} />
+          <Menu size={22} />
         </button>
-        <h1 className="text-2xl font-extrabold tracking-tight text-white">Thekedaari</h1>
+        <h1 className="text-xl font-extrabold tracking-tight text-white">Thekedaari</h1>
       </div>
 
       <div className="flex items-center gap-2">
         <button
           onClick={() => switchLang(lang === 'en' ? 'hi' : 'en')}
-          className="bg-white/20 text-white font-semibold px-3 py-1.5 rounded-full text-sm active:bg-white/30 transition-colors"
+          className="bg-white/20 text-white font-semibold px-2.5 py-1 rounded-full text-xs active:bg-white/30 transition-colors"
         >
           {lang === 'en' ? 'हिंदी' : 'English'}
         </button>
@@ -93,7 +59,7 @@ export default function Navbar({ onMenuClick }) {
           <div className="relative" ref={profileRef}>
             <button
               onClick={() => setProfileOpen((prev) => !prev)}
-              className="w-9 h-9 rounded-full bg-white text-primary-700 font-bold text-lg flex items-center justify-center ring-2 ring-white/40 hover:ring-white/70 transition-all"
+              className="w-8 h-8 rounded-full bg-white text-primary-700 font-bold text-base flex items-center justify-center ring-2 ring-white/40 hover:ring-white/70 transition-all"
             >
               {initial}
             </button>
@@ -124,47 +90,17 @@ export default function Navbar({ onMenuClick }) {
                         </span>
                       </div>
                     )}
-                    {!isInstalled && (
-                      <div className="mt-1 space-y-2">
-                        <button
-                          type="button"
-                          onClick={handleProfileInstall}
-                          disabled={installing}
-                          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold transition-colors shadow-sm disabled:opacity-60 text-white bg-green-600 hover:bg-green-700 active:bg-green-800"
-                        >
-                          <Download size={18} />
-                          {installing ? (hi ? 'इंस्टॉल हो रहा है...' : 'Installing...') : t('install_app')}
-                        </button>
-                        {installHintOpen && (
-                          <div className="text-xs text-gray-600 bg-gray-50 rounded-xl px-3 py-2.5 border border-gray-100 space-y-2">
-                            <p className="text-gray-700 font-medium">{t('install_fallback_intro')}</p>
-                            {isLikelyIOS() && (
-                              <p>
-                                {hi
-                                  ? 'Safari → शेयर (□↑) →「होम स्क्रीन में जोड़ें」'
-                                  : 'Safari: Share → Add to Home Screen.'}
-                              </p>
-                            )}
-                            {isLikelyAndroid() && (
-                              <p>
-                                {hi
-                                  ? 'Chrome: ⋮ मेनू →「ऐप इंस्टॉल करें」या「होम स्क्रीन में जोड़ें」'
-                                  : 'Chrome: ⋮ menu → Install app or Add to Home screen.'}
-                              </p>
-                            )}
-                            {!isLikelyIOS() && !isLikelyAndroid() && (
-                              <p>{t('install_desktop_hint')}</p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    {isInstalled && (
-                      <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-2 rounded-xl text-sm font-medium">
-                        <CheckCircle size={16} />
-                        {lang === 'hi' ? 'ऐप इंस्टॉल है' : 'App Installed'}
-                      </div>
-                    )}
+                    <div className="mt-1">
+                      <a
+                        href="https://play.google.com/store/apps/details?id=com.thekedaari.app&hl=en_IN&pli=1"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold transition-colors shadow-sm text-white bg-green-600 hover:bg-green-700 active:bg-green-800"
+                      >
+                        <Download size={18} />
+                        {hi ? 'ऐप डाउनलोड करें' : t('install_app')}
+                      </a>
+                    </div>
                   </div>
 
                   <div className="border-t border-gray-100 p-3">

@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
 :root {
   --color-income: #22c55e;
   --color-expense: #ef4444;
@@ -78,4 +83,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .page-content {
   padding-bottom: calc(90px + var(--safe-bottom));
+}
+
+/* Save button: sticky at bottom, above the bottom nav on mobile */
+.att-save-btn-sticky {
+  position: sticky;
+  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  z-index: 50;
+}
+@media (min-width: 768px) {
+  .att-save-btn-sticky {
+    bottom: 1rem;
+    z-index: 20;
+  }
 }

@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<title>Thekedaari — Instagram Reel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700;900&family=Inter:wght@700;900&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0a0a0a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Noto Sans Devanagari', 'Inter', sans-serif;
+  }
+
+  /* 9:16 portrait canvas */
+  #reel {
+    width: 405px;
+    height: 720px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 24px;
+    background: #0f1923;
+    box-shadow: 0 0 80px rgba(0,0,0,0.8);
+  }
+
+  /* ── PROGRESS BAR ── */
+  #progress-bar {
+    position: absolute;
+    top: 0; left: 0;
+    height: 3px;
+    width: 0%;
+    background: linear-gradient(90deg, #38bdf8, #6366f1, #f59e0b);
+    z-index: 100;
+    transition: width 0.1s linear;
+  }
+
+  /* ── SCENES ── */
+  .scene {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+  }
+  .scene.active { opacity: 1; pointer-events: auto; }
+
+  /* ════════════════════════════════
+     SCENE 1 — Opening splash
+  ════════════════════════════════ */
+  #s1 {
+    background: radial-gradient(ellipse at 30% 20%, #1e3a5f 0%, #0f1923 60%);
+  }
+  .s1-particles { position: absolute; inset: 0; overflow: hidden; }
+  .particle {
+    position: absolute;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: rgba(56,189,248,0.6);
+    animation: float linear infinite;
+  }
+  @keyframes float {
+    0%   { transform: translateY(100%) translateX(0); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 0.6; }
+    100% { transform: translateY(-120%) translateX(30px); opacity: 0; }
+  }
+  .s1-logo {
+    width: 96px; height: 96px;
+    border-radius: 28px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 40px rgba(37,99,235,0.6), 0 0 80px rgba(37,99,235,0.3);
+    animation: logoPop 0.7s cubic-bezier(0.34,1.56,0.64,1) both;
+    animation-delay: 0.3s;
+    font-size: 48px;
+    z-index: 2;
+  }
+  @keyframes logoPop {
+    from { transform: scale(0) rotate(-20deg); opacity: 0; }
+    to   { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+  .s1-name {
+    margin-top: 20px;
+    font-family: 'Inter', sans-serif;
+    font-size: 42px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: -1px;
+    animation: slideUp 0.6s ease both;
+    animation-delay: 0.7s;
+    z-index: 2;
+  }
+  .s1-name span { color: #38bdf8; }
+  .s1-tagline {
+    margin-top: 10px;
+    font-size: 18px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.7);
+    animation: slideUp 0.6s ease both;
+    animation-delay: 1s;
+    z-index: 2;
+  }
+  .s1-badge {
+    margin-top: 24px;
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 6px 18px;
+    border-radius: 20px;
+    animation: slideUp 0.6s ease both;
+    animation-delay: 1.2s;
+    z-index: 2;
+    letter-spacing: 0.5px;
+  }
+
+  /* ════════════════════════════════
+     SCENE 2 — Problem
+  ════════════════════════════════ */
+  #s2 {
+    background: linear-gradient(160deg, #1a0a0a 0%, #0f1923 100%);
+    padding: 40px;
+    text-align: center;
+    gap: 16px;
+  }
+  .problem-emoji {
+    font-size: 72px;
+    animation: wobble 0.6s ease both;
+    animation-delay: 0.2s;
+  }
+  @keyframes wobble {
+    0%   { transform: scale(0); }
+    60%  { transform: scale(1.2) rotate(-5deg); }
+    80%  { transform: scale(0.95) rotate(3deg); }
+    100% { transform: scale(1) rotate(0); }
+  }
+  .problem-heading {
+    font-size: 26px;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1.3;
+    animation: slideUp 0.5s ease both;
+    animation-delay: 0.5s;
+  }
+  .problem-sub {
+    font-size: 17px;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.5;
+    animation: slideUp 0.5s ease both;
+    animation-delay: 0.8s;
+  }
+  .problem-pain {
+    display: flex; flex-direction: column; gap: 10px;
+    width: 100%;
+    animation: slideUp 0.5s ease both;
+    animation-delay: 1s;
+  }
+  .pain-item {
+    background: rgba(239,68,68,0.12);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 12px;
+    padding: 10px 16px;
+    display: flex; align-items: center; gap: 10px;
+    color: #fca5a5;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  /* ════════════════════════════════
+     SCENE 3 — Feature: Attendance
+  ════════════════════════════════ */
+  #s3 {
+    background: linear-gradient(160deg, #0c1a12 0%, #0f1923 100%);
+    padding: 32px 28px;
+    gap: 0;
+  }
+  .feat-tag {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #4ade80;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    animation: fadeIn 0.4s ease both;
+    animation-delay: 0.1s;
+  }
+  .feat-title {
+    font-size: 32px;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1.15;
+    margin-bottom: 6px;
+    animation: slideUp 0.5s ease both;
+    animation-delay: 0.3s;
+  }
+  .feat-title span { color: #4ade80; }
+  .feat-sub {
+    font-size: 15px;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 24px;
+    animation: fadeIn 0.5s ease both;
+    animation-delay: 0.5s;
+  }
+
+  /* Attendance mock UI */
+  .att-mock {
+    width: 100%;
+    background: #1a2332;
+    border-radius: 20px;
+    padding: 16px;
+    border: 1px solid rgba(74,222,128,0.2);
+    animation: slideUp 0.6s ease both;
+    animation-delay: 0.6s;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .att-date-row {
+    display: flex; gap: 6px; margin-bottom: 14px;
+    justify-content: center;
+  }
+  .att-day {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    width: 38px;
+  }
+  .att-day-label { font-size: 8px; color: #4ade80; font-weight: 700; }
+  .att-day-circle {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: #4ade80;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 900; color: #0c1a12;
+  }
+  .att-day-circle.today { background: #f59e0b; color: #fff; }
+  .att-worker { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .att-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 14px; flex-shrink: 0;
+  }
+  .att-worker-info { flex: 1; }
+  .att-worker-name { font-size: 13px; font-weight: 700; color: #fff; }
+  .att-worker-rate { font-size: 10px; color: rgba(255,255,255,0.4); }
+  .att-btns { display: flex; gap: 5px; }
+  .att-btn {
+    width: 32px; height: 28px; border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 900;
+    border: 1.5px solid;
+  }
+  .att-btn.p  { background: #22c55e; color: #fff; border-color: #22c55e; }
+  .att-btn.hd { background: #fff; color: #d1d5db; border-color: #d1d5db; }
+  .att-btn.a  { background: #fff; color: #d1d5db; border-color: #d1d5db; }
+  .att-btn.absent { background: #ef4444; color: #fff; border-color: #ef4444; }
+  .att-total {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 12px; padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .att-total-label { font-size: 11px; color: rgba(255,255,255,0.4); }
+  .att-total-val { font-size: 20px; font-weight: 900; color: #4ade80; }
+
+  /* ════════════════════════════════
+     SCENE 4 — Feature: Ledger
+  ════════════════════════════════ */
+  #s4 {
+    background: linear-gradient(160deg, #1a0f2e 0%, #0f1923 100%);
+    padding: 32px 28px; gap: 0;
+  }
+  .ledger-mock {
+    width: 100%;
+    background: #1a1a2e;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid rgba(139,92,246,0.3);
+    animation: slideUp 0.6s ease both;
+    animation-delay: 0.6s;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .ledger-header {
+    background: linear-gradient(135deg, #7c3aed, #5b21b6);
+    padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .ledger-worker { font-size: 14px; font-weight: 700; color: #fff; }
+  .ledger-balance-label { font-size: 9px; color: rgba(255,255,255,0.6); }
+  .ledger-balance { font-size: 22px; font-weight: 900; color: #fff; }
+  .ledger-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .ledger-row-label { font-size: 12px; color: rgba(255,255,255,0.6); }
+  .ledger-row-label span { font-size: 9px; color: rgba(255,255,255,0.3); display: block; }
+  .ledger-row-amount { font-size: 13px; font-weight: 700; }
+  .ledger-row-amount.earned { color: #4ade80; }
+  .ledger-row-amount.paid { color: #f87171; }
+
+  /* ════════════════════════════════
+     SCENE 5 — Feature: Finance
+  ════════════════════════════════ */
+  #s5 {
+    background: linear-gradient(160deg, #1a1400 0%, #0f1923 100%);
+    padding: 32px 28px; gap: 0;
+  }
+  .finance-mock {
+    width: 100%;
+    background: #1c1a10;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid rgba(251,191,36,0.3);
+    animation: slideUp 0.6s ease both;
+    animation-delay: 0.5s;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .finance-summary {
+    background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    padding: 14px 16px;
+  }
+  .finance-project { font-size: 12px; color: rgba(255,255,255,0.6); }
+  .finance-profit { font-size: 28px; font-weight: 900; color: #4ade80; }
+  .finance-profit-label { font-size: 10px; color: rgba(255,255,255,0.5); }
+  .finance-stats {
+    display: flex; gap: 0;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .finance-stat {
+    flex: 1; text-align: center;
+    border-right: 1px solid rgba(255,255,255,0.08);
+  }
+  .finance-stat:last-child { border-right: none; }
+  .finance-stat-val { font-size: 14px; font-weight: 700; }
+  .finance-stat-val.income { color: #4ade80; }
+  .finance-stat-val.expense { color: #f87171; }
+  .finance-stat-label { font-size: 9px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+  .finance-items { padding: 10px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .finance-item {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .finance-item-name { font-size: 12px; color: rgba(255,255,255,0.65); display: flex; align-items: center; gap: 6px; }
+  .finance-item-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .finance-item-amt { font-size: 12px; font-weight: 700; color: #fff; }
+
+  /* ════════════════════════════════
+     SCENE 6 — Version 3.0 Features
+  ════════════════════════════════ */
+  #s6 {
+    background: linear-gradient(160deg, #0a1628 0%, #0f1923 100%);
+    padding: 32px 28px;
+    gap: 0;
+  }
+  .v3-badge {
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 5px 14px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+    display: inline-block;
+    animation: pulse 1s ease infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(245,158,11,0); }
+  }
+  .v3-title {
+    font-size: 36px; font-weight: 900; color: #fff;
+    font-family: 'Inter', sans-serif;
+    margin-bottom: 4px;
+    animation: slideUp 0.5s ease both;
+    animation-delay: 0.2s;
+  }
+  .v3-title span { color: #f59e0b; }
+  .v3-sub {
+    font-size: 14px; color: rgba(255,255,255,0.5);
+    margin-bottom: 20px;
+    animation: fadeIn 0.5s ease both;
+    animation-delay: 0.5s;
+  }
+  .v3-features { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+  .v3-feat {
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 12px 14px;
+    animation: slideRight 0.5s ease both;
+  }
+  .v3-feat:nth-child(1) { animation-delay: 0.4s; border-color: rgba(59,130,246,0.3); }
+  .v3-feat:nth-child(2) { animation-delay: 0.55s; border-color: rgba(16,185,129,0.3); }
+  .v3-feat:nth-child(3) { animation-delay: 0.7s; border-color: rgba(139,92,246,0.3); }
+  .v3-feat:nth-child(4) { animation-delay: 0.85s; border-color: rgba(249,115,22,0.3); }
+  @keyframes slideRight {
+    from { transform: translateX(-30px); opacity: 0; }
+    to   { transform: translateX(0); opacity: 1; }
+  }
+  .v3-feat-icon {
+    width: 38px; height: 38px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .v3-feat-name { font-size: 14px; font-weight: 700; color: #fff; }
+  .v3-feat-desc { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 1px; }
+
+  /* ════════════════════════════════
+     SCENE 7 — CTA
+  ════════════════════════════════ */
+  #s7 {
+    background: radial-gradient(ellipse at 50% 30%, #1e3a5f 0%, #0f1923 65%);
+    text-align: center;
+    padding: 40px 32px;
+    gap: 0;
+  }
+  .cta-logo {
+    width: 80px; height: 80px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+    margin: 0 auto 16px;
+    box-shadow: 0 0 40px rgba(37,99,235,0.5);
+    animation: logoPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+    animation-delay: 0.2s;
+  }
+  .cta-app-name {
+    font-family: 'Inter', sans-serif;
+    font-size: 38px; font-weight: 900; color: #fff;
+    letter-spacing: -1px;
+    animation: slideUp 0.5s ease both; animation-delay: 0.5s;
+  }
+  .cta-app-name span { color: #38bdf8; }
+  .cta-tagline {
+    font-size: 17px; font-weight: 600;
+    color: rgba(255,255,255,0.6);
+    margin: 6px 0 28px;
+    animation: slideUp 0.5s ease both; animation-delay: 0.7s;
+  }
+  .cta-stats {
+    display: flex; gap: 20px; justify-content: center;
+    margin-bottom: 28px;
+    animation: slideUp 0.5s ease both; animation-delay: 0.9s;
+  }
+  .cta-stat { text-align: center; }
+  .cta-stat-val { font-size: 24px; font-weight: 900; color: #38bdf8; font-family: 'Inter', sans-serif; }
+  .cta-stat-label { font-size: 11px; color: rgba(255,255,255,0.4); }
+  .cta-btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    font-size: 18px; font-weight: 800;
+    padding: 16px 32px;
+    border-radius: 20px;
+    width: 100%;
+    box-shadow: 0 4px 24px rgba(34,197,94,0.4);
+    animation: slideUp 0.5s ease both; animation-delay: 1.1s;
+    margin-bottom: 16px;
+  }
+  .cta-btn-sub {
+    font-size: 12px; color: rgba(255,255,255,0.4);
+    animation: fadeIn 0.5s ease both; animation-delay: 1.3s;
+  }
+  .cta-footer {
+    position: absolute; bottom: 20px; left: 0; right: 0;
+    text-align: center;
+  }
+  .cta-footer-text { font-size: 10px; color: rgba(255,255,255,0.2); letter-spacing: 1px; }
+
+  /* ── SHARED ANIMATIONS ── */
+  @keyframes slideUp {
+    from { transform: translateY(24px); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* ── WATERMARK / timestamp ── */
+  #timer {
+    position: absolute;
+    bottom: 12px; right: 16px;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px; font-weight: 700;
+    color: rgba(255,255,255,0.3);
+    z-index: 99;
+    letter-spacing: 1px;
+  }
+
+  /* Screen instruction outside reel */
+  #instructions {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    color: #fff; font-size: 13px; padding: 10px 20px; border-radius: 20px;
+    font-family: 'Inter', sans-serif;
+    display: flex; align-items: center; gap: 10px;
+    backdrop-filter: blur(10px);
+    white-space: nowrap;
+  }
+  #play-btn {
+    background: #22c55e; border: none; color: #fff;
+    padding: 6px 16px; border-radius: 12px;
+    font-weight: 700; font-size: 13px; cursor: pointer;
+  }
+  #restart-btn {
+    background: #3b82f6; border: none; color: #fff;
+    padding: 6px 16px; border-radius: 12px;
+    font-weight: 700; font-size: 13px; cursor: pointer;
+  }
+  #mute-btn {
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+    color: #fff; padding: 6px 12px; border-radius: 12px;
+    font-size: 15px; cursor: pointer; transition: background 0.2s;
+  }
+  #mute-btn:hover { background: rgba(255,255,255,0.25); }
+  #voice-status {
+    position: absolute;
+    top: 14px; left: 14px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 20px;
+    padding: 4px 10px;
+    display: flex; align-items: center; gap: 5px;
+    font-size: 10px; color: rgba(255,255,255,0.7);
+    z-index: 99;
+    font-family: 'Inter', sans-serif;
+    backdrop-filter: blur(6px);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  #voice-status.visible { opacity: 1; }
+  .voice-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: #4ade80;
+    animation: blink 0.8s ease infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Pre-generated human AI voice files (run generate-audio.js first) -->
+<audio id="audio-s1" preload="auto"><source src="audio/s1.mp3" type="audio/mpeg"></audio>
+<audio id="audio-s2" preload="auto"><source src="audio/s2.mp3" type="audio/mpeg"></audio>
+<audio id="audio-s3" preload="auto"><source src="audio/s3.mp3" type="audio/mpeg"></audio>
+<audio id="audio-s4" preload="auto"><source src="audio/s4.mp3" type="audio/mpeg"></audio>
+<audio id="audio-s5" preload="auto"><source src="audio/s5.mp3" type="audio/mpeg"></audio>
+<audio id="audio-s6" preload="auto"><source src="audio/s6.mp3" type="audio/mpeg"></audio>
+<audio id="audio-s7" preload="auto"><source src="audio/s7.mp3" type="audio/mpeg"></audio>
+
+<div id="reel">
+  <div id="progress-bar"></div>
+  <div id="timer">0:00</div>
+  <div id="voice-status"><div class="voice-dot"></div><span id="voice-label">बोल रहा है...</span></div>
+
+  <!-- ══ SCENE 1: Opening ══ -->
+  <div class="scene" id="s1">
+    <div class="s1-particles" id="particles"></div>
+    <div class="s1-logo">🏗️</div>
+    <div class="s1-name">Theke<span>daari</span></div>
+    <div class="s1-tagline">हर साइट का हिसाब — एक ऐप में</div>
+    <div class="s1-badge">✨ Version 3.0 लॉन्च हो गया!</div>
+  </div>
+
+  <!-- ══ SCENE 2: Problem ══ -->
+  <div class="scene" id="s2">
+    <div class="problem-emoji">😫</div>
+    <div class="problem-heading">क्या आप अभी भी<br/>कागज़ पर हिसाब<br/>रखते हैं?</div>
+    <div class="problem-sub" style="margin: 12px 0 16px;">Construction Site मैनेजमेंट<br/>अब आसान हो गया</div>
+    <div class="problem-pain">
+      <div class="pain-item">📋 हाज़िरी रजिस्टर खो जाता है</div>
+      <div class="pain-item">💸 मज़दूरों का हिसाब भूल जाते हैं</div>
+      <div class="pain-item">📊 Project का खर्च पता नहीं रहता</div>
+    </div>
+  </div>
+
+  <!-- ══ SCENE 3: Attendance ══ -->
+  <div class="scene" id="s3">
+    <div class="feat-tag">Feature 1</div>
+    <div class="feat-title">साइट<br/><span>हाज़िरी</span></div>
+    <div class="feat-sub">एक टैप में पूरी साइट की हाज़िरी लगाएं</div>
+    <div class="att-mock">
+      <div class="att-date-row">
+        <div class="att-day"><div class="att-day-label">MON</div><div class="att-day-circle">02</div></div>
+        <div class="att-day"><div class="att-day-label">TUE</div><div class="att-day-circle">03</div></div>
+        <div class="att-day"><div class="att-day-label">WED</div><div class="att-day-circle">04</div></div>
+        <div class="att-day"><div class="att-day-label">THU</div><div class="att-day-circle">05</div></div>
+        <div class="att-day"><div class="att-day-label">FRI</div><div class="att-day-circle">06</div></div>
+        <div class="att-day"><div class="att-day-label">SAT</div><div class="att-day-circle">07</div></div>
+        <div class="att-day"><div class="att-day-label">MON</div><div class="att-day-circle today">08</div></div>
+      </div>
+      <div class="att-worker">
+        <div class="att-avatar" style="background:#dcfce7;color:#15803d">R</div>
+        <div class="att-worker-info">
+          <div class="att-worker-name">Ramesh Kumar</div>
+          <div class="att-worker-rate">Labour · ₹500/day</div>
+        </div>
+        <div class="att-btns">
+          <div class="att-btn p">P</div>
+          <div class="att-btn hd">HD</div>
+          <div class="att-btn a">A</div>
+        </div>
+      </div>
+      <div class="att-worker">
+        <div class="att-avatar" style="background:#fef3c7;color:#b45309">S</div>
+        <div class="att-worker-info">
+          <div class="att-worker-name">Suresh Singh</div>
+          <div class="att-worker-rate">Karigar · ₹650/day</div>
+        </div>
+        <div class="att-btns">
+          <div class="att-btn p">P</div>
+          <div class="att-btn hd">HD</div>
+          <div class="att-btn a">A</div>
+        </div>
+      </div>
+      <div class="att-worker">
+        <div class="att-avatar" style="background:#fee2e2;color:#dc2626">M</div>
+        <div class="att-worker-info">
+          <div class="att-worker-name">Mukesh Yadav</div>
+          <div class="att-worker-rate">Labour · ₹450/day</div>
+        </div>
+        <div class="att-btns">
+          <div class="att-btn hd">P</div>
+          <div class="att-btn hd" style="background:#eab308;color:#fff;border-color:#eab308">HD</div>
+          <div class="att-btn a">A</div>
+        </div>
+      </div>
+      <div class="att-total">
+        <div class="att-total-label">आज का कुल खर्च</div>
+        <div class="att-total-val">₹1,650</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCENE 4: Worker Ledger ══ -->
+  <div class="scene" id="s4">
+    <div class="feat-tag" style="color:#c084fc">Feature 2</div>
+    <div class="feat-title" style="margin-bottom:4px">मज़दूर की<br/><span style="color:#c084fc">पगार लेजर</span></div>
+    <div class="feat-sub" style="margin-bottom:16px">कितना देना है — एक नज़र में देखें</div>
+    <div class="ledger-mock">
+      <div class="ledger-header">
+        <div>
+          <div class="ledger-worker">👷 Ramesh Kumar</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px">Labour · Active</div>
+        </div>
+        <div style="text-align:right">
+          <div class="ledger-balance-label">अभी बाकी है</div>
+          <div class="ledger-balance">₹3,200</div>
+        </div>
+      </div>
+      <div class="ledger-row">
+        <div class="ledger-row-label">हाज़िरी — 08 Jun<span>Present · Full Day</span></div>
+        <div class="ledger-row-amount earned">+ ₹500</div>
+      </div>
+      <div class="ledger-row">
+        <div class="ledger-row-label">हाज़िरी — 07 Jun<span>Present + OT ₹100</span></div>
+        <div class="ledger-row-amount earned">+ ₹600</div>
+      </div>
+      <div class="ledger-row">
+        <div class="ledger-row-label">भुगतान — 05 Jun<span>Cash payment</span></div>
+        <div class="ledger-row-amount paid">− ₹1,000</div>
+      </div>
+      <div class="ledger-row" style="border:none">
+        <div class="ledger-row-label">हाज़िरी — 04 Jun<span>Half Day</span></div>
+        <div class="ledger-row-amount earned">+ ₹250</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCENE 5: Finance ══ -->
+  <div class="scene" id="s5">
+    <div class="feat-tag" style="color:#fbbf24">Feature 3</div>
+    <div class="feat-title" style="margin-bottom:4px">Project<br/><span style="color:#fbbf24">Finance</span></div>
+    <div class="feat-sub" style="margin-bottom:16px">आमदनी, ख़र्च और मुनाफ़ा — सब एक जगह</div>
+    <div class="finance-mock">
+      <div class="finance-summary">
+        <div class="finance-project">🏗️ Sharma House, Sector 12</div>
+        <div class="finance-profit">₹1,24,500</div>
+        <div class="finance-profit-label">कुल मुनाफ़ा</div>
+      </div>
+      <div class="finance-stats">
+        <div class="finance-stat">
+          <div class="finance-stat-val income">₹4.2L</div>
+          <div class="finance-stat-label">आमदनी</div>
+        </div>
+        <div class="finance-stat">
+          <div class="finance-stat-val expense">₹2.95L</div>
+          <div class="finance-stat-label">खर्च</div>
+        </div>
+        <div class="finance-stat">
+          <div class="finance-stat-val" style="color:#38bdf8">42%</div>
+          <div class="finance-stat-label">मार्जिन</div>
+        </div>
+      </div>
+      <div class="finance-items">
+        <div class="finance-item">
+          <div class="finance-item-name"><div class="finance-item-dot" style="background:#f87171"></div>मज़दूरी खर्च</div>
+          <div class="finance-item-amt">₹1,18,000</div>
+        </div>
+        <div class="finance-item">
+          <div class="finance-item-name"><div class="finance-item-dot" style="background:#fb923c"></div>सामग्री (Material)</div>
+          <div class="finance-item-amt">₹92,000</div>
+        </div>
+        <div class="finance-item">
+          <div class="finance-item-name"><div class="finance-item-dot" style="background:#a78bfa"></div>ठेका काम</div>
+          <div class="finance-item-amt">₹85,000</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCENE 6: V3 Features ══ -->
+  <div class="scene" id="s6">
+    <div class="v3-badge">🎉 Version 3.0 नया अपडेट</div>
+    <div class="v3-title">Version <span>3.0</span></div>
+    <div class="v3-sub">Bigger · Faster · Smarter</div>
+    <div class="v3-features">
+      <div class="v3-feat">
+        <div class="v3-feat-icon" style="background:rgba(59,130,246,0.15)">📋</div>
+        <div>
+          <div class="v3-feat-name">Attendance Report</div>
+          <div class="v3-feat-desc">Project-wise पूरी हाज़िरी रिपोर्ट</div>
+        </div>
+      </div>
+      <div class="v3-feat">
+        <div class="v3-feat-icon" style="background:rgba(16,185,129,0.15)">💰</div>
+        <div>
+          <div class="v3-feat-name">Worker Salary Report</div>
+          <div class="v3-feat-desc">हर मज़दूर की पगार का पूरा हिसाब</div>
+        </div>
+      </div>
+      <div class="v3-feat">
+        <div class="v3-feat-icon" style="background:rgba(139,92,246,0.15)">⏱️</div>
+        <div>
+          <div class="v3-feat-name">Overtime (OT)</div>
+          <div class="v3-feat-desc">ओवरटाइम सीधे हाज़िरी में जोड़ें</div>
+        </div>
+      </div>
+      <div class="v3-feat">
+        <div class="v3-feat-icon" style="background:rgba(249,115,22,0.15)">🗂️</div>
+        <div>
+          <div class="v3-feat-name">New Attendance UI</div>
+          <div class="v3-feat-desc">नया तेज़ और साफ़ डिज़ाइन</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCENE 7: CTA ══ -->
+  <div class="scene" id="s7">
+    <div class="cta-logo">🏗️</div>
+    <div class="cta-app-name">Theke<span>daari</span></div>
+    <div class="cta-tagline">Construction का सबसे आसान ऐप</div>
+    <div class="cta-stats">
+      <div class="cta-stat">
+        <div class="cta-stat-val">100%</div>
+        <div class="cta-stat-label">Free</div>
+      </div>
+      <div class="cta-stat" style="color:rgba(255,255,255,0.2)">|</div>
+      <div class="cta-stat">
+        <div class="cta-stat-val">हिंदी</div>
+        <div class="cta-stat-label">Support</div>
+      </div>
+      <div class="cta-stat" style="color:rgba(255,255,255,0.2)">|</div>
+      <div class="cta-stat">
+        <div class="cta-stat-val">v3.0</div>
+        <div class="cta-stat-label">Latest</div>
+      </div>
+    </div>
+    <div class="cta-btn">
+      <span>▶</span> अभी Download करें
+    </div>
+    <div class="cta-btn-sub">Google Play Store पर मुफ़्त उपलब्ध</div>
+    <div class="cta-footer">
+      <div class="cta-footer-text">THEKEDAARI.APP · CONSTRUCTION MANAGEMENT</div>
+    </div>
+  </div>
+</div>
+
+<div id="instructions">
+  <span id="audio-badge" style="font-size:11px;padding:4px 10px;border-radius:10px;background:rgba(251,191,36,0.3);" title="Run generate-audio.js for human voice">🔤 TTS Voice</span>
+  <button id="play-btn" onclick="startReel()">▶ Play</button>
+  <button id="restart-btn" onclick="restartReel()">↺ Reset</button>
+  <button id="mute-btn" onclick="toggleMute()" title="आवाज़ on/off">🔊</button>
+</div>
+
+<script>
+  // ── Particles ──
+  const particlesEl = document.getElementById('particles');
+  for (let i = 0; i < 20; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDuration = (4 + Math.random() * 6) + 's';
+    p.style.animationDelay = (Math.random() * 5) + 's';
+    p.style.width = p.style.height = (2 + Math.random() * 4) + 'px';
+    p.style.opacity = 0.3 + Math.random() * 0.5;
+    particlesEl.appendChild(p);
+  }
+
+  // ── Scene timings ──
+  const SCENES = [
+    [0,    4.5,  's1'],
+    [4.5,  9,    's2'],
+    [9,    14,   's3'],
+    [14,   19,   's4'],
+    [19,   24,   's5'],
+    [24,   28,   's6'],
+    [28,   31,   's7'],
+  ];
+  const TOTAL = 31;
+
+  // ── Narration text (fallback TTS) ──
+  const NARRATIONS = [
+    { scene: 's1', text: 'Thekedaari! Construction का सबसे आसान ऐप। हर साइट का हिसाब, एक ऐप में। Version 3.0 अब लॉन्च हो गया!' },
+    { scene: 's2', text: 'क्या आप अभी भी कागज़ पर हाज़िरी लिखते हैं? मज़दूरों का पैसा भूल जाते हैं? Project का खर्च पता नहीं रहता? अब इसका हल आ गया!' },
+    { scene: 's3', text: 'Thekedaari से पूरी साइट की हाज़िरी एक टैप में लगाएं। Present, Half Day, या Absent। साथ में Overtime भी जोड़ें — बिल्कुल आसान!' },
+    { scene: 's4', text: 'हर मज़दूर का पूरा लेजर। कितने दिन काम किया, कितना पैसा मिला, कितना दिया — सब एक जगह। पैसा देने से पहले balance ज़रूर देखें!' },
+    { scene: 's5', text: 'Project Finance में आमदनी, सामान का खर्च, और ठेका काम सब track करें। मुनाफा और नुकसान एक नज़र में!' },
+    { scene: 's6', text: 'Version 3.0 में चार नए features! Attendance Report, Worker Salary Report, Overtime, और नया तेज़ Design। Bigger, Faster, Smarter!' },
+    { scene: 's7', text: 'अभी Google Play Store से Thekedaari download करें — बिल्कुल मुफ़्त! हर Thekedaar के लिए बना, सबसे भरोसेमंद Construction ऐप!' },
+  ];
+
+  // ── Audio state ──
+  let muted = false;
+  let lastSpokenScene = null;
+  let currentAudio = null;
+  const voiceStatus = document.getElementById('voice-status');
+  const voiceLabel  = document.getElementById('voice-label');
+
+  // Check if pre-generated AI audio exists for a scene
+  function getAudioEl(sceneId) {
+    return document.getElementById('audio-' + sceneId);
+  }
+
+  // ── Play AI audio (MP3) — human voice ──
+  function playAI(sceneId) {
+    const el = getAudioEl(sceneId);
+    if (!el) return false;
+    // Check if src is loadable (file exists)
+    if (el.error || el.networkState === 3 /* NETWORK_NO_SOURCE */) return false;
+
+    stopAllAudio();
+    currentAudio = el;
+    el.currentTime = 0;
+    el.volume = 1;
+
+    const playPromise = el.play();
+    if (playPromise) {
+      playPromise.then(() => {
+        voiceStatus.classList.add('visible');
+        voiceLabel.textContent = 'AI आवाज़';
+      }).catch(() => {
+        // File not found or can't play — fall back to TTS
+        voiceStatus.classList.remove('visible');
+        speakTTS(sceneId);
+      });
+    }
+    el.onended = () => voiceStatus.classList.remove('visible');
+    el.onerror = () => {
+      voiceStatus.classList.remove('visible');
+      speakTTS(sceneId); // graceful fallback
+    };
+    return true;
+  }
+
+  // ── Fallback: browser TTS (used before AI audio is generated) ──
+  let hindiVoice = null;
+  function loadVoices() {
+    const voices = window.speechSynthesis.getVoices();
+    hindiVoice =
+      voices.find(v => v.lang === 'hi-IN') ||
+      voices.find(v => v.lang.startsWith('hi')) ||
+      null;
+  }
+  loadVoices();
+  if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = loadVoices;
+
+  function speakTTS(sceneId) {
+    if (muted || !window.speechSynthesis) return;
+    const narr = NARRATIONS.find(n => n.scene === sceneId);
+    if (!narr) return;
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(narr.text);
+    utt.lang = 'hi-IN'; utt.rate = 0.9; utt.pitch = 1; utt.volume = 1;
+    if (hindiVoice) utt.voice = hindiVoice;
+    utt.onstart = () => {
+      voiceStatus.classList.add('visible');
+      voiceLabel.textContent = 'बोल रहा है...';
+    };
+    utt.onend = utt.onerror = () => voiceStatus.classList.remove('visible');
+    window.speechSynthesis.speak(utt);
+  }
+
+  // ── Stop all audio ──
+  function stopAllAudio() {
+    // Stop AI audio
+    ['s1','s2','s3','s4','s5','s6','s7'].forEach(id => {
+      const el = getAudioEl(id);
+      if (el) { el.pause(); el.currentTime = 0; }
+    });
+    // Stop TTS
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    voiceStatus.classList.remove('visible');
+    currentAudio = null;
+  }
+
+  // ── Play narration: AI first, TTS fallback ──
+  function playNarration(sceneId) {
+    if (muted) return;
+    // Try AI audio first
+    const el = getAudioEl(sceneId);
+    const hasAI = el && el.readyState >= 1; // HAVE_METADATA = file loaded
+    if (hasAI) {
+      playAI(sceneId);
+    } else {
+      speakTTS(sceneId);
+    }
+  }
+
+  function toggleMute() {
+    muted = !muted;
+    document.getElementById('mute-btn').textContent = muted ? '🔇' : '🔊';
+    if (muted) stopAllAudio();
+  }
+
+  // ── Check if AI audio is ready and update badge ──
+  function updateAudioBadge() {
+    const el = getAudioEl('s1');
+    const ready = el && el.readyState >= 1;
+    const badge = document.getElementById('audio-badge');
+    if (badge) {
+      badge.textContent = ready ? '🎙️ AI Voice' : '🔤 TTS Voice';
+      badge.style.background = ready ? 'rgba(34,197,94,0.3)' : 'rgba(251,191,36,0.3)';
+      badge.title = ready
+        ? 'Human AI voice (ElevenLabs)'
+        : 'Browser TTS — run generate-audio.js for human voice';
+    }
+  }
+  // Re-check after a short delay (audio elements load async)
+  setTimeout(updateAudioBadge, 800);
+
+  // ── Reel engine ──
+  let startTime = null;
+  let animFrame = null;
+  let currentScene = null;
+
+  function showScene(id) {
+    if (currentScene === id) return;
+    currentScene = id;
+    document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+    const el = document.getElementById(id);
+    const clone = el.cloneNode(true);
+    el.parentNode.replaceChild(clone, el);
+    clone.classList.add('active');
+    if (lastSpokenScene !== id) {
+      lastSpokenScene = id;
+      playNarration(id);
+    }
+  }
+
+  function updateTimer(sec) {
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    document.getElementById('timer').textContent = m + ':' + String(s).padStart(2, '0');
+  }
+
+  function tick(timestamp) {
+    if (!startTime) startTime = timestamp;
+    const elapsed = (timestamp - startTime) / 1000;
+    document.getElementById('progress-bar').style.width = Math.min((elapsed / TOTAL) * 100, 100) + '%';
+    updateTimer(elapsed);
+    for (const [start, end, id] of SCENES) {
+      if (elapsed >= start && elapsed < end) {
+        if (currentScene !== id) showScene(id);
+        break;
+      }
+    }
+    if (elapsed < TOTAL) {
+      animFrame = requestAnimationFrame(tick);
+    } else {
+      showScene('s7');
+      document.getElementById('progress-bar').style.width = '100%';
+      updateTimer(TOTAL);
+      document.getElementById('play-btn').textContent = '▶ Play';
+      document.getElementById('play-btn').disabled = false;
+    }
+  }
+
+  function startReel() {
+    if (animFrame) cancelAnimationFrame(animFrame);
+    stopAllAudio();
+    startTime = null; currentScene = null; lastSpokenScene = null;
+    document.getElementById('progress-bar').style.width = '0%';
+    document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+    animFrame = requestAnimationFrame(tick);
+    document.getElementById('play-btn').textContent = '⏸ Playing...';
+    document.getElementById('play-btn').disabled = true;
+  }
+
+  function restartReel() {
+    if (animFrame) cancelAnimationFrame(animFrame);
+    stopAllAudio();
+    startTime = null; currentScene = null; lastSpokenScene = null;
+    document.getElementById('progress-bar').style.width = '0%';
+    document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+    updateTimer(0);
+    document.getElementById('play-btn').textContent = '▶ Play';
+    document.getElementById('play-btn').disabled = false;
+    showScene('s1');
+  }
+
+  showScene('s1');
+</script>
+</body>
+</html>

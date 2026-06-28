@@ -40,7 +40,9 @@ export default function EditWorkerPage() {
   const [tradeSaving, setTradeSaving] = useState(false);
   const [roleBootstrapping, setRoleBootstrapping] = useState(false);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '');
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL
+    ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '')
+    : 'http://localhost:5000';
 
   const isContractor = useMemo(() => {
     const role = roles.find((x) => String(x.id) === String(form.roleId));
