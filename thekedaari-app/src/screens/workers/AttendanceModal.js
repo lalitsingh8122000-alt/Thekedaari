@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
-  ScrollView, Modal, Pressable, Platform, KeyboardAvoidingView,
+  ScrollView, Modal, Platform, KeyboardAvoidingView, TouchableWithoutFeedback,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -160,21 +160,28 @@ export default function AttendanceModal({ worker, onClose, onSaved, preselectedP
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable
-          style={[styles.sheet, { maxHeight: Platform.OS === 'ios' ? '95%' : '92%', paddingBottom: insets.bottom + 8 }]}
-          onPress={(e) => e.stopPropagation()}
-        >
-          <View style={styles.handle} />
+      <View style={styles.overlay}>
+        <TouchableWithoutFeedback onPress={onClose}>
+          <View style={styles.overlayBackdrop} />
+        </TouchableWithoutFeedback>
 
-          <ScrollView
-            style={{ maxHeight: '100%' }}
-            contentContainerStyle={[styles.body, { paddingBottom: 24 }]}
-            keyboardShouldPersistTaps="always"
-            keyboardDismissMode="on-drag"
-            nestedScrollEnabled
-            showsVerticalScrollIndicator={false}
-          >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.sheetWrap}
+        >
+          <View style={[styles.sheet, { maxHeight: Platform.OS === 'ios' ? '95%' : '92%', paddingBottom: insets.bottom + 8 }]}>
+            <View style={styles.handle} />
+
+            <ScrollView
+              style={styles.scrollView}
+              contentContainerStyle={styles.body}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+              nestedScrollEnabled
+              bounces
+              decelerationRate="fast"
+              showsVerticalScrollIndicator={true}
+            >
             {/* Header */}
             <View style={styles.rowBetween}>
               <Text style={styles.title}>{t('markAttendance')}</Text>
@@ -420,40 +427,45 @@ export default function AttendanceModal({ worker, onClose, onSaved, preselectedP
             </View>
             </ScrollView>
 
-          {/* Save Button */}
-          <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}> 
-            <TouchableOpacity
-              style={[
-                styles.saveBtn,
-                { backgroundColor: form.status === 'Present' ? Colors.green : Colors.red },
-                saving && { opacity: 0.6 },
-              ]}
-              onPress={save}
-              disabled={saving}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.saveBtnText}>
-                {saving ? t('saving') : existing ? t('updateAttendance') : t('saveAttendance')}
-              </Text>
-            </TouchableOpacity>
+            {/* Save Button */}
+            <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}> 
+              <TouchableOpacity
+                style={[
+                  styles.saveBtn,
+                  { backgroundColor: form.status === 'Present' ? Colors.green : Colors.red },
+                  saving && { opacity: 0.6 },
+                ]}
+                onPress={save}
+                disabled={saving}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.saveBtnText}>
+                  {saving ? t('saving') : existing ? t('updateAttendance') : t('saveAttendance')}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </Pressable>
-      </Pressable>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  overlayBackdrop: { flex: 1, position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 },
+  sheetWrap: { width: '100%', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: Colors.white,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     width: '100%',
     maxHeight: '92%',
+    overflow: 'hidden',
   },
   handle: { width: 40, height: 4, backgroundColor: Colors.gray200, borderRadius: 2, alignSelf: 'center', marginTop: 10 },
-  body: { padding: 16, gap: 12 },
+  scrollView: { flexGrow: 0, maxHeight: '100%' },
+  body: { padding: 16, gap: 12, paddingBottom: 24, flexGrow: 1 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontSize: 16, fontWeight: '700', color: Colors.gray800 },
   infoText: { fontSize: 12, color: Colors.gray500, backgroundColor: Colors.gray100, padding: 8, borderRadius: 8 },

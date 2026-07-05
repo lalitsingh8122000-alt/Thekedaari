@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
 } from 'react-native';
@@ -15,6 +15,7 @@ export default function MoreMenuScreen({ navigation }) {
   const MENU_ITEMS = [
     { key: 'AttendanceReport', label: t('attendanceReport'), emoji: '📅', desc: t('attendanceReportDesc'), color: Colors.green },
     { key: 'Transactions', label: t('transactions'), emoji: '💰', desc: t('transactionsDesc'), color: Colors.primary },
+    { key: 'VendorsList', label: 'Vendors', emoji: '🚚', desc: 'Manage material suppliers', color: '#8b5cf6' },
     { key: 'Roles', label: t('rolesAndContracts'), emoji: '🏷️', desc: t('rolesDesc'), color: Colors.amber },
     { key: 'Profile', label: t('profile'), emoji: '👤', desc: t('profileDesc'), color: Colors.gray500 },
   ];

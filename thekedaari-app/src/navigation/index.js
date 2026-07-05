@@ -14,18 +14,23 @@ import AppHeader from '../components/AppHeader';
 // Auth screens
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
+import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 
 // Main screens
 import DashboardScreen from '../screens/DashboardScreen';
 import WorkersScreen from '../screens/workers/WorkersScreen';
 import WorkerFormScreen from '../screens/workers/WorkerFormScreen';
 import WorkerLedgerScreen from '../screens/workers/WorkerLedgerScreen';
+import WorkerReportScreen from '../screens/workers/WorkerReportScreen';
 import ProjectsScreen from '../screens/projects/ProjectsScreen';
 import ProjectFormScreen from '../screens/projects/ProjectFormScreen';
 import ProjectFinanceScreen from '../screens/projects/ProjectFinanceScreen';
 import ProjectAttendanceScreen from '../screens/projects/ProjectAttendanceScreen';
 import AttendanceScreen from '../screens/AttendanceScreen';
 import TransactionsScreen from '../screens/TransactionsScreen';
+import VendorsScreen from '../screens/vendors/VendorsScreen';
+import VendorFormScreen from '../screens/vendors/VendorFormScreen';
+import VendorLedgerScreen from '../screens/vendors/VendorLedgerScreen';
 import RolesScreen from '../screens/RolesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import MoreMenuScreen from '../screens/MoreMenuScreen';
@@ -45,6 +50,7 @@ function WorkersStack() {
       <Stack.Screen name="WorkersList" component={WorkersScreen} />
       <Stack.Screen name="WorkerForm" component={WorkerFormScreen} />
       <Stack.Screen name="WorkerLedger" component={WorkerLedgerScreen} />
+      <Stack.Screen name="WorkerReport" component={WorkerReportScreen} />
     </Stack.Navigator>
   );
 }
@@ -66,6 +72,9 @@ function MoreStack() {
       <Stack.Screen name="MoreMenu" component={MoreMenuScreen} />
       <Stack.Screen name="AttendanceReport" component={AttendanceScreen} />
       <Stack.Screen name="Transactions" component={TransactionsScreen} />
+      <Stack.Screen name="VendorsList" component={VendorsScreen} />
+      <Stack.Screen name="VendorForm" component={VendorFormScreen} />
+      <Stack.Screen name="VendorLedger" component={VendorLedgerScreen} />
       <Stack.Screen name="Roles" component={RolesScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
     </Stack.Navigator>
@@ -158,6 +167,7 @@ function AuthStack() {
     <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
     </Stack.Navigator>
   );
 }

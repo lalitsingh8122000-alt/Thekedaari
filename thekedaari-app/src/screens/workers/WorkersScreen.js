@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   TextInput, RefreshControl, FlatList,
@@ -121,19 +121,33 @@ export default function WorkersScreen({ navigation }) {
               </View>
             </View>
             <View style={styles.actionRow}>
-              <TouchableOpacity
-                style={[styles.actionBtn, { backgroundColor: Colors.greenBg }]}
-                onPress={() => setShowAttModal(w)}
-              >
-                <Text style={styles.actionIcon}>📅</Text>
-                <Text style={[styles.actionLabel, { color: Colors.green }]}>{t('attendance')}</Text>
-              </TouchableOpacity>
+              {w.role?.name !== 'Contractor' ? (
+                <TouchableOpacity
+                  style={[styles.actionBtn, { backgroundColor: Colors.greenBg }]}
+                  onPress={() => setShowAttModal(w)}
+                >
+                  <Text style={styles.actionIcon}>📅</Text>
+                  <Text style={[styles.actionLabel, { color: Colors.green }]}>{t('attendance')}</Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={[styles.actionBtn, { backgroundColor: Colors.gray100 }]}>
+                  <Text style={[styles.actionIcon, { opacity: 0.5 }]}>📅</Text>
+                  <Text style={[styles.actionLabel, { color: Colors.gray500 }]}>{t('attendance')}</Text>
+                </View>
+              )}
               <TouchableOpacity
                 style={[styles.actionBtn, { backgroundColor: Colors.blueBg }]}
                 onPress={() => navigation.navigate('WorkerLedger', { workerId: w.id, name: w.name })}
               >
                 <Text style={styles.actionIcon}>📒</Text>
                 <Text style={[styles.actionLabel, { color: Colors.primary }]}>{t('ledger')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionBtn, { backgroundColor: '#f5f3ff' }]}
+                onPress={() => navigation.navigate('WorkerReport', { workerId: w.id, name: w.name })}
+              >
+                <Text style={styles.actionIcon}>📋</Text>
+                <Text style={[styles.actionLabel, { color: '#8b5cf6' }]}>Report</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionBtn, { backgroundColor: Colors.gray100 }]}

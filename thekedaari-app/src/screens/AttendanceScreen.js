@@ -350,6 +350,10 @@ export default function AttendanceScreen({ navigation }) {
                     <Text style={[styles.statNum, { color: '#ea580c' }]}>₹{totalPaid.toLocaleString('en-IN')}</Text>
                     <Text style={styles.statLbl}>{t('totalPaid')}</Text>
                   </View>
+                  <View style={styles.statBox}>
+                    <Text style={[styles.statNum, { color: '#a21caf' }]}>₹{totalOT.toLocaleString('en-IN')}</Text>
+                    <Text style={styles.statLbl}>OT</Text>
+                  </View>
                 </View>
               }
               ListEmptyComponent={
