@@ -1,15 +1,19 @@
-﻿import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
-  FlatList, RefreshControl, ScrollView,
+  FlatList, RefreshControl, ScrollView, Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
 import client from '../../api/client';
 import { Colors } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
+import { LOGO_BASE64 } from '../../assets/logoBase64';
 import {
-  Card, StatCard, FinanceSkeleton, ErrorBox, BottomModal, ConfirmModal,
+  Card, StatCard, FinanceSkeleton, ErrorBox, BottomModal, ConfirmModal, DatePickerField,
 } from '../../components';
 
 const fmt = (n) => '₹' + (n || 0).toLocaleString('en-IN');
@@ -34,6 +38,7 @@ export default function ProjectFinanceScreen({ route, navigation }) {
   const [expenses, setExpenses] = useState([]);
   const [workers, setWorkers] = useState([]);
   const [contractTrades, setContractTrades] = useState([]);
+  const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -46,24 +51,26 @@ export default function ProjectFinanceScreen({ route, navigation }) {
   const [error, setError] = useState('');
 
   const [incForm, setIncForm] = useState({ amount: '', date: '', paymentMode: 'Cash', remarks: '' });
-  const [expForm, setExpForm] = useState({ amount: '', date: '', remarks: '', notes: '' });
+  const [expForm, setExpForm] = useState({ amount: '', date: '', remarks: '', notes: '', vendorId: '' });
   const [conForm, setConForm] = useState({ amount: '', date: '', contractTradeId: '', contractorId: '', notes: '' });
 
   const load = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     try {
-      const [s, i, e, w, tr] = await Promise.all([
+      const [s, i, e, w, tr, vn] = await Promise.all([
         client.get(`/finance/projects/${id}/summary`),
         client.get(`/finance/projects/${id}/income`),
         client.get(`/finance/projects/${id}/expenses`),
         client.get('/workers', { params: { status: 'Active' } }),
         client.get('/contract-trades'),
+        client.get('/vendors', { params: { status: 'Active' } }),
       ]);
       setSummary(s.data);
       setIncomes(i.data);
       setExpenses(e.data);
       setWorkers(Array.isArray(w.data) ? w.data : []);
       setContractTrades(Array.isArray(tr.data) ? tr.data : []);
+      setVendors(Array.isArray(vn.data) ? vn.data : []);
     } catch {}
     finally { setLoading(false); setRefreshing(false); }
   };
@@ -86,7 +93,7 @@ export default function ProjectFinanceScreen({ route, navigation }) {
   const resetForms = () => {
     const today = new Date().toISOString().split('T')[0];
     setIncForm({ amount: '', date: today, paymentMode: 'Cash', remarks: '' });
-    setExpForm({ amount: '', date: today, remarks: '', notes: '' });
+    setExpForm({ amount: '', date: today, remarks: '', notes: '', vendorId: '' });
     setConForm({ amount: '', date: today, contractTradeId: '', contractorId: '', notes: '' });
     setError('');
     setEditIncomeId(null);
@@ -111,7 +118,7 @@ export default function ProjectFinanceScreen({ route, navigation }) {
         setModal('contract');
         return;
       }
-      setExpForm({ amount: String(item.amount), date: toDateInput(item.date), remarks: item.remarks || '', notes: item.notes || '' });
+      setExpForm({ amount: String(item.amount), date: toDateInput(item.date), remarks: item.remarks || '', notes: item.notes || '', vendorId: item.vendorId != null ? String(item.vendorId) : '' });
     }
     setModal('expense');
   };
@@ -140,7 +147,13 @@ export default function ProjectFinanceScreen({ route, navigation }) {
     if (!expForm.remarks) { setError(t('selectCategory')); return; }
     setSaving(true);
     try {
-      const body = { amount, date: expForm.date, remarks: expForm.remarks, notes: expForm.notes.trim() };
+      const body = {
+        amount,
+        date: expForm.date,
+        remarks: expForm.remarks,
+        notes: expForm.notes.trim(),
+        vendorId: expForm.vendorId ? parseInt(expForm.vendorId, 10) : null,
+      };
       if (editExpenseId != null) await client.patch(`/finance/expenses/${editExpenseId}`, body);
       else await client.post(`/finance/projects/${id}/expenses`, body);
       setModal(null);
@@ -177,6 +190,131 @@ export default function ProjectFinanceScreen({ route, navigation }) {
       setLoading(true); load();
     } catch { setPendingDelete(null); }
     finally { setDeleting(false); }
+  };
+
+  const handleDownloadReport = async () => {
+    if (!summary) return;
+    try {
+      const now = new Date().toLocaleDateString('en-IN', {
+        day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
+      });
+      const fmtDateLocal = (d) => {
+        if (!d) return '—';
+        const dateVal = new Date(d);
+        if (isNaN(dateVal.getTime())) return '—';
+        return dateVal.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      };
+      const fmtRsLocal = (n) => '₹' + Number(n || 0).toLocaleString('en-IN');
+      const profitColor = summary.profitLoss >= 0 ? '#16a34a' : '#dc2626';
+      const profitLabel = summary.profitLoss >= 0 ? t('profit') : t('loss');
+      const hasContract = summary.totalContractExpense > 0;
+
+      const incomeRowsHtml = incomes.map((i) => `
+        <tr>
+          <td>${fmtDateLocal(i.date)}</td>
+          <td style="color:#16a34a;font-weight:700">${fmtRsLocal(i.amount)}</td>
+          <td>${i.paymentMode === 'Cash' ? t('cash') : t('online')}</td>
+          <td style="color:#64748b;font-size:9px">${i.remarks || '—'}</td>
+        </tr>`).join('');
+
+      const expenseRowsHtml = expenses.map((e) => `
+        <tr>
+          <td>${fmtDateLocal(e.date)}</td>
+          <td>${expLabel(e.remarks)}</td>
+          <td style="color:#dc2626;font-weight:700">${fmtRsLocal(e.amount)}</td>
+          <td style="color:#64748b">${e.vendor?.name || e.worker?.name || '—'}</td>
+          <td style="color:#64748b;font-size:9px">${e.notes || '—'}</td>
+        </tr>`).join('');
+
+      const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Expense Report — ${summary.project?.name || name}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Arial,sans-serif;color:#1e293b;background:#fff;font-size:11px}
+.page{padding:20px 24px;max-width:297mm;margin:0 auto}
+.header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #2563eb;padding-bottom:12px;margin-bottom:12px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-name{font-size:18px;font-weight:900;color:#2563eb;letter-spacing:-.5px}
+.brand-tag{font-size:10px;color:#64748b;margin-top:2px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.rr{text-align:right}.rt{font-size:14px;font-weight:800;color:#1e293b}.rg{font-size:10px;color:#94a3b8;margin-top:3px}
+.proj-row{background:#f1f5f9;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px}
+.proj-name{font-weight:900;font-size:15px;color:#1e293b}.proj-meta{font-size:10px;color:#64748b;margin-top:2px}
+.summary{display:grid;grid-template-columns:repeat(${hasContract ? 6 : 5},1fr);gap:6px;margin-bottom:12px}
+.sc{border-radius:8px;padding:8px 4px;text-align:center}
+.sc-income{background:#dcfce7}.sc-material{background:#fee2e2}.sc-labour{background:#ffedd5}
+.sc-contract{background:#fef9c3}.sc-total{background:#fecaca}.sc-pl{background:#dbeafe}
+.sc-loss{background:#fecaca}
+.sc-num{font-weight:900;font-size:12px;line-height:1}
+.sc-income .sc-num{color:#16a34a}.sc-material .sc-num{color:#dc2626}.sc-labour .sc-num{color:#ea580c}
+.sc-contract .sc-num{color:#a16207}.sc-total .sc-num{color:#b91c1c}
+.sc-pl .sc-num{color:#2563eb}.sc-loss .sc-num{color:#dc2626}
+.sc-label{font-size:8px;text-transform:uppercase;letter-spacing:.3px;color:#64748b;font-weight:700;margin-top:3px}
+.section-title{font-size:11px;font-weight:800;color:#1e293b;margin:12px 0 5px;padding-left:8px;border-left:3px solid #2563eb;text-transform:uppercase;letter-spacing:.4px}
+.section-title.green{border-color:#16a34a}.section-title.red{border-color:#ef4444}
+.table-wrap{border-radius:8px;border:1px solid #e2e8f0;margin-bottom:10px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:10px}
+thead{background:#1e293b;color:#fff}
+thead th{padding:8px 7px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+tbody tr:nth-child(even){background:#f8fafc}tbody tr:nth-child(odd){background:#fff}
+tbody td{padding:7px 7px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+.footer{margin-top:14px;border-top:1px solid #e2e8f0;padding-top:8px;display:flex;justify-content:space-between;color:#94a3b8;font-size:9px}
+</style></head><body>
+<div class="page">
+  <div class="header">
+    <div class="brand">
+      <img src="${LOGO_BASE64}" alt="Thekedaari" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0">
+      <div><div class="brand-name">Thekedaari</div><div class="brand-tag">Construction Management</div></div>
+    </div>
+    <div class="rr"><div class="rt">Expense Report</div><div class="rg">Generated: ${now}</div></div>
+  </div>
+  <div class="proj-row">
+    <div class="proj-name">${summary.project?.name || name}</div>
+    <div class="proj-meta">${t('totalIncome')}: ${fmtRsLocal(summary.totalIncome)} &nbsp;&middot;&nbsp; ${t('totalExpense')}: ${fmtRsLocal(summary.totalExpense)} &nbsp;&middot;&nbsp; ${profitLabel}: ${fmtRsLocal(Math.abs(summary.profitLoss))}</div>
+  </div>
+  <div class="summary">
+    <div class="sc sc-income"><div class="sc-num">${fmtRsLocal(summary.totalIncome)}</div><div class="sc-label">${t('totalIncome')}</div></div>
+    <div class="sc sc-material"><div class="sc-num">${fmtRsLocal(summary.totalMaterialExpense)}</div><div class="sc-label">${t('materialExpense')}</div></div>
+    <div class="sc sc-labour"><div class="sc-num">${fmtRsLocal(summary.totalLabourCost)}</div><div class="sc-label">${t('labourCost')}</div></div>
+    ${hasContract ? `<div class="sc sc-contract"><div class="sc-num">${fmtRsLocal(summary.totalContractExpense)}</div><div class="sc-label">${t('contractExpense')}</div></div>` : ''}
+    <div class="sc sc-total"><div class="sc-num">${fmtRsLocal(summary.totalExpense)}</div><div class="sc-label">${t('totalExpense')}</div></div>
+    <div class="sc ${summary.profitLoss >= 0 ? 'sc-pl' : 'sc-loss'}"><div class="sc-num" style="color:${profitColor}">${fmtRsLocal(Math.abs(summary.profitLoss))}</div><div class="sc-label">${profitLabel}</div></div>
+  </div>
+  ${incomes.length > 0 ? `
+  <div class="section-title green">${t('income')} (${incomes.length})</div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>${t('date')}</th><th>${t('amount')}</th><th>${t('paymentMethod')}</th><th>${t('remarks')}</th></tr></thead>
+    <tbody>${incomeRowsHtml}</tbody>
+  </table></div>` : ''}
+  ${expenses.length > 0 ? `
+  <div class="section-title red">${t('expense')} (${expenses.length})</div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>${t('date')}</th><th>${t('remarks')}</th><th>${t('amount')}</th><th>${t('vendor') || 'Vendor'} / ${t('contractor') || 'Contractor'}</th><th>${t('note')}</th></tr></thead>
+    <tbody>${expenseRowsHtml}</tbody>
+  </table></div>` : ''}
+  <div class="footer">
+    <span>Thekedaari — Construction Management App</span>
+    <span>${summary.project?.name || name} · Expense Report</span>
+  </div>
+</div>
+</body></html>`;
+
+      const { uri } = await Print.printToFileAsync({ html });
+      const cleanProj = (summary.project?.name || name || 'Project').replace(/[^a-zA-Z0-9]/g, '_');
+      const cleanDate = new Date().toISOString().split('T')[0];
+      const pdfFileName = `Thekedaari_Expense_Report_${cleanProj}_${cleanDate}.pdf`;
+      const newUri = FileSystem.cacheDirectory + pdfFileName;
+      await FileSystem.copyAsync({ from: uri, to: newUri });
+      await Sharing.shareAsync(newUri, {
+        mimeType: 'application/pdf',
+        dialogTitle: `${summary.project?.name || name} - Expense Report`,
+        UTI: 'com.adobe.pdf',
+      });
+    } catch (err) {
+      console.log('PDF generation error:', err);
+      Alert.alert('Error', `Failed to generate Expense Report PDF: ${err.message || err}`);
+    }
   };
 
   if (loading) return <FinanceSkeleton />;
@@ -294,6 +432,9 @@ export default function ProjectFinanceScreen({ route, navigation }) {
                 <Text style={styles.addRowBtnText}>{t('addContractBtn')}</Text>
               </TouchableOpacity>
             </View>
+            <TouchableOpacity style={[styles.addRowBtn, { backgroundColor: Colors.primary, marginTop: 4 }]} onPress={handleDownloadReport}>
+              <Text style={styles.addRowBtnText}>⬇️ {t('downloadReport') || 'Download Expense Report'}</Text>
+            </TouchableOpacity>
             {expenses.length === 0 ? (
               <Card style={{ alignItems: 'center', paddingVertical: 30 }}>
                 <Text style={{ color: Colors.gray400 }}>{t('noExpense')}</Text>
@@ -325,6 +466,11 @@ export default function ProjectFinanceScreen({ route, navigation }) {
                     {e.contractTrade?.name ? ` · ${e.contractTrade.name}` : ''}
                   </Text>
                 )}
+                {e.vendor && (
+                  <Text style={{ fontSize: 12, color: '#6d28d9', marginTop: 4, fontWeight: '600' }}>
+                    🚚 {t('vendor_from') || 'From'}: {e.vendor.name}
+                  </Text>
+                )}
                 {e.notes ? <Text style={{ fontSize: 12, color: Colors.gray500, marginTop: 2 }}>{e.notes}</Text> : null}
               </Card>
             ))}
@@ -337,8 +483,7 @@ export default function ProjectFinanceScreen({ route, navigation }) {
         <ErrorBox message={error} />
         <FieldLabel>{t('amount')}</FieldLabel>
         <TextInput style={styles.input} value={incForm.amount} onChangeText={(v) => setIncForm((f) => ({ ...f, amount: v }))} keyboardType="numeric" placeholder="₹" placeholderTextColor={Colors.gray400} />
-        <FieldLabel>{t('date')}</FieldLabel>
-        <TextInput style={styles.input} value={incForm.date} onChangeText={(v) => setIncForm((f) => ({ ...f, date: v }))} placeholder="YYYY-MM-DD" placeholderTextColor={Colors.gray400} keyboardType="numeric" />
+        <DatePickerField value={incForm.date} onChange={(v) => setIncForm((f) => ({ ...f, date: v }))} label={t('date')} style={{ marginBottom: 10 }} />
         <FieldLabel>{t('paymentMethod')}</FieldLabel>
         <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
           {['Cash', 'Online'].map((m) => (
@@ -367,10 +512,35 @@ export default function ProjectFinanceScreen({ route, navigation }) {
         </View>
         <FieldLabel>{t('amount')}</FieldLabel>
         <TextInput style={styles.input} value={expForm.amount} onChangeText={(v) => setExpForm((f) => ({ ...f, amount: v }))} keyboardType="numeric" placeholder="₹" placeholderTextColor={Colors.gray400} />
-        <FieldLabel>{t('date')}</FieldLabel>
-        <TextInput style={styles.input} value={expForm.date} onChangeText={(v) => setExpForm((f) => ({ ...f, date: v }))} placeholder="YYYY-MM-DD" placeholderTextColor={Colors.gray400} keyboardType="numeric" />
+        <DatePickerField value={expForm.date} onChange={(v) => setExpForm((f) => ({ ...f, date: v }))} label={t('date')} style={{ marginBottom: 10 }} />
         <FieldLabel>{t('note')}</FieldLabel>
         <TextInput style={styles.input} value={expForm.notes} onChangeText={(v) => setExpForm((f) => ({ ...f, notes: v }))} placeholder={t('optional')} placeholderTextColor={Colors.gray400} />
+        {vendors.length > 0 && (
+          <>
+            <FieldLabel>{t('vendor_select') || 'Select Vendor (optional)'}</FieldLabel>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+              <TouchableOpacity
+                style={[styles.catChip, !expForm.vendorId && styles.catChipActive]}
+                onPress={() => setExpForm((f) => ({ ...f, vendorId: '' }))}
+              >
+                <Text style={[styles.catChipText, !expForm.vendorId && { color: Colors.white }]}>
+                  — {t('none') || 'None'} —
+                </Text>
+              </TouchableOpacity>
+              {vendors.map((v) => (
+                <TouchableOpacity
+                  key={v.id}
+                  style={[styles.catChip, String(v.id) === String(expForm.vendorId) && styles.catChipActive]}
+                  onPress={() => setExpForm((f) => ({ ...f, vendorId: String(v.id) }))}
+                >
+                  <Text style={[styles.catChipText, String(v.id) === String(expForm.vendorId) && { color: Colors.white }]}>
+                    {v.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </>
+        )}
         <TouchableOpacity style={[styles.saveBtn, { backgroundColor: Colors.red, marginTop: 16 }, saving && { opacity: 0.6 }]} onPress={saveExpense} disabled={saving}>
           <Text style={styles.saveBtnText}>{saving ? t('saveDot') : t('save')}</Text>
         </TouchableOpacity>
@@ -408,8 +578,7 @@ export default function ProjectFinanceScreen({ route, navigation }) {
         )}
         <FieldLabel>{t('amount')}</FieldLabel>
         <TextInput style={styles.input} value={conForm.amount} onChangeText={(v) => setConForm((f) => ({ ...f, amount: v }))} keyboardType="numeric" placeholder="₹" placeholderTextColor={Colors.gray400} />
-        <FieldLabel>{t('date')}</FieldLabel>
-        <TextInput style={styles.input} value={conForm.date} onChangeText={(v) => setConForm((f) => ({ ...f, date: v }))} placeholder="YYYY-MM-DD" placeholderTextColor={Colors.gray400} keyboardType="numeric" />
+        <DatePickerField value={conForm.date} onChange={(v) => setConForm((f) => ({ ...f, date: v }))} label={t('date')} style={{ marginBottom: 10 }} />
         <FieldLabel>{t('note')}</FieldLabel>
         <TextInput style={styles.input} value={conForm.notes} onChangeText={(v) => setConForm((f) => ({ ...f, notes: v }))} placeholder={t('optional')} placeholderTextColor={Colors.gray400} />
         <TouchableOpacity style={[styles.saveBtn, { backgroundColor: '#d97706', marginTop: 16 }, saving && { opacity: 0.6 }]} onPress={saveContract} disabled={saving}>

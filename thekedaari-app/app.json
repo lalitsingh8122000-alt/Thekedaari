@@ -2,7 +2,7 @@
   "expo": {
     "name": "Thekedaari",
     "slug": "thekedaari-app",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -21,7 +21,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.thekedaari.app",
-      "versionCode": 36434
+      "versionCode": 36435
     },
     "web": {
       "favicon": "./assets/favicon.png"

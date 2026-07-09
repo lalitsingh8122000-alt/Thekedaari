@@ -128,7 +128,7 @@ export default function VendorsScreen({ navigation }) {
                 onPress={() => navigation.navigate('VendorLedger', { vendorId: v.id, name: v.name })}
               >
                 <Text style={styles.actionIcon}>📒</Text>
-                <Text style={[styles.actionLabel, { color: '#8b5cf6' }]}>{t('vendor_ledger') || 'Ledger'}</Text>
+                <Text style={[styles.actionLabel, { color: '#8b5cf6' }]}>{t('vendorLedger') || 'Ledger'}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionBtn, { backgroundColor: Colors.gray100 }]}

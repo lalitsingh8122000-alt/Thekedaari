@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
 import client from '../../api/client';
 import { useLanguage } from '../../context/LanguageContext';
 import { Colors } from '../../theme/colors';
@@ -113,14 +114,15 @@ export default function WorkerReportScreen({ route, navigation }) {
           <p>Salary: ₹${totalSalary} | Paid: ₹${totalPaid} | OT: ₹${totalOT}</p>
           <p><strong>Balance: ₹${balance}</strong></p>
           <table>
-            <tr><th>Date</th><th>Project</th><th>Attendance</th><th>Salary</th><th>Paid</th></tr>
+            <tr><th>Date</th><th>Project</th><th>Attendance</th><th>Salary</th><th>OT</th><th>Paid</th></tr>
             ${sorted.map(r => `
               <tr>
                 <td>${fmtDate(r.date)}</td>
                 <td>${r.project?.name || '-'}</td>
                 <td>${r.type}</td>
-                <td>${r.salary || 0}</td>
-                <td>${r.payment || 0}</td>
+                <td>₹${r.salary || 0}</td>
+                <td>₹${r.overtime || 0}</td>
+                <td>₹${r.payment || 0}</td>
               </tr>
             `).join('')}
           </table>
@@ -130,7 +132,16 @@ export default function WorkerReportScreen({ route, navigation }) {
 
     try {
       const { uri } = await Print.printToFileAsync({ html });
-      await Sharing.shareAsync(uri);
+      const cleanName = (worker.name || 'Worker').replace(/[^a-zA-Z0-9]/g, '_');
+      const cleanMonth = rangeLabel.replace(/[^a-zA-Z0-9]/g, '_');
+      const pdfFileName = `Thekedaari_Salary_Report_${cleanName}_${cleanMonth}.pdf`;
+      const newUri = FileSystem.cacheDirectory + pdfFileName;
+      await FileSystem.copyAsync({ from: uri, to: newUri });
+      await Sharing.shareAsync(newUri, {
+        mimeType: 'application/pdf',
+        dialogTitle: `${worker.name} - Salary Report`,
+        UTI: 'com.adobe.pdf',
+      });
     } catch (error) {
       Alert.alert('Error', 'Failed to generate PDF');
     }
@@ -247,6 +258,7 @@ export default function WorkerReportScreen({ route, navigation }) {
                   <View style={{ alignItems: 'flex-end' }}>
                     <Text style={styles.rowType}>{r.type}</Text>
                     {r.type !== 'Absent' && <Text style={{ fontSize: 12, fontWeight: '700', color: '#7c3aed' }}>{fmtNum(r.salary)}</Text>}
+                    {r.overtime > 0 && <Text style={{ fontSize: 11, color: '#a21caf', fontWeight: '600' }}>OT: {fmtNum(r.overtime)}</Text>}
                     {r.payment > 0 && <Text style={{ fontSize: 11, color: '#ea580c', fontWeight: '600' }}>Paid: {fmtNum(r.payment)}</Text>}
                   </View>
                 </Card>

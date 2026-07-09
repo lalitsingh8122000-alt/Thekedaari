@@ -21,7 +21,6 @@ import DashboardScreen from '../screens/DashboardScreen';
 import WorkersScreen from '../screens/workers/WorkersScreen';
 import WorkerFormScreen from '../screens/workers/WorkerFormScreen';
 import WorkerLedgerScreen from '../screens/workers/WorkerLedgerScreen';
-import WorkerReportScreen from '../screens/workers/WorkerReportScreen';
 import ProjectsScreen from '../screens/projects/ProjectsScreen';
 import ProjectFormScreen from '../screens/projects/ProjectFormScreen';
 import ProjectFinanceScreen from '../screens/projects/ProjectFinanceScreen';
@@ -50,7 +49,6 @@ function WorkersStack() {
       <Stack.Screen name="WorkersList" component={WorkersScreen} />
       <Stack.Screen name="WorkerForm" component={WorkerFormScreen} />
       <Stack.Screen name="WorkerLedger" component={WorkerLedgerScreen} />
-      <Stack.Screen name="WorkerReport" component={WorkerReportScreen} />
     </Stack.Navigator>
   );
 }

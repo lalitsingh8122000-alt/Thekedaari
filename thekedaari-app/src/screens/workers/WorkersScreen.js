@@ -143,13 +143,6 @@ export default function WorkersScreen({ navigation }) {
                 <Text style={[styles.actionLabel, { color: Colors.primary }]}>{t('ledger')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.actionBtn, { backgroundColor: '#f5f3ff' }]}
-                onPress={() => navigation.navigate('WorkerReport', { workerId: w.id, name: w.name })}
-              >
-                <Text style={styles.actionIcon}>📋</Text>
-                <Text style={[styles.actionLabel, { color: '#8b5cf6' }]}>Report</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
                 style={[styles.actionBtn, { backgroundColor: Colors.gray100 }]}
                 onPress={() => navigation.navigate('WorkerForm', { worker: w })}
               >

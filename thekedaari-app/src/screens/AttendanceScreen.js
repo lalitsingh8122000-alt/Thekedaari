@@ -8,6 +8,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
 import client from '../api/client';
 import { Colors } from '../theme/colors';
 import { Card, AttendanceSkeleton, DatePickerField } from '../components';
@@ -248,17 +249,19 @@ export default function AttendanceScreen({ navigation }) {
       const html = buildPDFHtml(rows, dlRangeLabel, dlProjectName);
       const toFileDate = (iso) => iso ? new Date(iso + 'T12:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/\s/g, '') : '';
       const toSafe = (str) => str.replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/, '');
-      const pdfFileName = `Thekedaari_Attendance_Report_${toSafe(dlProjectName)}_${toFileDate(dlRange.start)}_to_${toFileDate(dlRange.end)}`;
-      const { uri } = await Print.printToFileAsync({ html, base64: false, filename: pdfFileName });
+      const pdfFileName = `Thekedaari_Attendance_Report_${toSafe(dlProjectName)}_${toFileDate(dlRange.start)}_to_${toFileDate(dlRange.end)}.pdf`;
+      const { uri } = await Print.printToFileAsync({ html, base64: false });
+      const newUri = FileSystem.cacheDirectory + pdfFileName;
+      await FileSystem.copyAsync({ from: uri, to: newUri });
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
-        await Sharing.shareAsync(uri, {
+        await Sharing.shareAsync(newUri, {
           mimeType: 'application/pdf',
           dialogTitle: `Attendance Report — ${dlProjectName}`,
           UTI: 'com.adobe.pdf',
         });
       } else {
-        Alert.alert('Saved', `PDF saved to:\n${uri}`);
+        Alert.alert('Saved', `PDF saved to:\n${newUri}`);
       }
     } catch {
       setDlError('Could not generate report. Please try again.');
