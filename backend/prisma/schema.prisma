@@ -327,6 +327,9 @@ model PaymentOrder {
   razorpayOrderId   String?   @unique @db.VarChar(80)
   razorpayPaymentId String?   @db.VarChar(80)
   razorpaySignature String?   @db.VarChar(255)
+  /// Payment Link flow: the plink_* id and the hosted URL the user is sent to.
+  razorpayPaymentLinkId String? @unique @db.VarChar(80)
+  shortUrl              String? @db.VarChar(500)
   method            String?   @db.VarChar(30)
   failureReason     String?   @db.VarChar(255)
   paidAt            DateTime?

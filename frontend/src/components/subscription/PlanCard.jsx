@@ -98,7 +98,7 @@ export default function PlanCard({ plan, lang, t, onSelect, busy = false, disabl
         {busy ? (
           <>
             <Loader2 size={18} className="animate-spin" aria-hidden />
-            {t('sub_opening_payment')}
+            {t('sub_redirecting')}
           </>
         ) : isCurrent ? (
           <>

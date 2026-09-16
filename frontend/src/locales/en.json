@@ -386,5 +386,8 @@
   "paywall_title_expired": "Your plan has expired",
   "paywall_sub_expired": "Renew to get back to your sites, attendance and hisaab. Nothing has been deleted.",
   "paywall_data_safe": "Your data is safe",
-  "paywall_instant_unlock": "Unlocks instantly after payment"
+  "paywall_instant_unlock": "Unlocks instantly after payment",
+  "sub_payment_cancelled": "Payment was cancelled. Your plan has not changed — you can try again any time.",
+  "sub_payment_failed": "The payment did not go through. No money was taken. Please try again or contact support.",
+  "sub_redirecting": "Taking you to the payment page…"
 }

@@ -1,0 +1,11 @@
+User-Agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /projects
+Disallow: /workers
+Disallow: /transactions
+Disallow: /roles
+Disallow: /attendance
+
+Sitemap: https://thekedaari.com/sitemap.xml

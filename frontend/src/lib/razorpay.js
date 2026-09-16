@@ -1,9 +1,13 @@
 /**
- * Razorpay Checkout loader + a single place that runs the buy flow.
+ * The buy flow. POST /subscription/orders and do whatever the server tells us:
  *
- * Flow: POST /subscription/orders -> open Checkout -> POST /subscription/verify.
- * The backend webhook credits the same order independently, so a browser that dies
- * mid-payment still ends up subscribed.
+ *   mode 'link'     -> redirect to a Razorpay-hosted payment page. Nothing to load in
+ *                      the browser, and the app itself does not need HTTPS. Razorpay
+ *                      sends the customer back to /subscription?payment=success.
+ *   mode 'checkout' -> open the in-page Checkout popup, then POST /subscription/verify.
+ *
+ * Either way the backend webhook credits the same order independently, so a browser
+ * that dies mid-payment still ends up subscribed.
  */
 
 import api from '@/lib/api';
@@ -77,6 +81,28 @@ export async function startCheckout({ planCode, user, lang = 'en', onSuccess, on
       ),
       { code: data?.code, supportPhone: data?.supportPhone }
     );
+  }
+
+  // Payment Link: hand the browser over to Razorpay's hosted page and stop here.
+  if (order.mode === 'link') {
+    if (!order.paymentUrl) {
+      return onError(
+        hi ? 'भुगतान लिंक नहीं मिला। दोबारा कोशिश करें।' : 'Payment link was not created. Please try again.',
+        { code: 'PAYMENT_LINK_MISSING' }
+      );
+    }
+    try {
+      // Remember what is being bought so the return trip can confirm it even though
+      // the page reloads completely.
+      sessionStorage.setItem(
+        'thekedaari_pending_payment',
+        JSON.stringify({ planCode, orderId: order.orderId, at: Date.now() })
+      );
+    } catch {
+      /* private mode — the server still knows, this is only for nicer messaging */
+    }
+    window.location.href = order.paymentUrl;
+    return undefined;
   }
 
   const ready = await loadRazorpayScript();

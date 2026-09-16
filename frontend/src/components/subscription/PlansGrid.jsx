@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { AlertCircle, Check, Loader2, Phone, ShieldCheck } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,6 +28,47 @@ export default function PlansGrid({ compact = false }) {
   const [busyPlan, setBusyPlan] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const router = useRouter();
+
+  // Coming back from a Razorpay-hosted payment page: the server has already verified
+  // the signature and credited the plan, so just re-read status and report the outcome.
+  //
+  // Read the query string straight off window rather than useSearchParams(): this
+  // component also renders inside the paywall on every gated page, and useSearchParams
+  // would force each of them behind a Suspense boundary.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const outcome = params.get('payment');
+    if (!outcome) return;
+
+    let pending = null;
+    try {
+      const raw = sessionStorage.getItem('thekedaari_pending_payment');
+      if (raw) pending = JSON.parse(raw);
+      sessionStorage.removeItem('thekedaari_pending_payment');
+    } catch {
+      /* nothing to recover — the server is the source of truth either way */
+    }
+
+    if (outcome === 'success') {
+      refresh?.().then((fresh) => {
+        const code = params.get('plan') || pending?.planCode;
+        setSuccess({
+          plan: (fresh?.plans || []).find((p) => p.code === code) || null,
+          expiresAt: fresh?.expiresAt || null,
+        });
+      });
+    } else if (outcome === 'cancelled') {
+      setError(t('sub_payment_cancelled'));
+    } else {
+      setError(t('sub_payment_failed'));
+    }
+
+    // Drop the query string so a refresh does not replay the message.
+    router.replace('/subscription', { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (contextPlans?.length) {

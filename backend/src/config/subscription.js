@@ -31,6 +31,30 @@ const RENEWAL_REMINDER_DAYS = intFromEnv(process.env.SUBSCRIPTION_REMINDER_DAYS,
 const SUPPORT_PHONE = String(process.env.SUPPORT_PHONE || '').trim();
 
 /**
+ * How the customer pays:
+ *   'link'     -> Razorpay Payment Link. They are sent to a Razorpay-hosted HTTPS page,
+ *                 so this works even while the app itself is served over plain HTTP.
+ *   'checkout' -> the in-page Checkout popup. Nicer UX, but needs HTTPS in live mode.
+ */
+const PAYMENT_MODE =
+  String(process.env.SUBSCRIPTION_PAYMENT_MODE || 'link').trim().toLowerCase() === 'checkout'
+    ? 'checkout'
+    : 'link';
+
+/**
+ * Public origin of this deployment, e.g. https://thekedaar.com or http://13.233.10.80.
+ * Payment Links bounce the customer back here after paying, so it must be reachable
+ * from the open internet — localhost will not work for a real payment.
+ */
+const PUBLIC_BASE_URL = String(process.env.PUBLIC_BASE_URL || '').trim().replace(/\/$/, '');
+
+/** Ask Razorpay to also SMS the payment link to the customer (may bill you per SMS). */
+const LINK_NOTIFY_SMS = String(process.env.RAZORPAY_LINK_NOTIFY_SMS || 'false').toLowerCase() === 'true';
+
+/** Payment links stop being payable after this many minutes. */
+const LINK_EXPIRY_MINUTES = intFromEnv(process.env.RAZORPAY_LINK_EXPIRY_MINUTES, 60 * 24);
+
+/**
  * Fallback price list, used when `subscription_plans` has not been seeded yet
  * (e.g. a fresh DB where the migration ran but the seed insert was rolled back).
  * Keep in sync with the seed block in the add_subscription_module migration.
@@ -104,5 +128,9 @@ module.exports = {
   GRACE_DAYS,
   RENEWAL_REMINDER_DAYS,
   SUPPORT_PHONE,
+  PAYMENT_MODE,
+  PUBLIC_BASE_URL,
+  LINK_NOTIFY_SMS,
+  LINK_EXPIRY_MINUTES,
   FALLBACK_PLANS,
 };
