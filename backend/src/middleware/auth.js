@@ -4,6 +4,10 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function auth(req, res, next) {
+  // Idempotent: routes are mounted behind `auth` in index.js and also call it
+  // internally, so the second pass must not re-verify or re-query.
+  if (req.userId && req.authUser) return next();
+
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Access denied. No token provided.' });
@@ -15,13 +19,23 @@ async function auth(req, res, next) {
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        createdAt: true,
+        planExpiresAt: true,
+        planStatus: true,
+        isLegacyUser: true,
+        currentPlanCode: true,
+      },
     });
     if (!user) {
       return res.status(401).json({ error: 'Session expired. Please log in again.' });
     }
 
     req.userId = decoded.userId;
+    req.authUser = user;
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Invalid or expired token.' });

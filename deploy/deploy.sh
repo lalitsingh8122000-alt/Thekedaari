@@ -50,9 +50,19 @@ echo "[5/7] Building frontend (this takes 1-2 minutes)..."
 npm run build
 
 # --- Copy Nginx config ---
+# certbot writes the SSL (443) block straight into sites-available/thekedaar, so
+# blindly copying the port-80 template back over it would drop HTTPS. Razorpay
+# Checkout, the payment webhook and the PWA service worker all need HTTPS, so
+# leave an SSL-enabled config alone and only refresh it when asked.
 echo "[6/7] Setting up Nginx..."
-sudo cp "$DEPLOY_DIR/nginx.conf" /etc/nginx/sites-available/thekedaar
-sudo ln -sf /etc/nginx/sites-available/thekedaar /etc/nginx/sites-enabled/thekedaar
+NGINX_SITE=/etc/nginx/sites-available/thekedaar
+if grep -q "ssl_certificate" "$NGINX_SITE" 2>/dev/null && [ "${FORCE_NGINX:-0}" != "1" ]; then
+    echo "      -> SSL config detected, keeping it (run with FORCE_NGINX=1 to overwrite,"
+    echo "         then re-run: sudo certbot --nginx -d <your-domain>)"
+else
+    sudo cp "$DEPLOY_DIR/nginx.conf" "$NGINX_SITE"
+fi
+sudo ln -sf "$NGINX_SITE" /etc/nginx/sites-enabled/thekedaar
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl reload nginx
 

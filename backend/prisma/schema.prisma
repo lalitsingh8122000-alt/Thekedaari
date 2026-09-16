@@ -15,6 +15,16 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  /// Access is granted while planExpiresAt is in the future. Null = no access (must subscribe).
+  planExpiresAt DateTime?
+  /// Cached hint for admin/CRM queries: legacy | trial | active | expired | none.
+  /// Never trust this for access control — planExpiresAt is the source of truth.
+  planStatus String @default("none") @db.VarChar(20)
+  /// True for users who registered before the paid launch (free founder window).
+  isLegacyUser Boolean @default(false)
+  /// Code of the last plan that was activated for this user (display only).
+  currentPlanCode String? @db.VarChar(40)
+
   projects       Project[]
   roles          Role[]
   contractTrades ContractTrade[]
@@ -25,6 +35,10 @@ model User {
   expenses       Expense[]
   vendors        Vendor[]
   vendorLedgers  VendorLedgerEntry[]
+  subscriptions  Subscription[]
+  paymentOrders  PaymentOrder[]
+
+  @@index([planExpiresAt])
 }
 
 model Project {
@@ -235,6 +249,97 @@ model ForgotPasswordRequest {
 
   @@index([phone])
   @@index([createdAt])
+}
+
+/// Sellable subscription plans. Priced in paise so Razorpay amounts stay integer-exact.
+model SubscriptionPlan {
+  id           Int     @id @default(autoincrement())
+  code         String  @unique @db.VarChar(40)
+  name         String  @db.VarChar(80)
+  nameHi       String  @db.VarChar(80)
+  tagline      String? @db.VarChar(200)
+  taglineHi    String? @db.VarChar(200)
+  /// Billing length. months > 0 uses calendar-month math; otherwise durationDays is used.
+  months       Int     @default(0)
+  durationDays Int     @default(0)
+  priceInPaise Int
+  /// Strike-through reference price (1-month rate x months). Equals priceInPaise when there is no discount.
+  mrpInPaise   Int
+  badge        String? @db.VarChar(40)
+  badgeHi      String? @db.VarChar(40)
+  highlight    Boolean @default(false)
+  isActive     Boolean @default(true)
+  sortOrder    Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subscriptions Subscription[]
+  orders        PaymentOrder[]
+
+  @@map("subscription_plans")
+}
+
+/// One granted access window. A renewal creates a new row rather than editing the old one.
+model Subscription {
+  id            Int               @id @default(autoincrement())
+  userId        Int
+  user          User              @relation(fields: [userId], references: [id])
+  planId        Int?
+  plan          SubscriptionPlan? @relation(fields: [planId], references: [id])
+  planCode      String?           @db.VarChar(40)
+  /// active | expired | cancelled
+  status        String            @default("active") @db.VarChar(20)
+  /// razorpay | manual | legacy | trial
+  source        String            @default("razorpay") @db.VarChar(20)
+  startsAt      DateTime
+  endsAt        DateTime
+  amountInPaise Int               @default(0)
+  orderId       Int?              @unique
+  order         PaymentOrder?     @relation(fields: [orderId], references: [id])
+  notes         String?           @db.VarChar(255)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([endsAt])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+/// Payment attempt. Created before checkout opens, flipped to paid by verify or webhook (whichever lands first).
+model PaymentOrder {
+  id            Int              @id @default(autoincrement())
+  userId        Int
+  user          User             @relation(fields: [userId], references: [id])
+  planId        Int?
+  plan          SubscriptionPlan? @relation(fields: [planId], references: [id])
+  planCode      String           @db.VarChar(40)
+  amountInPaise Int
+  currency      String           @default("INR") @db.VarChar(10)
+  receipt       String           @unique @db.VarChar(60)
+  /// created | paid | failed | refunded
+  status        String           @default("created") @db.VarChar(20)
+  /// razorpay | manual
+  provider      String           @default("razorpay") @db.VarChar(20)
+
+  razorpayOrderId   String?   @unique @db.VarChar(80)
+  razorpayPaymentId String?   @db.VarChar(80)
+  razorpaySignature String?   @db.VarChar(255)
+  method            String?   @db.VarChar(30)
+  failureReason     String?   @db.VarChar(255)
+  paidAt            DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subscription Subscription?
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("payment_orders")
 }
 
 /// SEO blog posts — managed by Prisma migrations so deploys never drop this table

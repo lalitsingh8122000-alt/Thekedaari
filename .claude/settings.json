@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx prisma *)",
+      "Bash(node scripts/prisma-with-env.js validate)",
+      "Bash(node scripts/prisma-with-env.js generate)",
+      "Bash(node /private/tmp/claude-501/-Users-lalitsingh-Desktop-Construction-Thekedaari/01d28e89-b50c-431a-9aa3-1004110433c9/scratchpad/test-subs.js)",
+      "Bash(node /private/tmp/claude-501/-Users-lalitsingh-Desktop-Construction-Thekedaari/01d28e89-b50c-431a-9aa3-1004110433c9/scratchpad/add-locales.js)",
+      "Bash(npx next *)",
+      "Bash(docker info *)",
+      "Bash(brew services *)",
+      "Read(//opt/homebrew/opt/**)",
+      "Bash(node /private/tmp/claude-501/-Users-lalitsingh-Desktop-Construction-Thekedaari/01d28e89-b50c-431a-9aa3-1004110433c9/scratchpad/add-postman.js)",
+      "Bash(python3 -c \"import json; json.load\\(open\\('/Users/lalitsingh/Desktop/Construction/Thekedaari/Thekedaari_API.postman_collection.json'\\)\\); print\\('valid JSON'\\)\")",
+      "Bash(bash /private/tmp/claude-501/-Users-lalitsingh-Desktop-Construction-Thekedaari/01d28e89-b50c-431a-9aa3-1004110433c9/scratchpad/e2e.sh)"
+    ]
+  }
+}

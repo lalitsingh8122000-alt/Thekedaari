@@ -7,9 +7,29 @@ const { normalizeString, normalizePhone, isValidPhone } = require('../utils/vali
 const { ensureDefaultContractTrades } = require('../utils/defaultContractTrades');
 const { ensureDefaultRoles } = require('../utils/defaultRoles');
 const { sendRouteError } = require('../utils/serverError');
+const {
+  initialAccessForNewUser,
+  resolveAccess,
+} = require('../services/subscriptionService');
 
 const router = express.Router();
 const prisma = new PrismaClient();
+
+/** Shape the client stores in localStorage. Access fields ride along so the UI can gate instantly. */
+function publicUser(user) {
+  const access = resolveAccess(user);
+  return {
+    id: user.id,
+    name: user.name,
+    phone: user.phone,
+    createdAt: user.createdAt,
+    planExpiresAt: user.planExpiresAt || null,
+    planStatus: access.status,
+    isLegacyUser: access.isLegacyUser,
+    currentPlanCode: access.currentPlanCode,
+    subscriptionActive: access.isActive,
+  };
+}
 
 router.post('/register', async (req, res) => {
   try {
@@ -40,10 +60,34 @@ router.post('/register', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    // Sign-ups before the paid-launch cutoff keep the free founder window;
+    // after it they land on the plans screen (or get a trial, if one is configured).
+    const access = initialAccessForNewUser();
+
     const user = await prisma.$transaction(async (tx) => {
       const u = await tx.user.create({
-        data: { name, phone, password: hashedPassword },
+        data: {
+          name,
+          phone,
+          password: hashedPassword,
+          planExpiresAt: access.planExpiresAt,
+          planStatus: access.planStatus,
+          isLegacyUser: access.isLegacyUser,
+        },
       });
+      if (access.planExpiresAt) {
+        await tx.subscription.create({
+          data: {
+            userId: u.id,
+            status: 'active',
+            source: access.isLegacyUser ? 'legacy' : 'trial',
+            startsAt: u.createdAt,
+            endsAt: access.planExpiresAt,
+            amountInPaise: 0,
+            notes: access.isLegacyUser ? 'Founder member — free access window' : 'Free trial',
+          },
+        });
+      }
       await ensureDefaultContractTrades(tx, u.id);
       await ensureDefaultRoles(tx, u.id);
       return u;
@@ -51,10 +95,7 @@ router.post('/register', async (req, res) => {
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
-    res.status(201).json({
-      token,
-      user: { id: user.id, name: user.name, phone: user.phone, createdAt: user.createdAt },
-    });
+    res.status(201).json({ token, user: publicUser(user) });
   } catch (err) {
     sendRouteError(res, err, 'auth register');
   }
@@ -88,10 +129,7 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
-    res.json({
-      token,
-      user: { id: user.id, name: user.name, phone: user.phone, createdAt: user.createdAt },
-    });
+    res.json({ token, user: publicUser(user) });
   } catch (err) {
     sendRouteError(res, err, 'auth login');
   }
@@ -126,10 +164,19 @@ router.get('/me', auth, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
-      select: { id: true, name: true, phone: true, createdAt: true },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        createdAt: true,
+        planExpiresAt: true,
+        planStatus: true,
+        isLegacyUser: true,
+        currentPlanCode: true,
+      },
     });
     if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json(user);
+    res.json(publicUser(user));
   } catch (err) {
     sendRouteError(res, err, 'auth me');
   }

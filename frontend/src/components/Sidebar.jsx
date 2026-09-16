@@ -12,8 +12,10 @@ import {
   BookOpen,
   Headphones,
   Store,
+  Crown,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 const menuItems = [
   { key: 'dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -23,6 +25,7 @@ const menuItems = [
   { key: 'vendors', path: '/vendors', icon: Store },
   { key: 'roles', path: '/roles', icon: ShieldCheck },
   { key: 'transactions', path: '/transactions', icon: ArrowLeftRight },
+  { key: 'subscription', path: '/subscription', icon: Crown },
   { key: 'how_to_use', path: '/how-to-use', icon: BookOpen },
   { key: 'contact_us', path: '/contact-us', icon: Headphones },
   { key: 'profile', path: '/profile', icon: UserCircle },
@@ -32,6 +35,7 @@ export default function Sidebar({ open, onClose, onProfileOpen }) {
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useLanguage();
+  const { locked, showRenewalReminder, daysLeft } = useSubscription();
 
   const navigate = (path) => {
     if (path === '/profile' && onProfileOpen) {
@@ -76,6 +80,15 @@ export default function Sidebar({ open, onClose, onProfileOpen }) {
         >
           {menuItems.map(({ key, path, icon: Icon, subtitle }) => {
             const active = pathname.startsWith(path);
+            const isSubscription = path === '/subscription';
+            const badge = isSubscription
+              ? locked
+                ? t('sub_badge_locked')
+                : showRenewalReminder
+                  ? t('sub_badge_days_left').replace('{days}', daysLeft ?? 0)
+                  : null
+              : null;
+
             return (
               <button
                 key={key}
@@ -87,13 +100,26 @@ export default function Sidebar({ open, onClose, onProfileOpen }) {
                     : 'text-gray-600 active:bg-gray-100'
                 }`}
               >
-                <Icon size={22} className="flex-shrink-0" strokeWidth={active ? 2.25 : 2} />
-                <div className="min-w-0">
+                <Icon
+                  size={22}
+                  className={`flex-shrink-0 ${isSubscription && !active ? 'text-amber-500' : ''}`}
+                  strokeWidth={active ? 2.25 : 2}
+                />
+                <div className="min-w-0 flex-1">
                   <span className="leading-snug">{t(key)}</span>
                   {subtitle && (
                     <p className="text-xs text-gray-400 font-normal mt-0.5">{t(subtitle)}</p>
                   )}
                 </div>
+                {badge && (
+                  <span
+                    className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                      locked ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-800'
+                    }`}
+                  >
+                    {badge}
+                  </span>
+                )}
               </button>
             );
           })}

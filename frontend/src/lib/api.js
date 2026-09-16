@@ -49,10 +49,22 @@ api.interceptors.response.use(
         if (path !== '/login' && path !== '/register') {
           localStorage.removeItem('thekedaar_token');
           localStorage.removeItem('thekedaar_user');
+          localStorage.removeItem('thekedaar_subscription');
           window.location.href = '/login';
         }
       }
     }
+
+    // 402 = the plan lapsed. Stay logged in; SubscriptionContext listens for this
+    // event, re-reads the status, and the shell swaps in the plans screen.
+    if (err.response?.status === 402 && typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('thekedaari:subscription-required', {
+          detail: err.response.data?.subscription || null,
+        })
+      );
+    }
+
     return Promise.reject(err);
   }
 );

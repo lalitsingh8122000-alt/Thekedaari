@@ -2,16 +2,21 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import { isUnlockedPath } from '@/lib/subscription';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
 import ProfileModal from './ProfileModal';
 import WhatsNewBanner from './WhatsNewBanner';
+import PaywallScreen from './subscription/PaywallScreen';
+import SubscriptionBanner from './subscription/SubscriptionBanner';
 
 export default function AppShell({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const { user, loading } = useAuth();
+  const { locked } = useSubscription();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -81,6 +86,10 @@ export default function AppShell({ children }) {
 
   if (!user) return null;
 
+  // Plan lapsed: swap the page body for the price list, but keep the chrome so the
+  // user can still log out, switch language, or reach support and the guide.
+  const paywalled = locked && !isUnlockedPath(pathname);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar onMenuClick={() => setSidebarOpen(true)} />
@@ -89,10 +98,21 @@ export default function AppShell({ children }) {
         onClose={() => setSidebarOpen(false)}
         onProfileOpen={() => setProfileModalOpen(true)}
       />
-      <main className="page-content p-4 max-w-4xl mx-auto">{children}</main>
-      <BottomNav sidebarOpen={sidebarOpen} />
+      <main
+        className={`page-content p-4 mx-auto ${paywalled ? 'max-w-5xl' : 'max-w-4xl'}`}
+      >
+        {paywalled ? (
+          <PaywallScreen />
+        ) : (
+          <>
+            <SubscriptionBanner />
+            {children}
+          </>
+        )}
+      </main>
+      {!paywalled && <BottomNav sidebarOpen={sidebarOpen} />}
       <ProfileModal open={profileModalOpen} onClose={closeProfileModal} />
-      <WhatsNewBanner />
+      {!paywalled && <WhatsNewBanner />}
     </div>
   );
 }
