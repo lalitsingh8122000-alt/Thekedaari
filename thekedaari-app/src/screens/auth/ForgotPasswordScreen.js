@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView, Image,
+  KeyboardAvoidingView, Platform, ScrollView, Image, Modal, Pressable,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import client from '../../api/client';
 import { useLanguage } from '../../context/LanguageContext';
 import { Colors } from '../../theme/colors';
+import { SUPPORTED_LANGUAGES } from '../../i18n/translations';
 
 export default function ForgotPasswordScreen({ navigation }) {
   const { lang, switchLang, t } = useLanguage();
@@ -15,6 +16,7 @@ export default function ForgotPasswordScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
   const insets = useSafeAreaInsets();
 
   const handleSubmit = async () => {
@@ -39,6 +41,8 @@ export default function ForgotPasswordScreen({ navigation }) {
     }
   };
 
+  const currentLangLabel = SUPPORTED_LANGUAGES.find((l) => l.code === lang)?.label || 'English';
+
   return (
     <View style={{ flex: 1 }}>
       <View style={[styles.topBar, { paddingTop: insets.top + 12 }]}>
@@ -57,10 +61,10 @@ export default function ForgotPasswordScreen({ navigation }) {
         </View>
         <TouchableOpacity
           style={styles.langBtn}
-          onPress={() => switchLang(lang === 'hi' ? 'en' : 'hi')}
+          onPress={() => setLangOpen(true)}
           activeOpacity={0.8}
         >
-          <Text style={styles.langBtnText}>{lang === 'hi' ? 'English' : 'हिंदी'}</Text>
+          <Text style={styles.langBtnText}>{currentLangLabel}</Text>
         </TouchableOpacity>
       </View>
 
@@ -94,7 +98,7 @@ export default function ForgotPasswordScreen({ navigation }) {
             ) : (
               <>
                 <Image
-                  source={require('../../../assets/logo.png')}
+                   source={require('../../../assets/logo.png')}
                   style={styles.logoBig}
                   resizeMode="contain"
                 />
@@ -136,6 +140,54 @@ export default function ForgotPasswordScreen({ navigation }) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Language Selection Modal */}
+      <Modal
+        visible={langOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setLangOpen(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setLangOpen(false)}>
+          <Pressable style={styles.langModalSheet} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.langModalHeader}>
+              <Text style={styles.langModalTitle}>{t('language') || 'Language'}</Text>
+              <TouchableOpacity onPress={() => setLangOpen(false)}>
+                <Ionicons name="close" size={24} color={Colors.gray800} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              contentContainerStyle={styles.langList}
+              showsVerticalScrollIndicator={false}
+            >
+              {SUPPORTED_LANGUAGES.map((l) => (
+                <TouchableOpacity
+                  key={l.code}
+                  style={[
+                    styles.langItem,
+                    lang === l.code && styles.langItemActive,
+                  ]}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    switchLang(l.code);
+                    setLangOpen(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.langItemText,
+                    lang === l.code && styles.langItemTextActive,
+                  ]}>
+                    {l.label}
+                  </Text>
+                  {lang === l.code && (
+                    <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -224,4 +276,61 @@ const styles = StyleSheet.create({
   },
   successTitle: { fontSize: 20, fontWeight: '800', color: Colors.gray800, marginBottom: 8 },
   successBody: { fontSize: 14, color: Colors.gray600, textAlign: 'center', lineHeight: 20 },
+
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  langModalSheet: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '65%',
+    paddingBottom: 24,
+  },
+  langModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.gray100,
+  },
+  langModalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: Colors.gray900,
+  },
+  langList: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  langItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: Colors.gray100,
+    borderWidth: 1.5,
+    borderColor: Colors.gray100,
+  },
+  langItemActive: {
+    backgroundColor: Colors.primaryLight,
+    borderColor: Colors.primary,
+  },
+  langItemText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.gray700,
+  },
+  langItemTextActive: {
+    fontWeight: '700',
+    color: Colors.primaryDark,
+  },
 });

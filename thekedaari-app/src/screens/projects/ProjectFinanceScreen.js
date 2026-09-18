@@ -21,6 +21,18 @@ const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('en-IN') : '';
 const toDateInput = (v) => v ? (typeof v === 'string' ? v : new Date(v).toISOString()).slice(0, 10) : new Date().toISOString().split('T')[0];
 
 const EXPENSE_CATS = ['Cement', 'Sand', 'Brick', 'Steel', 'Aggregate', 'Others'];
+const FIXED_EXPENSE_REMARKS = new Set(['Cement', 'Sand', 'Brick', 'Steel', 'Aggregate']);
+const EXPENSE_FILTER_OPTIONS = ['All', ...EXPENSE_CATS, 'Contract'];
+const EXPENSE_FILTER_ICONS = {
+  All: '📊',
+  Cement: '🏗️',
+  Sand: '⏳',
+  Brick: '🧱',
+  Steel: '⚙️',
+  Aggregate: '🪨',
+  Others: '📦',
+  Contract: '📜',
+};
 
 export default function ProjectFinanceScreen({ route, navigation }) {
   const { t } = useLanguage();
@@ -36,6 +48,7 @@ export default function ProjectFinanceScreen({ route, navigation }) {
   const [summary, setSummary] = useState(null);
   const [incomes, setIncomes] = useState([]);
   const [expenses, setExpenses] = useState([]);
+  const [expenseFilter, setExpenseFilter] = useState('All');
   const [workers, setWorkers] = useState([]);
   const [contractTrades, setContractTrades] = useState([]);
   const [vendors, setVendors] = useState([]);
@@ -435,45 +448,82 @@ tbody td{padding:7px 7px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
             <TouchableOpacity style={[styles.addRowBtn, { backgroundColor: Colors.primary, marginTop: 4 }]} onPress={handleDownloadReport}>
               <Text style={styles.addRowBtnText}>⬇️ {t('downloadReport') || 'Download Expense Report'}</Text>
             </TouchableOpacity>
-            {expenses.length === 0 ? (
-              <Card style={{ alignItems: 'center', paddingVertical: 30 }}>
-                <Text style={{ color: Colors.gray400 }}>{t('noExpense')}</Text>
-              </Card>
-            ) : expenses.map((e) => (
-              <Card key={e.id}>
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontWeight: '700', fontSize: 16, color: Colors.red }}>{fmt(e.amount)}</Text>
-                    <Text style={{ fontSize: 12, color: Colors.gray400, marginTop: 2 }}>{fmtDate(e.date)}</Text>
-                    <View style={styles.expBadge}>
-                      <Text style={{ fontSize: 11, color: Colors.red, fontWeight: '700' }}>{expLabel(e.remarks)}</Text>
+
+            {/* Category Filter Chips */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterChipContainer}>
+              {EXPENSE_FILTER_OPTIONS.map((opt) => {
+                const isActive = expenseFilter === opt;
+                const icon = EXPENSE_FILTER_ICONS[opt] || '';
+                const label = opt === 'All' ? (t('all') || 'All') : expLabel(opt);
+                return (
+                  <TouchableOpacity
+                    key={opt}
+                    activeOpacity={0.75}
+                    style={[
+                      styles.chip,
+                      isActive && styles.chipActive,
+                    ]}
+                    onPress={() => setExpenseFilter(opt)}
+                  >
+                    <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                      {icon ? `${icon} ` : ''}{label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            {(() => {
+              const filtered = expenseFilter === 'All'
+                ? expenses
+                : expenseFilter === 'Others'
+                  ? expenses.filter((e) => !FIXED_EXPENSE_REMARKS.has(e.remarks) && e.remarks !== 'Contract')
+                  : expenses.filter((e) => e.remarks === expenseFilter);
+
+              if (filtered.length === 0) {
+                return (
+                  <Card style={{ alignItems: 'center', paddingVertical: 30 }}>
+                    <Text style={{ color: Colors.gray400 }}>{t('noExpense')}</Text>
+                  </Card>
+                );
+              }
+
+              return filtered.map((e) => (
+                <Card key={e.id}>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontWeight: '700', fontSize: 16, color: Colors.red }}>{fmt(e.amount)}</Text>
+                      <Text style={{ fontSize: 12, color: Colors.gray400, marginTop: 2 }}>{fmtDate(e.date)}</Text>
+                      <View style={styles.expBadge}>
+                        <Text style={{ fontSize: 11, color: Colors.red, fontWeight: '700' }}>{expLabel(e.remarks)}</Text>
+                      </View>
                     </View>
+                    {e.remarks !== 'Labour' && (
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        <TouchableOpacity style={styles.iconBtn} onPress={() => openExpense(e)}>
+                          <Text>✏️</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.iconBtn, { backgroundColor: Colors.redBg }]} onPress={() => setPendingDelete({ kind: 'expense', id: e.id })}>
+                          <Text>🗑️</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
                   </View>
-                  {e.remarks !== 'Labour' && (
-                    <View style={{ flexDirection: 'row', gap: 6 }}>
-                      <TouchableOpacity style={styles.iconBtn} onPress={() => openExpense(e)}>
-                        <Text>✏️</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={[styles.iconBtn, { backgroundColor: Colors.redBg }]} onPress={() => setPendingDelete({ kind: 'expense', id: e.id })}>
-                        <Text>🗑️</Text>
-                      </TouchableOpacity>
-                    </View>
+                  {e.worker && (
+                    <Text style={{ fontSize: 12, color: '#92400e', marginTop: 4, fontWeight: '600' }}>
+                      {e.remarks === 'Contract' ? t('contractor') : t('paid')}: {e.worker.name}
+                      {e.contractTrade?.name ? ` · ${e.contractTrade.name}` : ''}
+                    </Text>
                   )}
-                </View>
-                {e.worker && (
-                  <Text style={{ fontSize: 12, color: '#92400e', marginTop: 4, fontWeight: '600' }}>
-                    {e.remarks === 'Contract' ? t('contractor') : t('paid')}: {e.worker.name}
-                    {e.contractTrade?.name ? ` · ${e.contractTrade.name}` : ''}
-                  </Text>
-                )}
-                {e.vendor && (
-                  <Text style={{ fontSize: 12, color: '#6d28d9', marginTop: 4, fontWeight: '600' }}>
-                    🚚 {t('vendor_from') || 'From'}: {e.vendor.name}
-                  </Text>
-                )}
-                {e.notes ? <Text style={{ fontSize: 12, color: Colors.gray500, marginTop: 2 }}>{e.notes}</Text> : null}
-              </Card>
-            ))}
+                  {e.vendor && (
+                    <Text style={{ fontSize: 12, color: '#6d28d9', marginTop: 4, fontWeight: '600' }}>
+                      🚚 {t('vendor_from') || 'From'}: {e.vendor.name}
+                    </Text>
+                  )}
+                  {e.notes ? <Text style={{ fontSize: 12, color: Colors.gray500, marginTop: 2 }}>{e.notes}</Text> : null}
+                </Card>
+              ));
+            })()}
           </>
         )}
       </ScrollView>
@@ -629,6 +679,38 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: Colors.gray200, borderRadius: 12,
     paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: Colors.gray800,
     backgroundColor: Colors.white, marginBottom: 10,
+  },
+  filterChipContainer: { gap: 8, paddingVertical: 8, paddingHorizontal: 2 },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: Colors.white,
+    borderWidth: 1.5,
+    borderColor: Colors.gray200,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  chipActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+    elevation: 3,
+    shadowOpacity: 0.15,
+  },
+  chipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.gray700,
+  },
+  chipTextActive: {
+    color: Colors.white,
+    fontWeight: '700',
   },
   optBtn: { flex: 1, borderRadius: 10, paddingVertical: 9, alignItems: 'center', backgroundColor: Colors.gray100 },
   optBtnActive: { backgroundColor: Colors.primary },

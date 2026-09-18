@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import client from '../../api/client';
 import { Colors } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
-import { Card, LoadingSpinner, EmptyState } from '../../components';
+import { Card, LoadingSpinner, EmptyState, ConfirmModal } from '../../components';
 
 const fmt = (n) => '₹' + Math.abs(n || 0).toLocaleString('en-IN');
 const fmtDate = (iso) => (iso ? new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '');
@@ -29,6 +29,9 @@ export default function VendorLedgerScreen({ route, navigation }) {
   const [editForm, setEditForm] = useState({ amount: '', remarks: '', comment: '' });
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState('');
+
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(() => {
     client.get(`/vendor-ledger/${vendorId}`)

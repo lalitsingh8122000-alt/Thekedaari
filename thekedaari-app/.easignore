@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+
+# Expo / build outputs
+.expo/
+dist/
+web-build/
+
+# Android build outputs & local artifacts
+android/build/
+android/app/build/
+android/.gradle/
+android/.cxx/
+android/app/.cxx/
+android/.kotlin/
+android/.idea/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# General build folders
+build/
+**/build/
+.gradle/
+**/.gradle/
+.cxx/
+**/.cxx/
+
+# iOS build outputs
+ios/build/
+ios/Pods/
+ios/DerivedData/
+
+# Logs & Environment
+*.log
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local

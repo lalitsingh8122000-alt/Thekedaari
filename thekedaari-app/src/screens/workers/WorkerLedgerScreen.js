@@ -11,7 +11,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import client from '../../api/client';
 import { Colors } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
-import { Card, StatCard, LedgerSkeleton, ErrorBox, BottomModal } from '../../components';
+import { Card, StatCard, LedgerSkeleton, ErrorBox, BottomModal, ConfirmModal } from '../../components';
 
 const fmt = (n) => '₹' + Math.abs(n || 0).toLocaleString('en-IN');
 const fmtDay = (iso) => iso ? new Date(iso).toLocaleDateString('en-IN') : '';
@@ -261,6 +261,7 @@ tbody td{padding:7px 7px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
         }
         renderItem={({ item: entry }) => {
           const isOwed = entry.type === 'Credit';
+          const isManual = !entry.attendanceId && !entry.expenseId;
           return (
             <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
               <View style={{ flex: 1 }}>
@@ -443,4 +444,5 @@ const styles = StyleSheet.create({
   catBtnText: { fontSize: 13, fontWeight: '600', color: Colors.gray600 },
   saveBtn: { borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
   saveBtnText: { color: Colors.white, fontSize: 15, fontWeight: '700' },
+  iconBtn: { padding: 6, borderRadius: 8, backgroundColor: Colors.gray100 },
 });

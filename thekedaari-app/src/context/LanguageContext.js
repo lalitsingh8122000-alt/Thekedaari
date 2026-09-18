@@ -5,7 +5,7 @@ import translations from '../i18n/translations';
 const LanguageContext = createContext(null);
 
 export function LanguageProvider({ children }) {
-  const [lang, setLang] = useState('hi');
+  const [lang, setLang] = useState('en');
 
   useEffect(() => {
     AsyncStorage.getItem('thekedaar_lang').then((saved) => {
@@ -18,7 +18,7 @@ export function LanguageProvider({ children }) {
     AsyncStorage.setItem('thekedaar_lang', l);
   };
 
-  const t = (key) => translations[lang]?.[key] || translations.hi[key] || key;
+  const t = (key) => translations[lang]?.[key] || translations.en[key] || translations.hi[key] || key;
 
   return (
     <LanguageContext.Provider value={{ lang, switchLang, t }}>

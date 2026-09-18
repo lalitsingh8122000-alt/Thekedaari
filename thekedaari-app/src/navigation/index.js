@@ -33,6 +33,7 @@ import VendorLedgerScreen from '../screens/vendors/VendorLedgerScreen';
 import RolesScreen from '../screens/RolesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import MoreMenuScreen from '../screens/MoreMenuScreen';
+import HowToUseScreen from '../screens/HowToUseScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -74,6 +75,7 @@ function MoreStack() {
       <Stack.Screen name="VendorForm" component={VendorFormScreen} />
       <Stack.Screen name="VendorLedger" component={VendorLedgerScreen} />
       <Stack.Screen name="Roles" component={RolesScreen} />
+      <Stack.Screen name="HowToUse" component={HowToUseScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
     </Stack.Navigator>
   );

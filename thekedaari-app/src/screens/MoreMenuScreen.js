@@ -17,6 +17,7 @@ export default function MoreMenuScreen({ navigation }) {
     { key: 'Transactions', label: t('transactions'), emoji: '💰', desc: t('transactionsDesc'), color: Colors.primary },
     { key: 'VendorsList', label: 'Vendors', emoji: '🚚', desc: 'Manage material suppliers', color: '#8b5cf6' },
     { key: 'Roles', label: t('rolesAndContracts'), emoji: '🏷️', desc: t('rolesDesc'), color: Colors.amber },
+    { key: 'HowToUse', label: t('howToUse') || 'How to Use', emoji: '📖', desc: t('howToUseDesc') || 'App usage guide', color: '#06b6d4' },
     { key: 'Profile', label: t('profile'), emoji: '👤', desc: t('profileDesc'), color: Colors.gray500 },
   ];
 

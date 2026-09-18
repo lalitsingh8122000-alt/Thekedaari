@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, Image, Modal, Pressable, Alert,
+  View, Text, TouchableOpacity, StyleSheet, Image, Modal, Pressable, Alert, ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Colors } from '../theme/colors';
+import { SUPPORTED_LANGUAGES } from '../i18n/translations';
 
 export default function AppHeader() {
   const { user, logout } = useAuth();
   const { lang, switchLang, t } = useLanguage();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
   const insets = useSafeAreaInsets();
   const initial = (user?.name || 'U').charAt(0).toUpperCase();
 
@@ -22,6 +24,8 @@ export default function AppHeader() {
       { text: t('logoutBtn'), style: 'destructive', onPress: logout },
     ]);
   };
+
+  const currentLangLabel = SUPPORTED_LANGUAGES.find((l) => l.code === lang)?.label || 'English';
 
   return (
     <>
@@ -39,10 +43,10 @@ export default function AppHeader() {
         <View style={styles.right}>
           <TouchableOpacity
             style={styles.langBtn}
-            onPress={() => switchLang(lang === 'hi' ? 'en' : 'hi')}
+            onPress={() => setLangOpen(true)}
             activeOpacity={0.8}
           >
-            <Text style={styles.langBtnText}>{lang === 'hi' ? 'English' : 'हिंदी'}</Text>
+            <Text style={styles.langBtnText}>{currentLangLabel}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.avatarBtn}
@@ -54,6 +58,7 @@ export default function AppHeader() {
         </View>
       </View>
 
+      {/* Profile Modal */}
       <Modal
         visible={profileOpen}
         transparent
@@ -87,20 +92,17 @@ export default function AppHeader() {
             {/* Language section */}
             <View style={styles.langSection}>
               <Text style={styles.langSectionLabel}>{t('language')}</Text>
-              <View style={styles.langRow}>
-                <TouchableOpacity
-                  style={[styles.langOpt, lang === 'hi' && styles.langOptActive]}
-                  onPress={() => switchLang('hi')}
-                >
-                  <Text style={[styles.langOptText, lang === 'hi' && styles.langOptTextActive]}>हिंदी</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.langOpt, lang === 'en' && styles.langOptActive]}
-                  onPress={() => switchLang('en')}
-                >
-                  <Text style={[styles.langOptText, lang === 'en' && styles.langOptTextActive]}>English</Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                style={styles.langSelectorRow}
+                activeOpacity={0.7}
+                onPress={() => {
+                  setProfileOpen(false);
+                  setLangOpen(true);
+                }}
+              >
+                <Text style={styles.langSelectorLabel}>{currentLangLabel}</Text>
+                <Ionicons name="chevron-forward" size={16} color={Colors.gray500} />
+              </TouchableOpacity>
             </View>
 
             {/* Logout */}
@@ -114,6 +116,54 @@ export default function AppHeader() {
                 <Text style={styles.logoutText}>{t('logout')}</Text>
               </TouchableOpacity>
             </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Language Selection Modal */}
+      <Modal
+        visible={langOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setLangOpen(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setLangOpen(false)}>
+          <Pressable style={styles.langModalSheet} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.langModalHeader}>
+              <Text style={styles.langModalTitle}>{t('language') || 'Language'}</Text>
+              <TouchableOpacity onPress={() => setLangOpen(false)}>
+                <Ionicons name="close" size={24} color={Colors.gray800} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              contentContainerStyle={styles.langList}
+              showsVerticalScrollIndicator={false}
+            >
+              {SUPPORTED_LANGUAGES.map((l) => (
+                <TouchableOpacity
+                  key={l.code}
+                  style={[
+                    styles.langItem,
+                    lang === l.code && styles.langItemActive,
+                  ]}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    switchLang(l.code);
+                    setLangOpen(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.langItemText,
+                    lang === l.code && styles.langItemTextActive,
+                  ]}>
+                    {l.label}
+                  </Text>
+                  {lang === l.code && (
+                    <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>
@@ -197,20 +247,23 @@ const styles = StyleSheet.create({
   sheetInfoRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 },
   sheetInfoText: { fontSize: 13, color: 'rgba(255,255,255,0.8)' },
 
-  langSection: { padding: 16, paddingBottom: 12 },
+  langSection: { padding: 16, paddingBottom: 16 },
   langSectionLabel: {
     fontSize: 11, fontWeight: '700', color: Colors.gray400,
     textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10,
   },
-  langRow: { flexDirection: 'row', gap: 8 },
-  langOpt: {
-    flex: 1, paddingVertical: 10, borderRadius: 10,
-    backgroundColor: Colors.gray100, borderWidth: 1.5,
-    borderColor: Colors.gray200, alignItems: 'center',
+  langSelectorRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: Colors.gray100,
+    borderWidth: 1,
+    borderColor: Colors.gray200,
   },
-  langOptActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  langOptText: { fontSize: 14, fontWeight: '700', color: Colors.gray500 },
-  langOptTextActive: { color: Colors.white },
+  langSelectorLabel: { fontSize: 15, fontWeight: '700', color: Colors.gray800 },
 
   sheetFooter: { borderTopWidth: 1, borderTopColor: Colors.gray100, padding: 12 },
   logoutBtn: {
@@ -219,4 +272,61 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: '#fecaca',
   },
   logoutText: { color: Colors.red, fontSize: 15, fontWeight: '700' },
+
+  // New Language Selection Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  langModalSheet: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '65%',
+    paddingBottom: 24,
+  },
+  langModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.gray100,
+  },
+  langModalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: Colors.gray900,
+  },
+  langList: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  langItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: Colors.gray100,
+    borderWidth: 1.5,
+    borderColor: Colors.gray100,
+  },
+  langItemActive: {
+    backgroundColor: Colors.primaryLight,
+    borderColor: Colors.primary,
+  },
+  langItemText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.gray700,
+  },
+  langItemTextActive: {
+    fontWeight: '700',
+    color: Colors.primaryDark,
+  },
 });
