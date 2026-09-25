@@ -5,19 +5,40 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import { Colors } from '../theme/colors';
 import { Card } from '../components';
 
 export default function MoreMenuScreen({ navigation }) {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { status, locked, daysLeft } = useSubscription();
+
+  const subBadge = locked
+    ? t('sub_badge_locked')
+    : daysLeft !== null && daysLeft !== undefined
+    ? `${daysLeft}d left`
+    : status?.isActive
+    ? 'Active'
+    : null;
 
   const MENU_ITEMS = [
+    {
+      key: 'Subscription',
+      label: t('subscription'),
+      emoji: '👑',
+      desc: t('managePlan') || 'View plans & billing',
+      color: Colors.amber,
+      badge: subBadge,
+      badgeColor: locked ? '#fee2e2' : '#dbeafe',
+      badgeTextColor: locked ? '#dc2626' : '#1d4ed8',
+    },
     { key: 'AttendanceReport', label: t('attendanceReport'), emoji: '📅', desc: t('attendanceReportDesc'), color: Colors.green },
     { key: 'Transactions', label: t('transactions'), emoji: '💰', desc: t('transactionsDesc'), color: Colors.primary },
     { key: 'VendorsList', label: 'Vendors', emoji: '🚚', desc: 'Manage material suppliers', color: '#8b5cf6' },
     { key: 'Roles', label: t('rolesAndContracts'), emoji: '🏷️', desc: t('rolesDesc'), color: Colors.amber },
     { key: 'HowToUse', label: t('howToUse') || 'How to Use', emoji: '📖', desc: t('howToUseDesc') || 'App usage guide', color: '#06b6d4' },
+    { key: 'ContactUs', label: t('contactUs') || 'Contact Us', emoji: '📞', desc: t('contactUsDesc') || 'Call & WhatsApp support', color: '#10b981' },
     { key: 'Profile', label: t('profile'), emoji: '👤', desc: t('profileDesc'), color: Colors.gray500 },
   ];
 
@@ -25,15 +46,20 @@ export default function MoreMenuScreen({ navigation }) {
     <SafeAreaView style={styles.safe} edges={[]}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* User Header */}
-        <View style={styles.userCard}>
+        <TouchableOpacity
+          style={styles.userCard}
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate('Profile')}
+        >
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{(user?.name || 'U').charAt(0).toUpperCase()}</Text>
           </View>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.userName}>{user?.name || '—'}</Text>
             <Text style={styles.userPhone}>{user?.phone}</Text>
           </View>
-        </View>
+          <Text style={styles.arrow}>›</Text>
+        </TouchableOpacity>
 
         <Text style={styles.sectionLabel}>{t('menu')}</Text>
 
@@ -48,7 +74,26 @@ export default function MoreMenuScreen({ navigation }) {
                 <Text style={styles.menuEmoji}>{item.emoji}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.menuLabel}>{item.label}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={styles.menuLabel}>{item.label}</Text>
+                  {item.badge ? (
+                    <View
+                      style={[
+                        styles.badgePill,
+                        { backgroundColor: item.badgeColor || '#f1f5f9' },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.badgePillText,
+                          { color: item.badgeTextColor || '#334155' },
+                        ]}
+                      >
+                        {item.badge}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
                 <Text style={styles.menuDesc}>{item.desc}</Text>
               </View>
               <Text style={styles.arrow}>›</Text>
@@ -82,4 +127,13 @@ const styles = StyleSheet.create({
   menuLabel: { fontSize: 15, fontWeight: '700', color: Colors.gray800 },
   menuDesc: { fontSize: 12, color: Colors.gray500, marginTop: 2 },
   arrow: { fontSize: 22, color: Colors.gray300, fontWeight: '300' },
+  badgePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  badgePillText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
 });

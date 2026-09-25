@@ -47,6 +47,13 @@ export default function PaymentResultModal({ open, plan, expiresAt, onClose }) {
             {t('sub_success_cta')}
             <ArrowRight size={20} aria-hidden />
           </button>
+
+          <a
+            href="thekedaari://subscription?payment=success"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            {lang === 'hi' ? 'ठेकेदारी ऐप में वापस जाएं' : 'Open in Thekedaari App'}
+          </a>
         </div>
       </div>
     </div>

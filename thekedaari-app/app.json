@@ -2,15 +2,12 @@
   "expo": {
     "name": "Thekedaari",
     "slug": "thekedaari-app",
+    "scheme": "thekedaari",
     "version": "1.0.9",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
+
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.thekedaari.app"
@@ -39,12 +36,20 @@
             "enableMinifyInReleaseBuilds": true
           },
           "ios": {
-            "deploymentTarget": "15.1"
+            "deploymentTarget": "16.4"
           }
         }
       ],
       "@react-native-community/datetimepicker",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/logo.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ]
     ],
     "extra": {
       "eas": {

@@ -212,15 +212,25 @@ tbody td{padding:7px 7px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
             <Text style={styles.subtitle}>{name || data?.worker?.name}</Text>
           </View>
         </View>
-        <TouchableOpacity
-          style={[styles.downloadBtn, (!data || !data.ledger || data.ledger.length === 0 || generating) && { opacity: 0.5 }]}
-          onPress={handlePrintPDF}
-          disabled={!data || !data.ledger || data.ledger.length === 0 || generating}
-        >
-          <Text style={styles.downloadText}>
-            {generating ? t('generating') : `📥 ${t('report')}`}
-          </Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+          <TouchableOpacity
+            style={[styles.downloadBtn, { backgroundColor: '#fef3c7', paddingHorizontal: 10 }]}
+            onPress={() => navigation.navigate('WorkerReport', { workerId, name: name || data?.worker?.name })}
+          >
+            <Text style={[styles.downloadText, { color: '#b45309' }]}>
+              📊 {t('attendance')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.downloadBtn, (!data || !data.ledger || data.ledger.length === 0 || generating) && { opacity: 0.5 }]}
+            onPress={handlePrintPDF}
+            disabled={!data || !data.ledger || data.ledger.length === 0 || generating}
+          >
+            <Text style={styles.downloadText}>
+              {generating ? t('generating') : `📥 ${t('report')}`}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <FlatList

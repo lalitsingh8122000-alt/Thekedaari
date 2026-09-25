@@ -170,7 +170,7 @@ router.post('/orders', auth, async (req, res) => {
     }
 
     const receipt = buildReceipt(req.userId);
-    const useLink = PAYMENT_MODE === 'link';
+    const useLink = req.body?.mode ? req.body.mode === 'link' : PAYMENT_MODE === 'link';
 
     // Persist first so a Razorpay success can never land on an unknown order.
     const order = await prisma.paymentOrder.create({
@@ -303,8 +303,44 @@ router.post('/orders', auth, async (req, res) => {
 
 router.get('/payment-link/callback', async (req, res) => {
   const base = publicBaseUrl(req);
-  const back = (result, extra = '') =>
-    res.redirect(302, `${base}/subscription?payment=${result}${extra}`);
+  const back = (result, extra = '', planCode = '') => {
+    // If the request comes from mobile browser or app, provide app deep link and web redirect
+    const userAgent = String(req.headers['user-agent'] || '').toLowerCase();
+    const isMobile = /android|iphone|ipad|mobile/i.test(userAgent);
+    const appUrl = `thekedaari://subscription?payment=${result}${extra}`;
+    const webUrl = `${base}/subscription?payment=${result}${extra}`;
+
+    if (isMobile) {
+      return res.send(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>Thekedaari Payment</title>
+            <style>
+              body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 90vh; text-align: center; padding: 20px; background: #f8fafc; }
+              .card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 360px; width: 100%; }
+              .btn { display: block; margin-top: 16px; padding: 12px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 10px; font-weight: bold; }
+            </style>
+          </head>
+          <body>
+            <div class="card">
+              <h2 style="color: ${result === 'success' ? '#16a34a' : '#dc2626'};">${result === 'success' ? 'भुगतान सफल!' : 'भुगतान पूरा नहीं हुआ'}</h2>
+              <p>${result === 'success' ? 'आपका प्लान चालू हो गया है। ऐप में वापस जाने के लिए नीचे बटन दबाएं।' : 'कृपया ऐप में वापस जाकर दोबारा कोशिश करें।'}</p>
+              <a href="${appUrl}" class="btn">ऐप में वापस जाएं (Open App)</a>
+            </div>
+            <script>
+              setTimeout(function() {
+                window.location.href = "${appUrl}";
+              }, 1200);
+            </script>
+          </body>
+        </html>
+      `);
+    }
+
+    return res.redirect(302, webUrl);
+  };
 
   try {
     const paymentLinkId = String(req.query.razorpay_payment_link_id || '').trim();
@@ -354,7 +390,7 @@ router.get('/payment-link/callback', async (req, res) => {
       `[subscription] payment link paid link=${paymentLinkId} credited=${result.credited}`
     );
 
-    return back('success', `&plan=${encodeURIComponent(plan.code)}`);
+    return back('success', `&plan=${encodeURIComponent(plan.code)}`, plan.code);
   } catch (err) {
     console.error('[subscription] payment link callback error:', err);
     return back('failed');

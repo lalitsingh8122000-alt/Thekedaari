@@ -6,16 +6,31 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import { Colors } from '../theme/colors';
 import { SUPPORTED_LANGUAGES } from '../i18n/translations';
+import { formatDate } from '../theme/subscription';
 
-export default function AppHeader() {
+export default function AppHeader({ onOpenSubscription }) {
   const { user, logout } = useAuth();
   const { lang, switchLang, t } = useLanguage();
+  const { status, locked } = useSubscription();
   const [profileOpen, setProfileOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const insets = useSafeAreaInsets();
   const initial = (user?.name || 'U').charAt(0).toUpperCase();
+
+  const planState = status?.status || 'none';
+  const planLabel =
+    status?.currentSubscription?.planName ||
+    status?.currentPlanCode ||
+    (planState === 'legacy'
+      ? t('sub_status_founder')
+      : planState === 'trial'
+      ? t('sub_status_trial')
+      : locked
+      ? t('sub_status_no_plan')
+      : t('sub_status_active'));
 
   const handleLogout = () => {
     setProfileOpen(false);
@@ -87,6 +102,34 @@ export default function AppHeader() {
                   </Text>
                 </View>
               ) : null}
+            </View>
+
+            {/* Subscription section */}
+            <View style={styles.subHeaderSection}>
+              <TouchableOpacity
+                style={[styles.subHeaderCard, locked && styles.subHeaderCardLocked]}
+                activeOpacity={0.8}
+                onPress={() => {
+                  setProfileOpen(false);
+                  if (onOpenSubscription) onOpenSubscription();
+                }}
+              >
+                <Ionicons
+                  name={locked ? 'lock-closed' : 'ribbon'}
+                  size={18}
+                  color={locked ? '#dc2626' : '#d97706'}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.subHeaderPlan}>{planLabel}</Text>
+                  {status?.expiresAt ? (
+                    <Text style={styles.subHeaderExpiry}>
+                      {status.isActive ? t('sub_valid_until') : t('sub_ended_on')}{' '}
+                      {formatDate(status.expiresAt, lang)}
+                    </Text>
+                  ) : null}
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
+              </TouchableOpacity>
             </View>
 
             {/* Language section */}
@@ -328,5 +371,34 @@ const styles = StyleSheet.create({
   langItemTextActive: {
     fontWeight: '700',
     color: Colors.primaryDark,
+  },
+  subHeaderSection: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  subHeaderCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#fffbeb',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  subHeaderCardLocked: {
+    backgroundColor: '#fef2f2',
+    borderColor: '#fecaca',
+  },
+  subHeaderPlan: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  subHeaderExpiry: {
+    fontSize: 11,
+    color: '#64748b',
+    marginTop: 1,
   },
 });

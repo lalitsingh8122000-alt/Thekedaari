@@ -1,10 +1,12 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 
 const dbTarget = (process.env.DB_TARGET || 'local').toLowerCase();
-if (!process.env.DATABASE_URL) {
+if (dbTarget === 'local' && process.env.DATABASE_URL_LOCAL) {
+  process.env.DATABASE_URL = process.env.DATABASE_URL_LOCAL;
+} else if (!process.env.DATABASE_URL) {
   process.env.DATABASE_URL =
     dbTarget === 'aws' ? process.env.DATABASE_URL_AWS : process.env.DATABASE_URL_LOCAL;
 }

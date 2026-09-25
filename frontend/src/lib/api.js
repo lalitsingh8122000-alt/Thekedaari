@@ -11,12 +11,12 @@ function resolveApiBaseURL() {
 
 const api = axios.create({
   baseURL: resolveApiBaseURL(),
-headers: {
-  'Content-Type': 'application/json',
-  'Cache-Control': 'no-cache, no-store, must-revalidate',
-  'Pragma': 'no-cache',
-  'Expires': '0',
-},
+  headers: {
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+  },
 });
 
 api.interceptors.request.use((config) => {

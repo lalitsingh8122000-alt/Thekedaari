@@ -6,13 +6,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import { Colors } from '../theme/colors';
 import { Card } from '../components';
 import { SUPPORTED_LANGUAGES } from '../i18n/translations';
+import { formatDate } from '../theme/subscription';
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }) {
   const { user, logout } = useAuth();
   const { lang, switchLang, t } = useLanguage();
+  const { status, locked } = useSubscription();
   const [langOpen, setLangOpen] = useState(false);
 
   const handleLogout = () => {
@@ -21,6 +24,18 @@ export default function ProfileScreen() {
       { text: t('logoutBtn'), style: 'destructive', onPress: logout },
     ]);
   };
+
+  const planState = status?.status || 'none';
+  const planLabel =
+    status?.currentSubscription?.planName ||
+    status?.currentPlanCode ||
+    (planState === 'legacy'
+      ? t('sub_status_founder')
+      : planState === 'trial'
+      ? t('sub_status_trial')
+      : locked
+      ? t('sub_status_no_plan')
+      : t('sub_status_active'));
 
   const currentLangLabel = SUPPORTED_LANGUAGES.find((l) => l.code === lang)?.label || 'English';
 
@@ -37,6 +52,52 @@ export default function ProfileScreen() {
           <Text style={styles.userPhone}>{user?.phone || '—'}</Text>
         </Card>
 
+        {/* Subscription Card */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => navigation?.navigate('Subscription')}
+        >
+          <Card style={[styles.subCard, locked && styles.subCardLocked]}>
+            <View style={styles.subCardRow}>
+              <View style={[styles.subIconWrap, locked ? styles.subIconLocked : styles.subIconActive]}>
+                <Ionicons
+                  name={locked ? 'lock-closed' : 'ribbon'}
+                  size={20}
+                  color={locked ? '#dc2626' : '#d97706'}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.subCardLabel}>{t('subscription')}</Text>
+                <Text style={styles.subCardPlanName} numberOfLines={1}>
+                  {planLabel}
+                </Text>
+                {status?.expiresAt ? (
+                  <Text style={styles.subCardExpiry}>
+                    {status.isActive ? t('sub_valid_until') : t('sub_ended_on')}{' '}
+                    {formatDate(status.expiresAt, lang)}
+                  </Text>
+                ) : null}
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={Colors.gray400} />
+            </View>
+          </Card>
+        </TouchableOpacity>
+
+        {/* Support & Help Card */}
+        <Card>
+          <TouchableOpacity
+            style={styles.actionRow}
+            activeOpacity={0.7}
+            onPress={() => navigation?.navigate('ContactUs')}
+          >
+            <View style={styles.actionRowLeft}>
+              <Ionicons name="headset-outline" size={20} color="#2563eb" />
+              <Text style={styles.actionRowText}>{t('contactUs') || 'Contact Us'}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={Colors.gray400} />
+          </TouchableOpacity>
+        </Card>
+
         {/* Language Selection Card */}
         <Card>
           <Text style={styles.sectionTitle}>{t('language')}</Text>
@@ -50,6 +111,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </Card>
 
+        {/* App Info Card */}
         <Card>
           <Text style={styles.sectionTitle}>{t('appInfo')}</Text>
           <View style={styles.infoRow}>
@@ -58,10 +120,22 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>{t('version')}</Text>
-            <Text style={styles.infoValue}>1.0.0</Text>
+            <Text style={styles.infoValue}>1.0.9</Text>
           </View>
         </Card>
 
+        {/* Delete Account Link */}
+        <TouchableOpacity
+          style={styles.deleteAccountBtn}
+          activeOpacity={0.8}
+          onPress={() => navigation?.navigate('DeleteAccount')}
+        >
+          <Text style={styles.deleteAccountText}>
+            {t('deleteAccount') || 'Delete Account'}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Logout */}
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
           <Text style={styles.logoutText}>{t('logout')}</Text>
         </TouchableOpacity>
@@ -209,5 +283,75 @@ const styles = StyleSheet.create({
   langItemTextActive: {
     fontWeight: '700',
     color: Colors.primaryDark,
+  },
+  subCard: {
+    padding: 14,
+    backgroundColor: '#fff',
+    borderColor: '#e2e8f0',
+  },
+  subCardLocked: {
+    backgroundColor: '#fef2f2',
+    borderColor: '#fecaca',
+  },
+  subCardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  subIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subIconActive: {
+    backgroundColor: '#fef3c7',
+  },
+  subIconLocked: {
+    backgroundColor: '#fee2e2',
+  },
+  subCardLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748b',
+    textTransform: 'uppercase',
+  },
+  subCardPlanName: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginTop: 1,
+  },
+  subCardExpiry: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  actionRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  actionRowText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1e293b',
+  },
+  deleteAccountBtn: {
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  deleteAccountText: {
+    fontSize: 13,
+    color: '#94a3b8',
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });

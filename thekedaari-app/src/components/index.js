@@ -1,4 +1,4 @@
-﻿import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, ActivityIndicator, Image,
   StyleSheet, Modal, ScrollView, Pressable, Animated, Dimensions, Easing,
@@ -847,3 +847,6 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
 });
+
+export { default as PaywallScreen } from './PaywallScreen';
+export { default as SubscriptionBanner } from './SubscriptionBanner';

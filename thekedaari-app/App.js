@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
 import { LanguageProvider } from './src/context/LanguageContext';
+import { SubscriptionProvider } from './src/context/SubscriptionContext';
 import AppNavigator from './src/navigation';
 
 export default function App() {
@@ -11,8 +12,10 @@ export default function App() {
     <SafeAreaProvider>
       <LanguageProvider>
         <AuthProvider>
-          <StatusBar style="light" backgroundColor="#2563eb" />
-          <AppNavigator />
+          <SubscriptionProvider>
+            <StatusBar style="light" backgroundColor="#2563eb" />
+            <AppNavigator />
+          </SubscriptionProvider>
         </AuthProvider>
       </LanguageProvider>
     </SafeAreaProvider>

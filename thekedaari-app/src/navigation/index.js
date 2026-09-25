@@ -1,15 +1,18 @@
 import React from 'react';
 import { View } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import { Colors } from '../theme/colors';
 import { LoadingSpinner } from '../components';
 import AppHeader from '../components/AppHeader';
+import PaywallScreen from '../components/PaywallScreen';
+import SubscriptionBanner from '../components/SubscriptionBanner';
 
 // Auth screens
 import LoginScreen from '../screens/auth/LoginScreen';
@@ -21,6 +24,7 @@ import DashboardScreen from '../screens/DashboardScreen';
 import WorkersScreen from '../screens/workers/WorkersScreen';
 import WorkerFormScreen from '../screens/workers/WorkerFormScreen';
 import WorkerLedgerScreen from '../screens/workers/WorkerLedgerScreen';
+import WorkerReportScreen from '../screens/workers/WorkerReportScreen';
 import ProjectsScreen from '../screens/projects/ProjectsScreen';
 import ProjectFormScreen from '../screens/projects/ProjectFormScreen';
 import ProjectFinanceScreen from '../screens/projects/ProjectFinanceScreen';
@@ -34,6 +38,17 @@ import RolesScreen from '../screens/RolesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import MoreMenuScreen from '../screens/MoreMenuScreen';
 import HowToUseScreen from '../screens/HowToUseScreen';
+import SubscriptionScreen from '../screens/SubscriptionScreen';
+import ContactUsScreen from '../screens/ContactUsScreen';
+import DeleteAccountScreen from '../screens/DeleteAccountScreen';
+
+export const navigationRef = createNavigationContainerRef();
+
+export function navigate(name, params) {
+  if (navigationRef.isReady()) {
+    navigationRef.navigate(name, params);
+  }
+}
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -50,6 +65,7 @@ function WorkersStack() {
       <Stack.Screen name="WorkersList" component={WorkersScreen} />
       <Stack.Screen name="WorkerForm" component={WorkerFormScreen} />
       <Stack.Screen name="WorkerLedger" component={WorkerLedgerScreen} />
+      <Stack.Screen name="WorkerReport" component={WorkerReportScreen} />
     </Stack.Navigator>
   );
 }
@@ -77,6 +93,9 @@ function MoreStack() {
       <Stack.Screen name="Roles" component={RolesScreen} />
       <Stack.Screen name="HowToUse" component={HowToUseScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+      <Stack.Screen name="ContactUs" component={ContactUsScreen} />
+      <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
     </Stack.Navigator>
   );
 }
@@ -154,11 +173,35 @@ function MainTabs() {
 }
 
 function MainApp() {
+  const { locked } = useSubscription();
+
+  const handleOpenSubscription = () => {
+    navigate('Subscription');
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: Colors.background }}>
-      <AppHeader />
-      <MainTabs />
+      <AppHeader onOpenSubscription={handleOpenSubscription} />
+      {locked ? (
+        <PaywallScreen />
+      ) : (
+        <>
+          <SubscriptionBanner onRenewPress={handleOpenSubscription} />
+          <MainTabs />
+        </>
+      )}
     </View>
+  );
+}
+
+function AppStack() {
+  return (
+    <Stack.Navigator screenOptions={screenOpts}>
+      <Stack.Screen name="MainApp" component={MainApp} />
+      <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+      <Stack.Screen name="ContactUs" component={ContactUsScreen} />
+      <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
+    </Stack.Navigator>
   );
 }
 
@@ -172,14 +215,27 @@ function AuthStack() {
   );
 }
 
-export default function AppNavigator() {
-  const { token, loading } = useAuth();
+const linking = {
+  prefixes: ['thekedaari://', 'https://thekedaari.com'],
+  config: {
+    screens: {
+      MainApp: '',
+      Subscription: 'subscription',
+      ContactUs: 'contact-us',
+      DeleteAccount: 'delete-account',
+    },
+  },
+};
 
-  if (loading) return <LoadingSpinner />;
+export default function AppNavigator() {
+  const { token, loading: authLoading } = useAuth();
+  const { loading: subLoading } = useSubscription();
+
+  if (authLoading || (token && subLoading)) return <LoadingSpinner />;
 
   return (
-    <NavigationContainer>
-      {token ? <MainApp /> : <AuthStack />}
+    <NavigationContainer ref={navigationRef} linking={linking}>
+      {token ? <AppStack /> : <AuthStack />}
     </NavigationContainer>
   );
 }
