@@ -3,11 +3,18 @@
     "name": "Thekedaari",
     "slug": "thekedaari-app",
     "scheme": "thekedaari",
-    "version": "1.0.9",
+    "version": "1.1.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/147b4846-f3f5-404b-b232-a8a41075c2b6",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.thekedaari.app"
@@ -18,7 +25,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.thekedaari.app",
-      "versionCode": 36441
+      "versionCode": 36446
     },
     "web": {
       "favicon": "./assets/favicon.png"
