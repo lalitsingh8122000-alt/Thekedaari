@@ -14,11 +14,13 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { INCLUDED_FEATURE_KEYS, DEFAULT_PLANS } from '../../theme/subscription';
+import { useNavigation } from '@react-navigation/native';
 import PlanCard from './PlanCard';
 import PaymentResultModal from './PaymentResultModal';
 import RazorpayCheckoutModal from './RazorpayCheckoutModal';
 
 export default function PlansGrid() {
+  const navigation = useNavigation();
   const { user } = useAuth();
   const { t, lang } = useLanguage();
   const {
@@ -26,9 +28,10 @@ export default function PlansGrid() {
     status,
     refresh,
     createOrder,
-    startCheckout,
     paymentsLive: contextPaymentsLive,
     supportPhone: contextSupportPhone,
+    paymentEvent,
+    clearPaymentEvent,
   } = useSubscription();
 
   const [plans, setPlans] = useState(contextPlans?.length ? contextPlans : DEFAULT_PLANS);
@@ -36,20 +39,65 @@ export default function PlansGrid() {
   const [paymentsLive, setPaymentsLive] = useState(contextPaymentsLive !== false);
   const [supportPhone, setSupportPhone] = useState(contextSupportPhone || '6377518112');
   const [busyPlan, setBusyPlan] = useState(null);
+  const [activeOrder, setActiveOrder] = useState(null);
+  const [checkoutVisible, setCheckoutVisible] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  const [activeCheckoutOrder, setActiveCheckoutOrder] = useState(null);
+  const pendingPlanRef = useRef(null);
 
-  // Auto-trigger celebration modal when plan activates (e.g. after returning from UPI/browser)
-  const prevActiveRef = useRef(status?.isActive);
+  // Handle deep link payment outcome (e.g. thekedaari://subscription?payment=success&plan=...)
   useEffect(() => {
-    if (prevActiveRef.current === false && status?.isActive === true) {
-      setSuccess({
-        plan: (status?.plans || plans).find((p) => p.code === status?.currentPlanCode) || null,
-        expiresAt: status?.expiresAt,
+    if (!paymentEvent) return;
+    const { outcome, planCode } = paymentEvent;
+    if (outcome === 'success') {
+      refresh().then((fresh) => {
+        const found =
+          (fresh?.plans || plans).find((p) => p.code === (planCode || fresh?.currentPlanCode)) ||
+          pendingPlanRef.current ||
+          (planCode ? { code: planCode, name: planCode } : null);
+        setSuccess({
+          plan: found,
+          expiresAt: fresh?.expiresAt || status?.expiresAt,
+        });
+        clearPaymentEvent?.();
       });
+    } else if (outcome === 'cancelled') {
+      setError(lang === 'hi' ? 'भुगतान रद्द कर दिया गया।' : 'Payment was cancelled.');
+      clearPaymentEvent?.();
+    } else if (outcome === 'failed') {
+      setError(
+        lang === 'hi'
+          ? 'भुगतान पूरा नहीं हो पाया। कृपया दोबारा कोशिश करें।'
+          : 'Payment failed. Please try again.'
+      );
+      clearPaymentEvent?.();
     }
-    prevActiveRef.current = status?.isActive;
+  }, [paymentEvent, plans, lang, refresh, clearPaymentEvent, status?.expiresAt]);
+
+  // Auto-detect when plan becomes active or is extended (e.g. returned from UPI app without waiting for redirect)
+  const prevStatusRef = useRef(status);
+  useEffect(() => {
+    const prev = prevStatusRef.current;
+    if (prev) {
+      const becameActive = !prev.isActive && status?.isActive;
+      const wasExtended =
+        Boolean(status?.isActive) &&
+        Boolean(status?.expiresAt) &&
+        Boolean(prev?.expiresAt) &&
+        new Date(status.expiresAt).getTime() > new Date(prev.expiresAt).getTime() + 1000 * 60 * 60;
+
+      if (becameActive || wasExtended) {
+        const activePlan =
+          (status?.plans || plans).find((p) => p.code === status?.currentPlanCode) ||
+          pendingPlanRef.current;
+        setSuccess({
+          plan: activePlan,
+          expiresAt: status?.expiresAt,
+        });
+        pendingPlanRef.current = null;
+      }
+    }
+    prevStatusRef.current = status;
   }, [status, plans]);
 
   useEffect(() => {
@@ -85,41 +133,20 @@ export default function PlansGrid() {
     if (busyPlan) return;
     setError(null);
     setBusyPlan(plan.code);
+    pendingPlanRef.current = plan;
 
     try {
-      // 1. Attempt In-App Razorpay Checkout Order
-      const order = await createOrder({ planCode: plan.code, mode: 'checkout' });
+      // 1. Create Razorpay Payment Link for app
+      const order = await createOrder({ planCode: plan.code, mode: 'link', source: 'app' });
       setBusyPlan(null);
 
-      if (order.mode === 'checkout' || order.razorpayOrderId) {
-        // Open In-App Razorpay Checkout Modal
-        setActiveCheckoutOrder({
-          ...order,
-          plan,
-        });
-      } else if (order.paymentUrl) {
-        // Fallback to payment link if server specifies link mode
-        await Linking.openURL(order.paymentUrl);
-        Alert.alert(
-          lang === 'hi' ? 'भुगतान शुरू हुआ' : 'Payment Started',
-          lang === 'hi'
-            ? 'भुगतान पूरा करने के बाद ऐप में वापस आएं, आपका प्लान तुरंत चालू हो जाएगा।'
-            : 'Return to the app after completing the payment, your plan will activate immediately.',
-          [
-            {
-              text: lang === 'hi' ? 'स्थिति जांचें' : 'Check Status',
-              onPress: async () => {
-                const fresh = await refresh();
-                if (fresh?.isActive) {
-                  setSuccess({
-                    plan,
-                    expiresAt: fresh.expiresAt,
-                  });
-                }
-              },
-            },
-            { text: 'OK', style: 'cancel' },
-          ]
+      if (order?.paymentUrl || order?.razorpayOrderId) {
+        // 2. Open payment link directly in-app via WebView modal
+        setActiveOrder({ ...order, plan });
+        setCheckoutVisible(true);
+      } else {
+        throw new Error(
+          lang === 'hi' ? 'भुगतान लिंक प्राप्त नहीं हुआ।' : 'Could not retrieve payment link.'
         );
       }
     } catch (err) {
@@ -135,15 +162,6 @@ export default function PlansGrid() {
       if (data?.supportPhone) setSupportPhone(data.supportPhone);
       if (data?.code === 'PAYMENT_NOT_CONFIGURED') setPaymentsLive(false);
     }
-  };
-
-  const handleCheckoutSuccess = (result) => {
-    setActiveCheckoutOrder(null);
-    setSuccess({
-      plan: result.plan,
-      expiresAt: result.subscription?.endsAt || result.subscription?.expiresAt,
-    });
-    refresh();
   };
 
 
@@ -234,15 +252,39 @@ export default function PlansGrid() {
         ) : null}
       </View>
 
-      {/* Razorpay In-App Checkout Modal */}
+      {/* In-App Payment Link / Razorpay Modal */}
       <RazorpayCheckoutModal
-        visible={Boolean(activeCheckoutOrder)}
-        order={activeCheckoutOrder}
+        visible={checkoutVisible}
+        order={activeOrder}
         user={user}
         lang={lang}
-        onSuccess={handleCheckoutSuccess}
-        onError={(err) => setError(err)}
-        onClose={() => setActiveCheckoutOrder(null)}
+        onSuccess={(result) => {
+          setCheckoutVisible(false);
+          setActiveOrder(null);
+          refresh().then((fresh) => {
+            const finishedPlan =
+              result?.plan ||
+              (fresh?.plans || plans).find(
+                (p) => p.code === (result?.planCode || fresh?.currentPlanCode)
+              ) ||
+              pendingPlanRef.current ||
+              activeOrder?.plan;
+            setSuccess({
+              plan: finishedPlan,
+              expiresAt: fresh?.expiresAt || result?.subscription?.endsAt || status?.expiresAt,
+            });
+            pendingPlanRef.current = null;
+          });
+        }}
+        onError={(errMsg) => {
+          setCheckoutVisible(false);
+          setActiveOrder(null);
+          if (errMsg) setError(errMsg);
+        }}
+        onClose={() => {
+          setCheckoutVisible(false);
+          setActiveOrder(null);
+        }}
       />
 
       {/* Success Celebration Modal */}
@@ -250,7 +292,16 @@ export default function PlansGrid() {
         open={Boolean(success)}
         plan={success?.plan}
         expiresAt={success?.expiresAt}
-        onClose={() => setSuccess(null)}
+        onClose={async () => {
+          setSuccess(null);
+          await refresh();
+          if (navigation?.canGoBack?.()) {
+            navigation.goBack();
+          }
+          try {
+            navigation?.navigate?.('MainApp');
+          } catch {}
+        }}
       />
     </View>
   );

@@ -61,7 +61,59 @@ router.get('/plans', async (req, res) => {
 
 router.get('/status', auth, async (req, res) => {
   try {
-    const access = resolveAccess(req.authUser);
+    let authUser = req.authUser;
+
+    // If user is not yet active, auto-check if they have a recently paid order from Razorpay
+    const isCurrentlyActive =
+      authUser?.planExpiresAt && new Date(authUser.planExpiresAt).getTime() > Date.now();
+
+    if (!isCurrentlyActive && razorpay.isConfigured()) {
+      try {
+        const recentOrder = await prisma.paymentOrder.findFirst({
+          where: {
+            userId: req.userId,
+            status: 'created',
+            createdAt: { gte: new Date(Date.now() - 2 * 60 * 60 * 1000) },
+          },
+          orderBy: { id: 'desc' },
+          include: { plan: true },
+        });
+
+        if (recentOrder && recentOrder.razorpayPaymentLinkId) {
+          const link = await razorpay
+            .fetchPaymentLink(recentOrder.razorpayPaymentLinkId)
+            .catch(() => null);
+
+          if (link && link.status === 'paid') {
+            const paymentId = link.payments?.[0]?.payment_id || null;
+            await activatePaidOrder(prisma, {
+              order: recentOrder,
+              plan: recentOrder.plan,
+              paymentId,
+            });
+
+            // Reload user with updated active plan
+            authUser = await prisma.user.findUnique({
+              where: { id: req.userId },
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+                createdAt: true,
+                planExpiresAt: true,
+                planStatus: true,
+                isLegacyUser: true,
+                currentPlanCode: true,
+              },
+            });
+          }
+        }
+      } catch (syncErr) {
+        console.warn('[subscription/status] Order auto-sync error:', syncErr.message);
+      }
+    }
+
+    const access = resolveAccess(authUser || req.authUser);
 
     const [activeSubscription, plans] = await Promise.all([
       prisma.subscription.findFirst({
@@ -91,6 +143,79 @@ router.get('/status', auth, async (req, res) => {
     });
   } catch (err) {
     sendRouteError(res, err, 'subscription status');
+  }
+});
+
+/* ── Explicit sync order status with Razorpay ────────────────────────────────── */
+
+router.post('/sync-order', auth, async (req, res) => {
+  try {
+    const orderId = req.body?.orderId;
+    const where = orderId
+      ? { id: Number(orderId), userId: req.userId }
+      : { userId: req.userId, status: 'created' };
+
+    const order = await prisma.paymentOrder.findFirst({
+      where,
+      orderBy: { id: 'desc' },
+      include: { plan: true },
+    });
+
+    if (!order) {
+      const access = resolveAccess(req.authUser);
+      return res.json({ synced: false, isActive: access.isActive, access });
+    }
+
+    if (order.status === 'paid') {
+      const user = await prisma.user.findUnique({
+        where: { id: req.userId },
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          createdAt: true,
+          planExpiresAt: true,
+          planStatus: true,
+          isLegacyUser: true,
+          currentPlanCode: true,
+        },
+      });
+      const access = resolveAccess(user || req.authUser);
+      return res.json({ synced: true, status: 'paid', isActive: access.isActive, access });
+    }
+
+    if (order.razorpayPaymentLinkId) {
+      const link = await razorpay.fetchPaymentLink(order.razorpayPaymentLinkId).catch(() => null);
+      if (link && link.status === 'paid') {
+        const paymentId = link.payments?.[0]?.payment_id || null;
+        await activatePaidOrder(prisma, {
+          order,
+          plan: order.plan,
+          paymentId,
+        });
+
+        const user = await prisma.user.findUnique({
+          where: { id: req.userId },
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            createdAt: true,
+            planExpiresAt: true,
+            planStatus: true,
+            isLegacyUser: true,
+            currentPlanCode: true,
+          },
+        });
+        const access = resolveAccess(user || req.authUser);
+        return res.json({ synced: true, status: 'paid', isActive: access.isActive, access });
+      }
+    }
+
+    const access = resolveAccess(req.authUser);
+    res.json({ synced: false, status: order.status, isActive: access.isActive, access });
+  } catch (err) {
+    sendRouteError(res, err, 'subscription sync-order');
   }
 });
 
@@ -171,6 +296,7 @@ router.post('/orders', auth, async (req, res) => {
 
     const receipt = buildReceipt(req.userId);
     const useLink = req.body?.mode ? req.body.mode === 'link' : PAYMENT_MODE === 'link';
+    const source = req.body?.source === 'app' ? 'app' : 'web';
 
     // Persist first so a Razorpay success can never land on an unknown order.
     const order = await prisma.paymentOrder.create({
@@ -182,7 +308,11 @@ router.post('/orders', auth, async (req, res) => {
         currency: 'INR',
         receipt,
         status: 'created',
-        provider: useLink ? 'razorpay_link' : 'razorpay',
+        provider: useLink
+          ? source === 'app'
+            ? 'razorpay_link_app'
+            : 'razorpay_link_web'
+          : 'razorpay',
       },
     });
 
@@ -219,8 +349,9 @@ router.post('/orders', auth, async (req, res) => {
             phone: req.authUser?.phone || '',
             planCode: plan.code,
             orderId: String(order.id),
+            source,
           },
-          callbackUrl: `${base}/api/subscription/payment-link/callback`,
+          callbackUrl: `${base}/api/subscription/payment-link/callback?source=${source}`,
           notifySms: LINK_NOTIFY_SMS,
           expiresInMinutes: LINK_EXPIRY_MINUTES,
         });
@@ -304,35 +435,113 @@ router.post('/orders', auth, async (req, res) => {
 router.get('/payment-link/callback', async (req, res) => {
   const base = publicBaseUrl(req);
   const back = (result, extra = '', planCode = '') => {
-    // If the request comes from mobile browser or app, provide app deep link and web redirect
-    const userAgent = String(req.headers['user-agent'] || '').toLowerCase();
-    const isMobile = /android|iphone|ipad|mobile/i.test(userAgent);
-    const appUrl = `thekedaari://subscription?payment=${result}${extra}`;
-    const webUrl = `${base}/subscription?payment=${result}${extra}`;
+    if (req.headers.accept?.includes('application/json') || req.query?.json === '1') {
+      return res.json({ success: result === 'success', result, extra, planCode });
+    }
 
-    if (isMobile) {
+    const source = String(req.query?.source || '').toLowerCase();
+    const isApp = source === 'app' || req.query?.is_app === '1';
+
+    // Website destination: always redirect directly to frontend website URL
+    const webBase =
+      process.env.FRONTEND_URL ||
+      (base.includes(':5000') ? 'http://localhost:3000' : base);
+    const webUrl = `${webBase}/subscription?payment=${result}${extra}`;
+    const appUrl = `thekedaari://home?payment=${result}${extra}`;
+
+    if (isApp) {
+      const isSuccess = result === 'success';
+      const isCancelled = result === 'cancelled';
+      const title = isSuccess
+        ? 'भुगतान सफल!'
+        : isCancelled
+        ? 'भुगतान रद्द किया गया'
+        : 'भुगतान पूरा नहीं हुआ';
+      const message = isSuccess
+        ? 'आपका प्लान तुरंत चालू हो गया है। ऐप में वापस जाने के लिए नीचे बटन दबाएं।'
+        : isCancelled
+        ? 'भुगतान रद्द कर दिया गया। दोबारा कोशिश करने के लिए ऐप में वापस जाएं।'
+        : 'कृपया ऐप में वापस जाकर दोबारा कोशिश करें या सपोर्ट से संपर्क करें।';
+      const primaryColor = isSuccess ? '#16a34a' : isCancelled ? '#d97706' : '#dc2626';
+
       return res.send(`
         <!DOCTYPE html>
         <html>
           <head>
+            <meta charset="utf-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
             <title>Thekedaari Payment</title>
             <style>
-              body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 90vh; text-align: center; padding: 20px; background: #f8fafc; }
-              .card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 360px; width: 100%; }
-              .btn { display: block; margin-top: 16px; padding: 12px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 10px; font-weight: bold; }
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 90vh;
+                margin: 0;
+                padding: 20px;
+                background: #f8fafc;
+                color: #1e293b;
+              }
+              .card {
+                background: white;
+                border-radius: 20px;
+                padding: 28px 24px;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+                max-width: 360px;
+                width: 100%;
+                text-align: center;
+                box-sizing: border-box;
+              }
+              .icon {
+                width: 64px;
+                height: 64px;
+                border-radius: 32px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 32px;
+                margin-bottom: 16px;
+                background: ${isSuccess ? '#dcfce7' : isCancelled ? '#fef3c7' : '#fee2e2'};
+                color: ${primaryColor};
+              }
+              h2 {
+                color: ${primaryColor};
+                margin: 0 0 10px 0;
+                font-size: 22px;
+                font-weight: 800;
+              }
+              p {
+                color: #64748b;
+                font-size: 14px;
+                line-height: 20px;
+                margin: 0 0 20px 0;
+              }
+              .btn {
+                display: block;
+                padding: 14px 20px;
+                background: #2563eb;
+                color: white;
+                text-decoration: none;
+                border-radius: 12px;
+                font-weight: 700;
+                font-size: 15px;
+                box-shadow: 0 4px 12px rgba(37,99,235,0.25);
+              }
             </style>
           </head>
           <body>
             <div class="card">
-              <h2 style="color: ${result === 'success' ? '#16a34a' : '#dc2626'};">${result === 'success' ? 'भुगतान सफल!' : 'भुगतान पूरा नहीं हुआ'}</h2>
-              <p>${result === 'success' ? 'आपका प्लान चालू हो गया है। ऐप में वापस जाने के लिए नीचे बटन दबाएं।' : 'कृपया ऐप में वापस जाकर दोबारा कोशिश करें।'}</p>
-              <a href="${appUrl}" class="btn">ऐप में वापस जाएं (Open App)</a>
+              <div class="icon">${isSuccess ? '✓' : isCancelled ? '!' : '✕'}</div>
+              <h2>${title}</h2>
+              <p>${message}</p>
+              <a href="${appUrl}" class="btn">ऐप होम पर जाएं (Open App)</a>
             </div>
             <script>
               setTimeout(function() {
                 window.location.href = "${appUrl}";
-              }, 1200);
+              }, 800);
             </script>
           </body>
         </html>

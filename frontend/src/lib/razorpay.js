@@ -70,7 +70,7 @@ export async function startCheckout({ planCode, user, lang = 'en', onSuccess, on
 
   let order;
   try {
-    const res = await api.post('/subscription/orders', { planCode });
+    const res = await api.post('/subscription/orders', { planCode, mode: 'link', source: 'web' });
     order = res.data;
   } catch (err) {
     const data = err?.response?.data;

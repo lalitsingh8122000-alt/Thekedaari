@@ -86,6 +86,9 @@ export function SubscriptionProvider({ children }) {
     refresh();
   }, [token, authLoading, user, refresh]);
 
+  const [paymentEvent, setPaymentEvent] = useState(null);
+  const clearPaymentEvent = useCallback(() => setPaymentEvent(null), []);
+
   // When app comes back to foreground (e.g. after completing payment in UPI app)
   useEffect(() => {
     if (!token) return;
@@ -95,18 +98,27 @@ export function SubscriptionProvider({ children }) {
       }
     });
 
-    // Handle deep links (e.g. thekedaari://subscription?payment=success)
-    const urlSub = Linking.addEventListener('url', (event) => {
-      if (event?.url && (event.url.includes('subscription') || event.url.includes('payment'))) {
-        refresh();
-      }
-    });
+    const handleUrl = (event) => {
+      const url = typeof event === 'string' ? event : event?.url;
+      if (!url) return;
+      if (url.includes('subscription') || url.includes('payment')) {
+        let outcome = null;
+        let planCode = null;
+        const outcomeMatch = url.match(/[?&]payment=([^&]+)/);
+        const planMatch = url.match(/[?&]plan=([^&]+)/);
+        if (outcomeMatch) outcome = decodeURIComponent(outcomeMatch[1]);
+        if (planMatch) planCode = decodeURIComponent(planMatch[1]);
 
-    Linking.getInitialURL().then((url) => {
-      if (url && (url.includes('subscription') || url.includes('payment'))) {
+        if (outcome) {
+          setPaymentEvent({ outcome, planCode, timestamp: Date.now() });
+        }
         refresh();
       }
-    });
+    };
+
+    // Handle deep links (e.g. thekedaari://subscription?payment=success)
+    const urlSub = Linking.addEventListener('url', handleUrl);
+    Linking.getInitialURL().then(handleUrl);
 
     return () => {
       subscription.remove();
@@ -128,10 +140,10 @@ export function SubscriptionProvider({ children }) {
   }, [refresh]);
 
   /**
-   * Create an Order for Razorpay checkout or payment link
+   * Create an Order for Razorpay payment link or checkout
    */
   const createOrder = useCallback(
-    async ({ planCode, mode = 'checkout' }) => {
+    async ({ planCode, mode = 'link' }) => {
       const res = await client.post('/subscription/orders', { planCode, mode });
       return res.data;
     },
@@ -168,15 +180,15 @@ export function SubscriptionProvider({ children }) {
   );
 
   /**
-   * Start payment via link or external browser fallback
+   * Start payment via link or checkout order
    */
   const startCheckout = useCallback(
-    async ({ planCode, lang = 'hi', onError }) => {
+    async ({ planCode, lang = 'hi', openExternal = false, onError }) => {
       try {
         const res = await client.post('/subscription/orders', { planCode, mode: 'link' });
         const order = res.data;
 
-        if (order.mode === 'link' || order.paymentUrl) {
+        if (openExternal && order.paymentUrl) {
           try {
             await Linking.openURL(order.paymentUrl);
             return { order, opened: true };
@@ -188,9 +200,8 @@ export function SubscriptionProvider({ children }) {
                 : 'Could not open payment page. Please try again.'
             );
           }
-        } else {
-          return { order, opened: false };
         }
+        return { order, opened: false };
       } catch (err) {
         const data = err?.response?.data;
         const msg =
@@ -231,6 +242,8 @@ export function SubscriptionProvider({ children }) {
         currentSubscription: status?.currentSubscription || null,
         currentPlanCode: status?.currentPlanCode || status?.currentSubscription?.planCode || null,
         supportPhone: status?.supportPhone || '6377518112',
+        paymentEvent,
+        clearPaymentEvent,
         refresh,
         createOrder,
         verifyPayment,
