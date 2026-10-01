@@ -28,6 +28,7 @@ function publicUser(user) {
     isLegacyUser: access.isLegacyUser,
     currentPlanCode: access.currentPlanCode,
     subscriptionActive: access.isActive,
+    isTrial: access.isTrial,
   };
 }
 

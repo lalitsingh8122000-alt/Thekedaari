@@ -35,7 +35,7 @@ export default function Sidebar({ open, onClose, onProfileOpen }) {
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useLanguage();
-  const { locked, showRenewalReminder, daysLeft } = useSubscription();
+  const { locked, showRenewalReminder, daysLeft, isTrial } = useSubscription();
 
   const navigate = (path) => {
     if (path === '/profile' && onProfileOpen) {
@@ -46,6 +46,11 @@ export default function Sidebar({ open, onClose, onProfileOpen }) {
     router.push(path);
     onClose();
   };
+
+  const visibleMenuItems = menuItems.filter((item) => {
+    if (item.key === 'subscription' && isTrial) return false;
+    return true;
+  });
 
   return (
     <>
@@ -78,7 +83,7 @@ export default function Sidebar({ open, onClose, onProfileOpen }) {
         <nav
           className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-2 sm:p-3 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] [-webkit-overflow-scrolling:touch]"
         >
-          {menuItems.map(({ key, path, icon: Icon, subtitle }) => {
+          {visibleMenuItems.map(({ key, path, icon: Icon, subtitle }) => {
             const active = pathname.startsWith(path);
             const isSubscription = path === '/subscription';
             const badge = isSubscription

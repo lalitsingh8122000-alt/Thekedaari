@@ -9,7 +9,7 @@ const DISMISS_KEY = 'thekedaari_renewal_banner_dismissed';
 
 export default function SubscriptionBanner({ onRenewPress }) {
   const { t } = useLanguage();
-  const { showRenewalReminder, daysLeft, isLegacyUser } = useSubscription();
+  const { showRenewalReminder, daysLeft, isLegacyUser, isTrial } = useSubscription();
   const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
@@ -19,7 +19,7 @@ export default function SubscriptionBanner({ onRenewPress }) {
     });
   }, []);
 
-  if (!showRenewalReminder || dismissed) return null;
+  if (isTrial || !showRenewalReminder || dismissed) return null;
 
   const days = daysLeft !== null && daysLeft !== undefined ? daysLeft : 0;
   const isUrgent = days <= 2;

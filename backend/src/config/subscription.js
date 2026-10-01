@@ -18,8 +18,8 @@ function intFromEnv(value, fallback) {
 /** Master switch — set SUBSCRIPTION_ENABLED=false to hand the whole app back to everyone. */
 const SUBSCRIPTION_ENABLED = String(process.env.SUBSCRIPTION_ENABLED || 'true').toLowerCase() !== 'false';
 
-/** Free days every new signup starts with. 0 = pay before first use. */
-const TRIAL_DAYS = intFromEnv(process.env.SUBSCRIPTION_TRIAL_DAYS, 0);
+/** Free days every new signup starts with. Defaults to 7 days free trial. */
+const TRIAL_DAYS = intFromEnv(process.env.SUBSCRIPTION_TRIAL_DAYS, 7);
 
 /** Extra days the app stays usable after expiry (soft landing). 0 = hard stop. */
 const GRACE_DAYS = intFromEnv(process.env.SUBSCRIPTION_GRACE_DAYS, 0);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -25,8 +25,20 @@ const FAQ_KEYS = [
 
 export default function SubscriptionScreen({ navigation }) {
   const { t, lang } = useLanguage();
-  const { supportPhone } = useSubscription();
+  const { supportPhone, isTrial } = useSubscription();
   const [expandedFaq, setExpandedFaq] = useState(null);
+
+  useEffect(() => {
+    if (isTrial) {
+      if (navigation?.canGoBack?.()) {
+        navigation.goBack();
+      } else {
+        navigation?.navigate?.('MainApp');
+      }
+    }
+  }, [isTrial, navigation]);
+
+  if (isTrial) return null;
 
   const toggleFaq = (idx) => {
     setExpandedFaq(expandedFaq === idx ? null : idx);

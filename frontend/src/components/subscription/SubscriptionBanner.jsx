@@ -12,7 +12,7 @@ const DISMISS_KEY = 'thekedaari_renewal_banner_dismissed';
 /** Renewal nudge in the last few days of a plan. Dismissible once per day. */
 export default function SubscriptionBanner() {
   const { t } = useLanguage();
-  const { showRenewalReminder, daysLeft, isLegacyUser } = useSubscription();
+  const { showRenewalReminder, daysLeft, isLegacyUser, isTrial } = useSubscription();
   const router = useRouter();
   const pathname = usePathname();
   const [dismissed, setDismissed] = useState(true);
@@ -22,7 +22,7 @@ export default function SubscriptionBanner() {
     setDismissed(localStorage.getItem(DISMISS_KEY) === today);
   }, []);
 
-  if (!showRenewalReminder || dismissed || pathname === SUBSCRIPTION_PATH) return null;
+  if (isTrial || !showRenewalReminder || dismissed || pathname === SUBSCRIPTION_PATH) return null;
 
   const urgent = (daysLeft ?? 0) <= 2;
   const days = daysLeft ?? 0;

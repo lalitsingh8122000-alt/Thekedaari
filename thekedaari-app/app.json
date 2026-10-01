@@ -3,7 +3,7 @@
     "name": "Thekedaari",
     "slug": "thekedaari-app",
     "scheme": "thekedaari",
-    "version": "1.1.2",
+    "version": "1.1.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -25,7 +25,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.thekedaari.app",
-      "versionCode": 36449
+      "versionCode": 36451
     },
     "web": {
       "favicon": "./assets/favicon.png"

@@ -11,7 +11,7 @@ import InstallAppSection from '@/components/InstallAppSection';
 export default function ProfileModal({ open, onClose }) {
   const { lang, t } = useLanguage();
   const { user, logout } = useAuth();
-  const { status, locked } = useSubscription();
+  const { status, locked, isTrial } = useSubscription();
   const router = useRouter();
 
   if (!open || !user) return null;
@@ -87,34 +87,36 @@ export default function ProfileModal({ open, onClose }) {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={openSubscription}
-            className={`flex w-full items-center gap-3 rounded-2xl border p-4 text-left transition-colors ${
-              locked
-                ? 'border-red-200 bg-red-50 hover:bg-red-100'
-                : 'border-gray-200 bg-white hover:bg-gray-50'
-            }`}
-          >
-            <span
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                locked ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'
+          {!isTrial && (
+            <button
+              type="button"
+              onClick={openSubscription}
+              className={`flex w-full items-center gap-3 rounded-2xl border p-4 text-left transition-colors ${
+                locked
+                  ? 'border-red-200 bg-red-50 hover:bg-red-100'
+                  : 'border-gray-200 bg-white hover:bg-gray-50'
               }`}
             >
-              <Crown size={20} strokeWidth={2.25} aria-hidden />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs text-gray-500">{t('subscription')}</p>
-              <p className="truncate font-bold text-gray-900">{planLabel}</p>
-              {status?.expiresAt && (
-                <p className="mt-0.5 text-xs text-gray-500">
-                  {status.isActive ? t('sub_valid_until') : t('sub_ended_on')}{' '}
-                  {formatDate(status.expiresAt, lang)}
-                </p>
-              )}
-            </div>
-            <ChevronRight size={20} className="shrink-0 text-gray-400" aria-hidden />
-          </button>
+              <span
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                  locked ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'
+                }`}
+              >
+                <Crown size={20} strokeWidth={2.25} aria-hidden />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-gray-500">{t('subscription')}</p>
+                <p className="truncate font-bold text-gray-900">{planLabel}</p>
+                {status?.expiresAt && (
+                  <p className="mt-0.5 text-xs text-gray-500">
+                    {status.isActive ? t('sub_valid_until') : t('sub_ended_on')}{' '}
+                    {formatDate(status.expiresAt, lang)}
+                  </p>
+                )}
+              </div>
+              <ChevronRight size={20} className="shrink-0 text-gray-400" aria-hidden />
+            </button>
+          )}
 
           <InstallAppSection lang={lang} t={t} />
 

@@ -14,7 +14,7 @@ import { formatDate } from '../theme/subscription';
 export default function AppHeader({ onOpenSubscription }) {
   const { user, logout } = useAuth();
   const { lang, switchLang, t } = useLanguage();
-  const { status, locked } = useSubscription();
+  const { status, locked, isTrial } = useSubscription();
   const [profileOpen, setProfileOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const insets = useSafeAreaInsets();
@@ -105,32 +105,34 @@ export default function AppHeader({ onOpenSubscription }) {
             </View>
 
             {/* Subscription section */}
-            <View style={styles.subHeaderSection}>
-              <TouchableOpacity
-                style={[styles.subHeaderCard, locked && styles.subHeaderCardLocked]}
-                activeOpacity={0.8}
-                onPress={() => {
-                  setProfileOpen(false);
-                  if (onOpenSubscription) onOpenSubscription();
-                }}
-              >
-                <Ionicons
-                  name={locked ? 'lock-closed' : 'ribbon'}
-                  size={18}
-                  color={locked ? '#dc2626' : '#d97706'}
-                />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.subHeaderPlan}>{planLabel}</Text>
-                  {status?.expiresAt ? (
-                    <Text style={styles.subHeaderExpiry}>
-                      {status.isActive ? t('sub_valid_until') : t('sub_ended_on')}{' '}
-                      {formatDate(status.expiresAt, lang)}
-                    </Text>
-                  ) : null}
-                </View>
-                <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
-              </TouchableOpacity>
-            </View>
+            {!isTrial && (
+              <View style={styles.subHeaderSection}>
+                <TouchableOpacity
+                  style={[styles.subHeaderCard, locked && styles.subHeaderCardLocked]}
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    setProfileOpen(false);
+                    if (onOpenSubscription) onOpenSubscription();
+                  }}
+                >
+                  <Ionicons
+                    name={locked ? 'lock-closed' : 'ribbon'}
+                    size={18}
+                    color={locked ? '#dc2626' : '#d97706'}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.subHeaderPlan}>{planLabel}</Text>
+                    {status?.expiresAt ? (
+                      <Text style={styles.subHeaderExpiry}>
+                        {status.isActive ? t('sub_valid_until') : t('sub_ended_on')}{' '}
+                        {formatDate(status.expiresAt, lang)}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
+                </TouchableOpacity>
+              </View>
+            )}
 
             {/* Language section */}
             <View style={styles.langSection}>

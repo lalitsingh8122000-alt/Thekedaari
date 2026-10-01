@@ -12,7 +12,7 @@ import { Card } from '../components';
 export default function MoreMenuScreen({ navigation }) {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const { status, locked, daysLeft } = useSubscription();
+  const { status, locked, daysLeft, isTrial } = useSubscription();
 
   const subBadge = locked
     ? t('sub_badge_locked')
@@ -42,6 +42,11 @@ export default function MoreMenuScreen({ navigation }) {
     { key: 'Profile', label: t('profile'), emoji: '👤', desc: t('profileDesc'), color: Colors.gray500 },
   ];
 
+  const visibleMenuItems = MENU_ITEMS.filter((item) => {
+    if (item.key === 'Subscription' && isTrial) return false;
+    return true;
+  });
+
   return (
     <SafeAreaView style={styles.safe} edges={[]}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -63,7 +68,7 @@ export default function MoreMenuScreen({ navigation }) {
 
         <Text style={styles.sectionLabel}>{t('menu')}</Text>
 
-        {MENU_ITEMS.map((item) => (
+        {visibleMenuItems.map((item) => (
           <TouchableOpacity
             key={item.key}
             activeOpacity={0.75}

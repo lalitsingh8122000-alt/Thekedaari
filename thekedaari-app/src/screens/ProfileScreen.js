@@ -15,7 +15,7 @@ import { formatDate } from '../theme/subscription';
 export default function ProfileScreen({ navigation }) {
   const { user, logout } = useAuth();
   const { lang, switchLang, t } = useLanguage();
-  const { status, locked } = useSubscription();
+  const { status, locked, isTrial } = useSubscription();
   const [langOpen, setLangOpen] = useState(false);
 
   const handleLogout = () => {
@@ -53,35 +53,37 @@ export default function ProfileScreen({ navigation }) {
         </Card>
 
         {/* Subscription Card */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => navigation?.navigate('Subscription')}
-        >
-          <Card style={[styles.subCard, locked && styles.subCardLocked]}>
-            <View style={styles.subCardRow}>
-              <View style={[styles.subIconWrap, locked ? styles.subIconLocked : styles.subIconActive]}>
-                <Ionicons
-                  name={locked ? 'lock-closed' : 'ribbon'}
-                  size={20}
-                  color={locked ? '#dc2626' : '#d97706'}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.subCardLabel}>{t('subscription')}</Text>
-                <Text style={styles.subCardPlanName} numberOfLines={1}>
-                  {planLabel}
-                </Text>
-                {status?.expiresAt ? (
-                  <Text style={styles.subCardExpiry}>
-                    {status.isActive ? t('sub_valid_until') : t('sub_ended_on')}{' '}
-                    {formatDate(status.expiresAt, lang)}
+        {!isTrial && (
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => navigation?.navigate('Subscription')}
+          >
+            <Card style={[styles.subCard, locked && styles.subCardLocked]}>
+              <View style={styles.subCardRow}>
+                <View style={[styles.subIconWrap, locked ? styles.subIconLocked : styles.subIconActive]}>
+                  <Ionicons
+                    name={locked ? 'lock-closed' : 'ribbon'}
+                    size={20}
+                    color={locked ? '#dc2626' : '#d97706'}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.subCardLabel}>{t('subscription')}</Text>
+                  <Text style={styles.subCardPlanName} numberOfLines={1}>
+                    {planLabel}
                   </Text>
-                ) : null}
+                  {status?.expiresAt ? (
+                    <Text style={styles.subCardExpiry}>
+                      {status.isActive ? t('sub_valid_until') : t('sub_ended_on')}{' '}
+                      {formatDate(status.expiresAt, lang)}
+                    </Text>
+                  ) : null}
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={Colors.gray400} />
               </View>
-              <Ionicons name="chevron-forward" size={18} color={Colors.gray400} />
-            </View>
-          </Card>
-        </TouchableOpacity>
+            </Card>
+          </TouchableOpacity>
+        )}
 
         {/* Support & Help Card */}
         <Card>

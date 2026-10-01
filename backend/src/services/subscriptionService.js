@@ -75,7 +75,18 @@ function daysBetween(from, to) {
  * @param {{ planExpiresAt: Date|null, planStatus?: string, isLegacyUser?: boolean, currentPlanCode?: string|null, createdAt?: Date }} user
  */
 function resolveAccess(user, now = new Date()) {
-  const expiresAt = user?.planExpiresAt ? new Date(user.planExpiresAt) : null;
+  let expiresAt = user?.planExpiresAt ? new Date(user.planExpiresAt) : null;
+  let userPlanStatus = user?.planStatus;
+
+  // Fallback for signups with planStatus 'trial' without planExpiresAt if created within TRIAL_DAYS
+  if (!expiresAt && userPlanStatus === 'trial' && !user?.currentPlanCode && TRIAL_DAYS > 0 && user?.createdAt) {
+    const signupDate = new Date(user.createdAt);
+    const trialEnd = addDays(signupDate, TRIAL_DAYS);
+    if (trialEnd.getTime() > now.getTime()) {
+      expiresAt = trialEnd;
+    }
+  }
+
   const graceEndsAt = expiresAt ? addDays(expiresAt, GRACE_DAYS) : null;
 
   if (!SUBSCRIPTION_ENABLED) {
@@ -89,6 +100,7 @@ function resolveAccess(user, now = new Date()) {
       daysLeft: expiresAt ? Math.max(0, daysBetween(now, expiresAt)) : null,
       isLegacyUser: Boolean(user?.isLegacyUser),
       currentPlanCode: user?.currentPlanCode || null,
+      isTrial: false,
       showRenewalReminder: false,
       reminderDays: RENEWAL_REMINDER_DAYS,
       supportPhone: SUPPORT_PHONE || null,
@@ -101,16 +113,18 @@ function resolveAccess(user, now = new Date()) {
   const isActive = hasWindow || inGrace;
 
   // `legacy` and `trial` label a free window someone was given by hand (bulk extend,
-  // support grant). Once a plan is bought, planStatus moves on and so does the label.
+  // support grant, or initial 7-day trial). Once a plan is bought, planStatus moves on and so does the label.
   let status;
   if (!expiresAt) status = 'none';
   else if (inGrace) status = 'grace';
   else if (!hasWindow) status = 'expired';
-  else if (user?.planStatus === 'legacy' && !user?.currentPlanCode) status = 'legacy';
-  else if (user?.planStatus === 'trial' && !user?.currentPlanCode) status = 'trial';
+  else if (userPlanStatus === 'legacy' && !user?.currentPlanCode) status = 'legacy';
+  else if (userPlanStatus === 'trial' && !user?.currentPlanCode) status = 'trial';
   else status = 'active';
 
   const daysLeft = hasWindow ? Math.max(0, daysBetween(now, expiresAt)) : 0;
+  // User is considered in active trial ONLY when they have an active trial status and window
+  const isTrial = Boolean(isActive && status === 'trial' && !user?.currentPlanCode);
 
   return {
     enforced: true,
@@ -122,7 +136,9 @@ function resolveAccess(user, now = new Date()) {
     daysLeft,
     isLegacyUser: Boolean(user?.isLegacyUser),
     currentPlanCode: user?.currentPlanCode || null,
-    showRenewalReminder: isActive && daysLeft <= RENEWAL_REMINDER_DAYS,
+    isTrial,
+    // Never show renewal reminders to active trial users (7-day free trial should be seamless)
+    showRenewalReminder: isActive && !isTrial && daysLeft <= RENEWAL_REMINDER_DAYS,
     reminderDays: RENEWAL_REMINDER_DAYS,
     supportPhone: SUPPORT_PHONE || null,
   };

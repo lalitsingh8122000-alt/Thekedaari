@@ -1,8 +1,11 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { HelpCircle } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import SubscriptionStatusCard from '@/components/subscription/SubscriptionStatusCard';
 import PlansGrid from '@/components/subscription/PlansGrid';
 import BillingHistory from '@/components/subscription/BillingHistory';
@@ -17,6 +20,16 @@ const FAQ_KEYS = [
 /** Plan management: current status, price list, billing history, FAQ. */
 export default function SubscriptionPage() {
   const { t } = useLanguage();
+  const { isTrial, loading } = useSubscription();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && isTrial) {
+      router.replace('/dashboard');
+    }
+  }, [isTrial, loading, router]);
+
+  if (!loading && isTrial) return null;
 
   return (
     <AppShell>

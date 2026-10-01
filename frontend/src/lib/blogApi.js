@@ -7,17 +7,25 @@ function getApiBase() {
 }
 
 export async function fetchBlogs() {
-  const res = await fetch(`${getApiBase()}/blogs`, {
-    next: { revalidate: 3600 },
-  });
-  if (!res.ok) return [];
-  return res.json();
+  try {
+    const res = await fetch(`${getApiBase()}/blogs`, {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return [];
+    return res.json();
+  } catch (err) {
+    return [];
+  }
 }
 
 export async function fetchBlogBySlug(slug) {
-  const res = await fetch(`${getApiBase()}/blogs/${encodeURIComponent(slug)}`, {
-    next: { revalidate: 3600 },
-  });
-  if (!res.ok) return null;
-  return res.json();
+  try {
+    const res = await fetch(`${getApiBase()}/blogs/${encodeURIComponent(slug)}`, {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch (err) {
+    return null;
+  }
 }

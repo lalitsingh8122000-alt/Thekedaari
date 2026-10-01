@@ -1,8 +1,8 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const API_BASE_URL = 'https://thekedaari.com/ap  i';
-// export const API_BASE_URL = 'http://192.168.161.79:5000/api';
+export const API_BASE_URL = 'https://thekedaari.com/api';
+// export const API_BASE_URL = 'http://10.215.221.79:5000/api';
 console.log('[API] Connecting to:', API_BASE_URL);
 
 const client = axios.create({

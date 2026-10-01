@@ -11,6 +11,10 @@ const STATUS_CACHE_KEY = 'thekedaar_subscription';
 function seedFromUser(user) {
   if (!user) return null;
   const isExplicitlyActive = user.subscriptionActive === true;
+  const isTrial = Boolean(
+    user.isTrial ||
+    (isExplicitlyActive && user.planStatus === 'trial' && !user.currentPlanCode)
+  );
   return {
     enforced: true,
     isActive: isExplicitlyActive,
@@ -19,6 +23,7 @@ function seedFromUser(user) {
     daysLeft: null,
     isLegacyUser: Boolean(user.isLegacyUser),
     currentPlanCode: user.currentPlanCode || null,
+    isTrial,
     showRenewalReminder: false,
     plans: DEFAULT_PLANS,
   };
@@ -219,9 +224,12 @@ export function SubscriptionProvider({ children }) {
 
   const enforced = status ? status.enforced !== false : true;
 
-  // Strict paywall rule: A logged-in user MUST be locked if subscription is enforced
-  // and status is not active. This ensures brand new signups land on the paywall screen.
   const locked = Boolean(token) && enforced && status?.isActive !== true;
+  const isTrial = Boolean(
+    status &&
+    status.isActive &&
+    (status.isTrial ?? (status.status === 'trial' && !status.currentPlanCode))
+  );
 
   const currentPlans = status?.plans && status.plans.length > 0 ? status.plans : DEFAULT_PLANS;
 
@@ -234,6 +242,7 @@ export function SubscriptionProvider({ children }) {
         error,
         locked,
         enforced,
+        isTrial,
         daysLeft: status?.daysLeft ?? null,
         expiresAt: status?.expiresAt || null,
         isLegacyUser: Boolean(status?.isLegacyUser),

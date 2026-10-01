@@ -11,6 +11,10 @@ const STATUS_CACHE_KEY = 'thekedaar_subscription';
 function seedFromUser(user) {
   if (!user) return null;
   if (typeof user.subscriptionActive !== 'boolean') return null;
+  const isTrial = Boolean(
+    user.isTrial ||
+    (user.subscriptionActive && user.planStatus === 'trial' && !user.currentPlanCode)
+  );
   return {
     enforced: true,
     isActive: user.subscriptionActive,
@@ -19,6 +23,7 @@ function seedFromUser(user) {
     daysLeft: null,
     isLegacyUser: Boolean(user.isLegacyUser),
     currentPlanCode: user.currentPlanCode || null,
+    isTrial,
     showRenewalReminder: false,
     plans: [],
   };
@@ -107,6 +112,11 @@ export function SubscriptionProvider({ children }) {
   const enforced = status ? status.enforced !== false : true;
   // Unknown status must not lock anyone out — fail open until the server says otherwise.
   const locked = Boolean(token) && enforced && status !== null && status.isActive === false;
+  const isTrial = Boolean(
+    status &&
+    status.isActive &&
+    (status.isTrial ?? (status.status === 'trial' && !status.currentPlanCode))
+  );
 
   return (
     <SubscriptionContext.Provider
@@ -117,6 +127,7 @@ export function SubscriptionProvider({ children }) {
         error,
         locked,
         enforced,
+        isTrial,
         daysLeft: status?.daysLeft ?? null,
         expiresAt: status?.expiresAt || null,
         isLegacyUser: Boolean(status?.isLegacyUser),
