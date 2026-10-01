@@ -17,8 +17,9 @@ echo "=========================================="
 # --- Pull latest code (if using git) ---
 cd "$APP_DIR"
 if [ -d .git ]; then
-    echo "[1/7] Pulling latest code..."
-    git pull origin main
+    BRANCH=$(git branch --show-current 2>/dev/null || echo "dev/project-attendance-ui")
+    echo "[1/7] Pulling latest code on branch: $BRANCH..."
+    git pull origin "$BRANCH"
 else
     echo "[1/7] No git repo found, skipping pull..."
 fi
